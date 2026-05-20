@@ -1,0 +1,1 @@
+ALTER TABLE `elders` ADD `cancellationRequestedAt` timestamp;

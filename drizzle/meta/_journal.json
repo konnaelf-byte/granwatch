@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1776270523834,
+      "tag": "0000_wealthy_sprite",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1776272452099,
+      "tag": "0001_opposite_chronomancer",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1776279918980,
+      "tag": "0002_charming_marrow",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1776344133906,
+      "tag": "0003_free_cobalt_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1776421058110,
+      "tag": "0004_aberrant_vision",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1776950049620,
+      "tag": "0005_dusty_alex_power",
+      "breakpoints": true
+    }
+  ]
+}

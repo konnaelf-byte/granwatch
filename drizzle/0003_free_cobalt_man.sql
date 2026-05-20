@@ -1,0 +1,1 @@
+ALTER TABLE `elderMembers` ADD `notificationsEnabled` boolean DEFAULT true NOT NULL;
