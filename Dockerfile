@@ -11,6 +11,12 @@ COPY package.json pnpm-lock.yaml ./
 COPY patches/ ./patches/
 RUN pnpm install --no-frozen-lockfile
 
+# Declare build args for Vite env vars — Railway passes these automatically.
+# Placing them here (after deps install) ensures the cache is invalidated
+# when the key changes, while still caching the slow pnpm install step.
+ARG VITE_CLERK_PUBLISHABLE_KEY
+ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+
 # Copy source and build
 COPY . .
 RUN pnpm run build
