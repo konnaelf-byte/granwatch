@@ -1,1 +1,1 @@
-ALTER TABLE `elders` ADD `birthday` varchar(5);
+ALTER TABLE `elders` ADD COLUMN IF NOT EXISTS `birthday` varchar(5);
