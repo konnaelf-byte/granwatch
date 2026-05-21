@@ -35,6 +35,7 @@ export const elders = mysqlTable("elders", {
   lemonsqueezySubscriptionId: varchar("lemonsqueezySubscriptionId", { length: 255 }),
   lemonsqueezyCustomerId: varchar("lemonsqueezyCustomerId", { length: 255 }),
   cancellationRequestedAt: timestamp("cancellationRequestedAt"),
+  birthday: varchar("birthday", { length: 5 }), // "MM-DD" format, year-agnostic
   createdByUserId: int("createdByUserId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

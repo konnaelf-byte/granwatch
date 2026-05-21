@@ -97,8 +97,8 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
 
   const perPersonRands = subStatus
     ? (subStatus.perPersonCost / 100).toFixed(2)
-    : "27.00";
-  const totalRands = "27.00";
+    : "79.00";
+  const totalRands = "79.00";
   const contributorCount = subStatus?.contributorCount ?? 1;
   const isPaid = subStatus?.isPaid ?? false;
   const cancellationPending = !!subStatus?.cancellationRequestedAt;
@@ -185,7 +185,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
                   disabled={toggleContribution.isPending || createCheckout.isPending}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  {createCheckout.isPending ? "Redirecting..." : `Join split — R${((2700 / (contributorCount + 1)) / 100).toFixed(2)}/mo`}
+                  {createCheckout.isPending ? "Redirecting..." : `Join split — R${((7900 / (contributorCount + 1)) / 100).toFixed(2)}/mo`}
                 </Button>
               )
             ) : (

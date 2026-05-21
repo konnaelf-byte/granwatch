@@ -135,13 +135,13 @@ export default function Landing() {
         <div className="mt-12 max-w-sm w-full bg-card border rounded-2xl p-6 text-left">
           <div className="flex items-center justify-between mb-3">
             <span className="font-bold text-foreground">Gran+</span>
-            <span className="text-primary font-bold">R27/month</span>
+            <span className="text-primary font-bold">R79/month</span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">
-            Split between the whole family — could be as little as R3 each.
+            Split between the whole family — could be as little as R13 each.
           </p>
           <ul className="text-sm text-muted-foreground space-y-1">
-            {["Wellbeing check-ins", "Visit photos & notes", "Multiple gran profiles", "SMS alerts", "Custom alert threshold"].map(f => (
+            {["Wellbeing check-ins", "Visit photos & notes", "Multiple gran profiles", "Custom alert threshold", "Full visit history"].map(f => (
               <li key={f} className="flex items-center gap-2">
                 <span className="text-primary">✓</span> {f}
               </li>

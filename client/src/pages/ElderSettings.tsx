@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Sparkles, Lock, Bell, BellOff, LogOut, AlertTriangle, Users, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Lock, Bell, BellOff, LogOut, AlertTriangle, Users, CheckCircle2, Cake } from "lucide-react";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -82,6 +82,7 @@ export default function ElderSettings() {
   const [wellbeingEnabled, setWellbeingEnabled] = useState(false);
   const [careNotes, setCareNotes] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [birthdayInput, setBirthdayInput] = useState(""); // "YYYY-MM-DD" for the input element
   const [initialized, setInitialized] = useState(false);
 
   const utils = trpc.useUtils();
@@ -98,6 +99,8 @@ export default function ElderSettings() {
       setWellbeingEnabled(elder.wellbeingEnabled);
       setCareNotes(elder.careNotes ?? "");
       setNotificationsEnabled(elder.notificationsEnabled ?? true);
+      // birthday stored as "MM-DD", input needs "YYYY-MM-DD" (use a dummy year)
+      setBirthdayInput(elder.birthday ? `2000-${elder.birthday}` : "");
       setInitialized(true);
     }
   }, [elder, initialized]);
@@ -147,10 +150,13 @@ export default function ElderSettings() {
   const handleSave = () => {
     // Save elder settings (admin only)
     if (isAdmin) {
+      // Convert "YYYY-MM-DD" → "MM-DD", or null to clear
+      const birthday = birthdayInput ? birthdayInput.slice(5) : null;
       updateElder.mutate({
         elderId,
         name: name.trim(),
         alertThresholdDays: threshold,
+        birthday,
         wellbeingEnabled: isPaid ? wellbeingEnabled : undefined,
         careNotes: isPaid ? careNotes : undefined,
       });
@@ -205,6 +211,23 @@ export default function ElderSettings() {
               onChange={e => setName(e.target.value)}
               className="h-12"
             />
+          </div>
+        )}
+
+        {/* Birthday — admin only */}
+        {isAdmin && (
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <Cake className="w-4 h-4 text-primary" />
+              Gran's birthday <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              type="date"
+              value={birthdayInput}
+              onChange={e => setBirthdayInput(e.target.value)}
+              className="h-12"
+            />
+            <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before her birthday. Leave blank to disable.</p>
           </div>
         )}
 

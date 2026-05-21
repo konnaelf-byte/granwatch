@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Heart } from "lucide-react";
+import { ArrowLeft, Heart, Cake } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ export default function CreateElder() {
   const [name, setName] = useState("");
   const [photoUrl, setPhotoUrl] = useState("");
   const [threshold, setThreshold] = useState(21);
+  const [birthdayInput, setBirthdayInput] = useState(""); // full date string from <input type="date">
 
   const createElder = trpc.elders.create.useMutation({
     onSuccess: (elder) => {
@@ -32,10 +33,13 @@ export default function CreateElder() {
       toast.error("Please enter a name");
       return;
     }
+    // Convert "YYYY-MM-DD" → "MM-DD"
+    const birthday = birthdayInput ? birthdayInput.slice(5) : undefined;
     createElder.mutate({
       name: name.trim(),
       photoUrl: photoUrl.trim() || undefined,
       alertThresholdDays: threshold,
+      birthday,
     });
   };
 
@@ -84,6 +88,21 @@ export default function CreateElder() {
               className="h-12 text-base"
               autoFocus
             />
+          </div>
+
+          {/* Birthday */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <Cake className="w-4 h-4 text-primary" />
+              Gran's birthday <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Input
+              type="date"
+              value={birthdayInput}
+              onChange={e => setBirthdayInput(e.target.value)}
+              className="h-12"
+            />
+            <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before her birthday.</p>
           </div>
 
           {/* Alert threshold */}

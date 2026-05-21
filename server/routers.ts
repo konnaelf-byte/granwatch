@@ -150,6 +150,7 @@ export const appRouter = router({
         name: z.string().min(1).max(128),
         photoUrl: z.string().optional(),
         alertThresholdDays: z.number().min(1).max(365).default(21),
+        birthday: z.string().regex(/^\d{2}-\d{2}$/).optional(), // "MM-DD"
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -161,6 +162,7 @@ export const appRouter = router({
           name: input.name,
           photoUrl: input.photoUrl ?? null,
           alertThresholdDays: input.alertThresholdDays,
+          birthday: input.birthday ?? null,
           inviteCode,
           createdByUserId: ctx.user.id,
         });
@@ -187,6 +189,7 @@ export const appRouter = router({
         alertThresholdDays: z.number().min(1).max(365).optional(),
         wellbeingEnabled: z.boolean().optional(),
         careNotes: z.string().optional(),
+        birthday: z.string().regex(/^\d{2}-\d{2}$/).nullable().optional(), // "MM-DD" or null to clear
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -207,6 +210,7 @@ export const appRouter = router({
         if (input.name !== undefined) updateData.name = input.name;
         if (input.photoUrl !== undefined) updateData.photoUrl = input.photoUrl;
         if (input.alertThresholdDays !== undefined) updateData.alertThresholdDays = input.alertThresholdDays;
+        if (input.birthday !== undefined) updateData.birthday = input.birthday; // can be null to clear
         // Gran+ only features
         if (input.wellbeingEnabled !== undefined) {
           if (!currentElder.isPaid) throw new Error("Wellbeing check-ins require Gran+");
@@ -595,7 +599,7 @@ export const appRouter = router({
           })
         );
 
-        const MONTHLY_COST = 2700; // R27.00 in cents
+        const MONTHLY_COST = 7900; // R79.00 in cents
         const perPerson = contributors.length > 0 ? Math.ceil(MONTHLY_COST / contributors.length) : MONTHLY_COST;
 
         return {

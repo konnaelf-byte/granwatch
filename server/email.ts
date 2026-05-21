@@ -87,7 +87,7 @@ function buildEmailHtml({
 
               <!-- CTA -->
               <div style="text-align:center;margin-bottom:24px;">
-                <a href="https://granwatch.com/dashboard" style="display:inline-block;background:#f97316;color:#ffffff;font-size:15px;font-weight:600;padding:12px 28px;border-radius:99px;text-decoration:none;">Open GranWatch</a>
+                <a href="https://granwatch.app/dashboard" style="display:inline-block;background:#f97316;color:#ffffff;font-size:15px;font-weight:600;padding:12px 28px;border-radius:99px;text-decoration:none;">Open GranWatch</a>
               </div>
 
               <p style="margin:0;font-size:13px;color:#78716c;line-height:1.5;">You can log a visit, schedule a future visit, or send a video call note directly from the app. Every check-in counts. 💚</p>
@@ -99,7 +99,7 @@ function buildEmailHtml({
             <td style="background:#f5f5f4;padding:16px 32px;text-align:center;border-top:1px solid #e7e5e4;">
               <p style="margin:0 0 4px;font-size:12px;color:#a8a29e;">You're receiving this because you're a family member on GranWatch.</p>
               <p style="margin:0;font-size:12px;color:#a8a29e;">
-                <a href="https://granwatch.com/dashboard" style="color:#f97316;text-decoration:none;">Manage notification preferences</a>
+                <a href="https://granwatch.app/dashboard" style="color:#f97316;text-decoration:none;">Manage notification preferences</a>
               </p>
             </td>
           </tr>
@@ -133,13 +133,13 @@ Hi ${recipientName},
 
 ${message}
 
-Open GranWatch to log a visit or schedule one: https://granwatch.com/dashboard
+Open GranWatch to log a visit or schedule one: https://granwatch.app/dashboard
 
 Every check-in counts. 💚
 
 ---
 You're receiving this because you're a family member on GranWatch.
-Manage notification preferences: https://granwatch.com/dashboard`;
+Manage notification preferences: https://granwatch.app/dashboard`;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -208,6 +208,135 @@ export async function sendVisitReminderEmails(params: SendVisitReminderParams): 
       }
     } catch (err) {
       console.error(`[Email] Unexpected error sending to ${recipient.email}:`, err);
+    }
+  }
+
+  return sent;
+}
+
+// ─── Birthday reminder email ──────────────────────────────────────────────────
+
+function buildBirthdayEmailHtml({
+  recipientName,
+  granName,
+  granPhotoUrl,
+  isToday,
+}: {
+  recipientName: string;
+  granName: string;
+  granPhotoUrl?: string | null;
+  isToday: boolean;
+}): string {
+  const photoSection = granPhotoUrl
+    ? `<img src="${granPhotoUrl}" alt="${granName}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #ec4899;display:block;margin:0 auto 16px;" />`
+    : `<div style="width:80px;height:80px;border-radius:50%;background:#ec4899;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;line-height:80px;text-align:center;">🎂</div>`;
+
+  const headline = isToday ? `🎂 It's ${granName}'s Birthday!` : `🎂 ${granName}'s Birthday is Coming Up!`;
+  const message = isToday
+    ? `Today is <strong>${granName}'s birthday</strong>! What a perfect day for a visit, a call, or a heartfelt message. Let's make her feel celebrated.`
+    : `Just a heads up — <strong>${granName}'s birthday is in 3 days</strong>. Why not plan a visit or organise something special with the family?`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GranWatch — Birthday Reminder</title>
+</head>
+<body style="margin:0;padding:0;background:#fafaf9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafaf9;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background:#ec4899;padding:24px 32px;text-align:center;">
+              <span style="font-size:28px;">🌿</span>
+              <h1 style="margin:8px 0 0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.3px;">GranWatch</h1>
+              <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Keeping family connected</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <div style="text-align:center;margin-bottom:8px;">
+                ${photoSection}
+              </div>
+              <h2 style="margin:20px 0 8px;font-size:20px;font-weight:700;color:#1c1917;text-align:center;">${headline}</h2>
+              <p style="margin:0 0 16px;font-size:15px;color:#44403c;line-height:1.6;">Hi ${recipientName},</p>
+              <p style="margin:0 0 24px;font-size:15px;color:#44403c;line-height:1.6;">${message}</p>
+              <div style="text-align:center;margin-bottom:24px;">
+                <a href="https://granwatch.app/dashboard" style="display:inline-block;background:#ec4899;color:#ffffff;font-size:15px;font-weight:600;padding:12px 28px;border-radius:99px;text-decoration:none;">Open GranWatch</a>
+              </div>
+              <p style="margin:0;font-size:13px;color:#78716c;line-height:1.5;">You can log a visit or book a time directly in the app. Every visit counts. 💚</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f5f5f4;padding:16px 32px;text-align:center;border-top:1px solid #e7e5e4;">
+              <p style="margin:0 0 4px;font-size:12px;color:#a8a29e;">You're receiving this because you're a family member on GranWatch.</p>
+              <p style="margin:0;font-size:12px;color:#a8a29e;">
+                <a href="https://granwatch.app/dashboard" style="color:#ec4899;text-decoration:none;">Manage notification preferences</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export interface SendBirthdayReminderParams {
+  recipients: EmailRecipient[];
+  granName: string;
+  granPhotoUrl?: string | null;
+  isToday: boolean; // true = birthday is today, false = 3 days away
+}
+
+/**
+ * Send birthday reminder emails to all opted-in family members.
+ * Returns the number of emails successfully sent.
+ */
+export async function sendBirthdayReminderEmails(params: SendBirthdayReminderParams): Promise<number> {
+  const { recipients, granName, granPhotoUrl, isToday } = params;
+
+  if (!ENV.resendApiKey) {
+    console.warn("[Email] RESEND_API_KEY not set — skipping birthday email send");
+    return 0;
+  }
+
+  const resend = getResend();
+  let sent = 0;
+
+  for (const recipient of recipients) {
+    if (!recipient.email) continue;
+    try {
+      const subject = isToday
+        ? `🎂 Today is ${granName}'s Birthday!`
+        : `🎂 ${granName}'s Birthday is in 3 days`;
+
+      const { error } = await resend.emails.send({
+        from: `GranWatch <${ENV.resendFromEmail}>`,
+        to: recipient.email,
+        subject,
+        html: buildBirthdayEmailHtml({
+          recipientName: recipient.name || "there",
+          granName,
+          granPhotoUrl,
+          isToday,
+        }),
+        text: isToday
+          ? `Hi ${recipient.name || "there"},\n\nToday is ${granName}'s birthday! Open GranWatch to log a visit or book one: https://granwatch.app/dashboard\n\n💚 GranWatch`
+          : `Hi ${recipient.name || "there"},\n\n${granName}'s birthday is in 3 days. Plan a visit or organise something special: https://granwatch.app/dashboard\n\n💚 GranWatch`,
+      });
+
+      if (error) {
+        console.error(`[Email] Birthday email failed for ${recipient.email}:`, error);
+      } else {
+        console.log(`[Email] Sent birthday reminder to ${recipient.email} for ${granName} (isToday=${isToday})`);
+        sent++;
+      }
+    } catch (err) {
+      console.error(`[Email] Unexpected error sending birthday email to ${recipient.email}:`, err);
     }
   }
 

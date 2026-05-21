@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2 } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import StatusRing from "@/components/StatusRing";
 import type { VisitStatus } from "@/components/StatusRing";
@@ -228,6 +228,31 @@ export default function ElderProfile() {
             <p className="text-xs text-destructive/80 mt-1">Please book a visit as soon as possible.</p>
           </div>
         )}
+
+        {/* Birthday banner — shown 7 days before and on the day */}
+        {elder.birthday && (() => {
+          const today = new Date();
+          const [mm, dd] = elder.birthday.split("-").map(Number);
+          const thisYear = new Date(today.getFullYear(), mm - 1, dd);
+          const nextYear = new Date(today.getFullYear() + 1, mm - 1, dd);
+          const next = thisYear >= new Date(today.getFullYear(), today.getMonth(), today.getDate()) ? thisYear : nextYear;
+          const daysUntil = Math.round((next.getTime() - new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) / 86400000);
+          if (daysUntil > 7) return null;
+          const isToday = daysUntil === 0;
+          return (
+            <div className={`mb-6 rounded-xl p-4 text-center flex items-center justify-center gap-3 ${isToday ? "bg-pink-50 border border-pink-200" : "bg-amber-50 border border-amber-200"}`}>
+              <Cake className={`w-5 h-5 flex-shrink-0 ${isToday ? "text-pink-500" : "text-amber-500"}`} />
+              <div>
+                <p className={`font-semibold text-sm ${isToday ? "text-pink-700" : "text-amber-700"}`}>
+                  {isToday ? `🎂 Happy Birthday, ${elder.name}!` : `🎂 ${elder.name}'s birthday is in ${daysUntil} day${daysUntil !== 1 ? "s" : ""}!`}
+                </p>
+                <p className={`text-xs mt-0.5 ${isToday ? "text-pink-600" : "text-amber-600"}`}>
+                  {isToday ? "Make it a special visit today." : "Plan a visit to make it memorable."}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Primary actions */}
         <div className="grid grid-cols-2 gap-3 mb-6">
