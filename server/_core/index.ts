@@ -1,8 +1,10 @@
 import "dotenv/config";
 import { clerkMiddleware } from "@clerk/express";
 import express from "express";
+import fs from "fs";
 import { createServer } from "http";
 import net from "net";
+import path from "path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerPayfastRoutes } from "../payfastRoute";
 import { registerLemonSqueezyRoutes } from "../lemonSqueezyRoute";
@@ -10,7 +12,6 @@ import { registerOgRoutes } from "../ogRoute";
 import { registerUploadRoutes } from "../uploadRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
-import { serveStatic, setupVite } from "./vite";
 import { startCronJobs } from "../cron";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -64,11 +65,21 @@ async function startServer() {
     })
   );
 
-  // Development mode uses Vite; production uses pre-built static files.
+  // Development mode uses Vite dev server (lazy import so `vite` is not
+  // required in production node_modules); production serves the pre-built
+  // static files from dist/public.
   if (process.env.NODE_ENV === "development") {
+    const { setupVite } = await import("./vite.js");
     await setupVite(app, server);
   } else {
-    serveStatic(app);
+    const distPath = path.resolve(import.meta.dirname, "public");
+    if (!fs.existsSync(distPath)) {
+      console.error(`Build directory not found: ${distPath}. Run 'pnpm build' first.`);
+    }
+    app.use(express.static(distPath));
+    app.use("*", (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
   }
 
   const preferredPort = parseInt(process.env.PORT || "3000");
