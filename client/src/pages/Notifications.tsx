@@ -34,6 +34,12 @@ export default function Notifications() {
 
   const unread = notifs?.filter(n => !n.read) ?? [];
 
+  const handleNotifClick = (n: NonNullable<typeof notifs>[number]) => {
+    if (!n.read) markRead.mutate({ notificationId: n.id });
+    // Navigate to the elder profile so the user can act immediately
+    if (n.elderId) navigate(`/elder/${n.elderId}`);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
@@ -66,28 +72,39 @@ export default function Notifications() {
           </div>
         ) : notifs && notifs.length > 0 ? (
           <div className="space-y-2">
-            {notifs.map((n: any) => {
+            {notifs.map((n) => {
               const meta = TYPE_LABELS[n.type] ?? { label: n.type, icon: "🔔", color: "text-foreground" };
               return (
                 <button
                   key={n.id}
-                  onClick={() => {
-                    if (!n.read) markRead.mutate({ notificationId: n.id });
-                  }}
-                  className={`w-full text-left bg-card border rounded-xl p-4 flex items-start gap-3 transition-opacity ${
-                    n.read ? "opacity-60" : "border-primary/30 shadow-sm"
+                  onClick={() => handleNotifClick(n)}
+                  className={`w-full text-left bg-card border rounded-xl p-4 flex items-start gap-3 transition-all active:scale-[0.99] ${
+                    n.read
+                      ? "opacity-60 hover:opacity-80"
+                      : "border-primary/30 shadow-sm hover:shadow-md"
                   }`}
                 >
                   <span className="text-2xl flex-shrink-0">{meta.icon}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className={`font-semibold text-sm ${meta.color}`}>{meta.label}</p>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <p className={`font-semibold text-sm ${meta.color}`}>{meta.label}</p>
+                        {n.elderName && (
+                          <span className="text-xs text-muted-foreground truncate">— {n.elderName}</span>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground flex-shrink-0">
                         {new Date(n.sentAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
                       </p>
                     </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {n.type === "nudge" && `${n.elderName ?? "Gran"} is waiting for a visit.`}
+                      {n.type === "red_alert" && `${n.elderName ?? "Gran"} hasn't had a visitor in a long time!`}
+                      {n.type === "weekly_digest" && "Family visit update."}
+                      {!["nudge", "red_alert", "weekly_digest"].includes(n.type) && "Tap to view."}
+                    </p>
                     {!n.read && (
-                      <div className="w-2 h-2 bg-primary rounded-full mt-1" />
+                      <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1.5" />
                     )}
                   </div>
                 </button>

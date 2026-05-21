@@ -64,7 +64,8 @@ export function registerUploadRoutes(app: Express) {
       }
 
       const ext = filePart.contentType.split("/")[1].replace("jpeg", "jpg");
-      const key = `gran-photos/${user.id}/photo.${ext}`;
+      // Include a timestamp in the key so CDN caches are busted when a user updates their photo.
+      const key = `gran-photos/${user.id}/${Date.now()}.${ext}`;
 
       const { url } = await storagePut(key, filePart.data, filePart.contentType);
 

@@ -28,7 +28,7 @@ function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { el
   const { data: subStatus } = trpc.subscription.status.useQuery({ elderId });
   const cancellationPending = !!subStatus?.cancellationRequestedAt;
   const contributorCount = subStatus?.contributorCount ?? 0;
-  const perPersonRands = subStatus ? (subStatus.perPersonCost / 100).toFixed(2) : "27.00";
+  const perPersonRands = subStatus ? (subStatus.perPersonCost / 100).toFixed(2) : "79.00";
 
   return (
     <div className={`rounded-xl border p-4 space-y-3 ${

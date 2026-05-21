@@ -4,7 +4,7 @@ import { getDb } from "./db";
 import { elders } from "../drizzle/schema";
 
 const DEFAULT_OG_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663467284809/kPXP5TfTQ4hUuXDHU4e2Bo/gran-icon-final_a6b9501a.png";
-const APP_URL = "https://granwatch.com";
+const APP_URL = process.env.APP_URL ?? "https://granwatch.app";
 
 function buildOgHtml({
   title,

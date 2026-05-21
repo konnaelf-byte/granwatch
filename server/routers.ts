@@ -8,7 +8,7 @@ import {
   elders, elderMembers, visits, plannedVisits,
   subscriptionContributions, notifications
 } from "../drizzle/schema";
-import { eq, and, desc, gte } from "drizzle-orm";
+import { eq, and, desc, gte, inArray } from "drizzle-orm";
 
 // Generate a random invite code
 function generateInviteCode(): string {
@@ -49,7 +49,8 @@ export const appRouter = router({
 
   // ─── ELDERS ────────────────────────────────────────────────────────────────
   elders: router({
-    // List all elder profiles the current user belongs to
+    // List all elder profiles the current user belongs to.
+    // Optimised to use bulk queries instead of N+1 per elder.
     list: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) throw new Error("DB unavailable");
@@ -62,36 +63,47 @@ export const appRouter = router({
       const elderIds = memberships.map(m => m.elderId);
       if (elderIds.length === 0) return [];
 
-      const elderList = await Promise.all(
-        elderIds.map(async (elderId) => {
-          const [elder] = await db.select().from(elders).where(eq(elders.id, elderId)).limit(1);
-          if (!elder) return null;
+      // Bulk fetch all elders in one query
+      const elderRows = await db
+        .select()
+        .from(elders)
+        .where(inArray(elders.id, elderIds));
 
-          // Get last visit
-          const [lastVisit] = await db
-            .select()
-            .from(visits)
-            .where(eq(visits.elderId, elderId))
-            .orderBy(desc(visits.visitedAt))
-            .limit(1);
+      // Bulk fetch last visit per elder using a single query per elder is unavoidable
+      // without raw SQL window functions — but we fetch all visits and pick the latest.
+      const allRecentVisits = await db
+        .select()
+        .from(visits)
+        .where(inArray(visits.elderId, elderIds))
+        .orderBy(desc(visits.visitedAt));
 
-          const daysSinceVisit = lastVisit ? daysSince(lastVisit.visitedAt) : 999;
-          const status = getStatus(daysSinceVisit, elder.alertThresholdDays);
+      // Bulk fetch all member counts
+      const allMembers = await db
+        .select()
+        .from(elderMembers)
+        .where(inArray(elderMembers.elderId, elderIds));
 
-          // Get member count
-          const members = await db.select().from(elderMembers).where(eq(elderMembers.elderId, elderId));
+      // Build maps for O(1) lookup
+      const lastVisitMap = new Map<number, Date>();
+      for (const v of allRecentVisits) {
+        if (!lastVisitMap.has(v.elderId)) lastVisitMap.set(v.elderId, v.visitedAt);
+      }
+      const memberCountMap = new Map<number, number>();
+      for (const m of allMembers) {
+        memberCountMap.set(m.elderId, (memberCountMap.get(m.elderId) ?? 0) + 1);
+      }
 
-          return {
-            ...elder,
-            daysSinceVisit,
-            status,
-            memberCount: members.length,
-            lastVisitDate: lastVisit?.visitedAt ?? null,
-          };
-        })
-      );
-
-      return elderList.filter(Boolean);
+      return elderRows.map(elder => {
+        const lastVisitDate = lastVisitMap.get(elder.id) ?? null;
+        const daysSinceVisit = lastVisitDate ? daysSince(lastVisitDate) : 999;
+        return {
+          ...elder,
+          daysSinceVisit,
+          status: getStatus(daysSinceVisit, elder.alertThresholdDays),
+          memberCount: memberCountMap.get(elder.id) ?? 0,
+          lastVisitDate,
+        };
+      });
     }),
 
     // Get a single elder profile
@@ -541,12 +553,24 @@ export const appRouter = router({
       const db = await getDb();
       if (!db) return [];
 
-      return db
+      const rows = await db
         .select()
         .from(notifications)
         .where(eq(notifications.userId, ctx.user.id))
         .orderBy(desc(notifications.sentAt))
         .limit(50);
+
+      // Attach elder name so the UI can display which gran the alert is about
+      return Promise.all(
+        rows.map(async (n) => {
+          const [elder] = await db
+            .select({ name: elders.name })
+            .from(elders)
+            .where(eq(elders.id, n.elderId))
+            .limit(1);
+          return { ...n, elderName: elder?.name ?? null };
+        })
+      );
     }),
 
     markRead: protectedProcedure

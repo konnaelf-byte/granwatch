@@ -50,9 +50,9 @@ async function startServer() {
   // OG image generation.
   registerOgRoutes(app);
 
-  // Configure body parser.
-  app.use(express.json({ limit: "50mb" }));
-  app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  // Configure body parser — 2mb is generous for a JSON API.
+  app.use(express.json({ limit: "2mb" }));
+  app.use(express.urlencoded({ limit: "2mb", extended: true }));
 
   // Photo upload route.
   registerUploadRoutes(app);
