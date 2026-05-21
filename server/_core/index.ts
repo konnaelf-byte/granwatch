@@ -13,6 +13,7 @@ import { registerUploadRoutes } from "../uploadRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startCronJobs } from "../cron";
+import { runMigrations } from "./migrateDb";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -95,4 +96,7 @@ async function startServer() {
   });
 }
 
-startServer().catch(console.error);
+// Run DB migrations then start the HTTP server.
+runMigrations()
+  .then(() => startServer())
+  .catch(console.error);

@@ -25,10 +25,11 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
-# Copy built artifacts + pruned node_modules
+# Copy built artifacts + pruned node_modules + drizzle migrations
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/drizzle ./drizzle
 
 # Railway injects PORT
 EXPOSE 3000
