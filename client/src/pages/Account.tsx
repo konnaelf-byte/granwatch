@@ -100,7 +100,7 @@ export default function Account() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center px-4">
-          Your account is managed through Manus. To update your name or email, visit your Manus profile settings.
+          To update your name or email, visit your account settings.
         </p>
 
         {/* Share GranWatch */}
