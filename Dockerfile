@@ -9,7 +9,7 @@ WORKDIR /app
 # Install deps first (layer cache)
 COPY package.json pnpm-lock.yaml ./
 COPY patches/ ./patches/
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy source and build
 COPY . .
