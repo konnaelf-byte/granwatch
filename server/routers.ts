@@ -795,7 +795,7 @@ export const appRouter = router({
               .orderBy(desc(visits.visitedAt))
               .limit(1);
             const myDaysSince = lastVisit ? daysSince(lastVisit.visitedAt) : 999;
-            return { ...m, userName: user?.name ?? "Family Member", myDaysSince };
+            return { ...m, userName: user?.name ?? "Family Member", userEmail: user?.email ?? null, myDaysSince };
           })
         );
 
@@ -853,7 +853,28 @@ export const appRouter = router({
           }
         }
 
-        return { sent, message: `${sent} notification${sent !== 1 ? "s" : ""} sent.` };
+        // Also send emails to all notifyable members with an address
+        const { sendVisitReminderEmails } = await import("./email");
+        const emailRecipients = notifyableMembers
+          .filter((m) => m.userEmail)
+          .map((m) => ({ name: m.userName, email: m.userEmail! }));
+
+        let emailsSent = 0;
+        if (emailRecipients.length > 0) {
+          emailsSent = await sendVisitReminderEmails({
+            recipients: emailRecipients,
+            granName: elder.name,
+            granPhotoUrl: elder.photoUrl ?? null,
+            daysSince: daysSinceVisit,
+            isWholeFamily: true,
+          });
+        }
+
+        return {
+          sent,
+          emailsSent,
+          message: `${sent} in-app notification${sent !== 1 ? "s" : ""} sent${emailsSent > 0 ? `, ${emailsSent} email${emailsSent !== 1 ? "s" : ""} sent` : ""}.`,
+        };
       }),
   }),
 
