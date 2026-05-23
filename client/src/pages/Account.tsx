@@ -2,15 +2,43 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getSignInUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
-import { Heart, ArrowLeft, LogOut, Mail, User, Share2 } from "lucide-react";
+import { Heart, ArrowLeft, LogOut, Mail, User, Share2, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-const OG_SHARE_URL = "https://granwatch.com/api/og/share";
+const OG_SHARE_URL = "https://granwatch.app";
 
 export default function Account() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
   const [copied, setCopied] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const deleteAccountMutation = trpc.auth.deleteAccount.useMutation();
+
+  async function handleDeleteAccount() {
+    setDeleting(true);
+    try {
+      await deleteAccountMutation.mutateAsync();
+      toast.success("Account deleted. Goodbye 💛");
+      // Give toast time to show, then log out
+      setTimeout(() => logout(), 1500);
+    } catch (err: any) {
+      toast.error(err.message ?? "Could not delete account. Please contact hello@granwatch.app");
+      setDeleting(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -122,6 +150,50 @@ export default function Account() {
           <LogOut className="w-4 h-4 mr-2" />
           Sign out
         </Button>
+
+        {/* Legal links */}
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
+          <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+          <span>·</span>
+          <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
+        </div>
+
+        {/* Delete account — shown at bottom, low prominence */}
+        <div className="pt-4 border-t">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 text-xs"
+              >
+                <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+                Delete account
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete your account and all your personal data.
+                  Any gran profiles you administer will also be deleted — make sure to
+                  transfer admin rights first if someone else should keep the profile.
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive hover:bg-destructive/90"
+                  onClick={handleDeleteAccount}
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting…" : "Yes, delete everything"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </main>
     </div>
   );

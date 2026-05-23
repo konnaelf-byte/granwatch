@@ -15,6 +15,8 @@ import ElderSettings from "./pages/ElderSettings";
 import { PaymentSuccess, PaymentCancel } from "./pages/PaymentResult";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import InstallPrompt from "./components/InstallPrompt";
 
 function SignInPage() {
@@ -41,6 +43,8 @@ function Router() {
       <Route path="/admin" component={Admin} />
       <Route path="/payment/success" component={PaymentSuccess} />
       <Route path="/payment/cancel" component={PaymentCancel} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

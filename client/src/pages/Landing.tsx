@@ -6,7 +6,7 @@ import { Heart, Bell, Calendar, Users, Camera, CheckCircle } from "lucide-react"
 import StatusRing from "@/components/StatusRing";
 import { useEffect } from "react";
 
-const GRAN_PHOTO = "https://d2xsxph8kpxj0f.cloudfront.net/310519663467284809/kPXP5TfTQ4hUuXDHU4e2Bo/gran-icon-v2_56b16aeb.png";
+const GRAN_PHOTO = "/icon-1024.png";
 
 export default function Landing() {
   const { isAuthenticated, loading } = useAuth();
@@ -158,8 +158,15 @@ export default function Landing() {
         </div>
       </main>
 
-      <footer className="text-center py-6 text-xs text-muted-foreground border-t">
-        © 2026 GranWatch — made with love, for every gran.
+      <footer className="text-center py-6 text-xs text-muted-foreground border-t space-y-2">
+        <div className="flex items-center justify-center gap-4">
+          <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+          <span>·</span>
+          <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
+          <span>·</span>
+          <a href="mailto:hello@granwatch.app" className="hover:text-foreground transition-colors">Contact</a>
+        </div>
+        <p>© 2026 GranWatch — made with love, for every gran.</p>
       </footer>
     </div>
   );

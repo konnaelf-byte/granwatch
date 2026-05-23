@@ -6,7 +6,7 @@ import { z } from "zod";
 import { getDb } from "./db";
 import {
   elders, elderMembers, visits, plannedVisits,
-  subscriptionContributions, notifications
+  subscriptionContributions, notifications, users
 } from "../drizzle/schema";
 import { eq, and, desc, gte, inArray } from "drizzle-orm";
 
@@ -43,6 +43,77 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      return { success: true } as const;
+    }),
+
+    /**
+     * Permanently delete the current user's account and all their data.
+     * Required by Apple App Store guidelines (since June 2022).
+     *
+     * Cascade order:
+     *  1. Remove the user from all elder memberships
+     *  2. Delete elder profiles they created where they are the ONLY admin
+     *     (profiles with another admin are left intact but de-membered)
+     *  3. Delete all their visits, planned visits, notifications, contributions
+     *  4. Delete the user record itself
+     *  5. Clear the session cookie
+     */
+    deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      const userId = ctx.user.id;
+
+      // 1. Find all elder profiles this user administers
+      const adminMemberships = await db
+        .select()
+        .from(elderMembers)
+        .where(and(eq(elderMembers.userId, userId), eq(elderMembers.role, "admin")));
+
+      for (const membership of adminMemberships) {
+        const elderId = membership.elderId;
+
+        // Check if there are other members on this profile
+        const otherMembers = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, elderId)));
+
+        const otherAdmins = otherMembers.filter(m => m.userId !== userId && m.role === "admin");
+        const hasOtherAdmin = otherAdmins.length > 0;
+
+        if (!hasOtherAdmin) {
+          // No other admin — delete the entire elder profile and all its data
+          await db.delete(visits).where(eq(visits.elderId, elderId));
+          await db.delete(plannedVisits).where(eq(plannedVisits.elderId, elderId));
+          await db.delete(notifications).where(eq(notifications.elderId, elderId));
+          await db.delete(subscriptionContributions).where(eq(subscriptionContributions.elderId, elderId));
+          await db.delete(elderMembers).where(eq(elderMembers.elderId, elderId));
+          await db.delete(elders).where(eq(elders.id, elderId));
+        } else {
+          // Another admin exists — just remove this user from the profile
+          await db.delete(elderMembers)
+            .where(and(eq(elderMembers.elderId, elderId), eq(elderMembers.userId, userId)));
+        }
+      }
+
+      // 2. Remove this user from any remaining memberships (non-admin roles)
+      await db.delete(elderMembers).where(eq(elderMembers.userId, userId));
+
+      // 3. Delete the user's personal data across all tables
+      await db.delete(visits).where(eq(visits.userId, userId));
+      await db.delete(plannedVisits).where(eq(plannedVisits.userId, userId));
+      await db.delete(notifications).where(eq(notifications.userId, userId));
+      await db.delete(subscriptionContributions).where(eq(subscriptionContributions.userId, userId));
+
+      // 4. Delete the user record
+      await db.delete(users).where(eq(users.id, userId));
+
+      // 5. Clear the session cookie
+      const cookieOptions = getSessionCookieOptions(ctx.req);
+      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+
+      console.log(`[deleteAccount] User ${userId} account permanently deleted.`);
       return { success: true } as const;
     }),
   }),
