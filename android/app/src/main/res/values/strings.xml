@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GranWatch</string>
+    <string name="title_activity_main">GranWatch</string>
+    <string name="package_name">app.granwatch</string>
+    <string name="custom_url_scheme">app.granwatch</string>
+</resources>
