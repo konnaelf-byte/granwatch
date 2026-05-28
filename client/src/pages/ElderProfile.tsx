@@ -4,6 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
+import { isNativeApp } from "@/utils/platform";
 import StatusRing from "@/components/StatusRing";
 import type { VisitStatus } from "@/components/StatusRing";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -183,7 +184,7 @@ export default function ElderProfile() {
         </Button>
         <h1 className="font-bold text-foreground">{elder.name}</h1>
         <div className="flex items-center gap-1">
-          {!elder.isPaid && (
+          {!elder.isPaid && !isNativeApp && (
             <Button variant="ghost" size="sm" onClick={() => setGranPlusOpen(true)} className="text-primary font-semibold">
               <Sparkles className="w-4 h-4 mr-1" />
               Gran+
@@ -456,14 +457,16 @@ export default function ElderProfile() {
         </Tabs>
       </main>
 
-      {/* Gran+ Modal */}
-      <GranPlusModal
-        open={granPlusOpen}
-        onOpenChange={setGranPlusOpen}
-        isAdmin={elder?.memberRole === "admin"}
-        elderId={elderId}
-        elderName={elder.name}
-      />
+      {/* Gran+ Modal — web only; hidden in native app (Apple Reader App model) */}
+      {!isNativeApp && (
+        <GranPlusModal
+          open={granPlusOpen}
+          onOpenChange={setGranPlusOpen}
+          isAdmin={elder?.memberRole === "admin"}
+          elderId={elderId}
+          elderName={elder.name}
+        />
+      )}
 
       {/* Log Visit Modal */}
       <Dialog open={logVisitOpen} onOpenChange={setLogVisitOpen}>

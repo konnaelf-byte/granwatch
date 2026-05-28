@@ -12,6 +12,7 @@ import { PhotoUpload } from "@/components/PhotoUpload";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { GranPlusModal } from "@/components/GranPlusModal";
+import { isNativeApp } from "@/utils/platform";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -293,14 +294,14 @@ export default function ElderSettings() {
                 checked={wellbeingEnabled}
                 onCheckedChange={(v) => {
                   if (!isPaid) {
-                    setGranPlusOpen(true);
+                    if (!isNativeApp) setGranPlusOpen(true);
                     return;
                   }
                   setWellbeingEnabled(v);
                 }}
               />
             </div>
-            {!isPaid && (
+            {!isPaid && !isNativeApp && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -328,9 +329,9 @@ export default function ElderSettings() {
               rows={4}
               className="resize-none"
               disabled={!isPaid}
-              onClick={() => { if (!isPaid) setGranPlusOpen(true); }}
+              onClick={() => { if (!isPaid && !isNativeApp) setGranPlusOpen(true); }}
             />
-            {!isPaid && (
+            {!isPaid && !isNativeApp && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -404,13 +405,16 @@ export default function ElderSettings() {
         )}
       </main>
 
-      <GranPlusModal
-        open={granPlusOpen}
-        onOpenChange={setGranPlusOpen}
-        elderId={elderId}
-        elderName={elder.name}
-        isAdmin={isAdmin}
-      />
+      {/* Gran+ Modal — web only; hidden in native app (Apple Reader App model) */}
+      {!isNativeApp && (
+        <GranPlusModal
+          open={granPlusOpen}
+          onOpenChange={setGranPlusOpen}
+          elderId={elderId}
+          elderName={elder.name}
+          isAdmin={isAdmin}
+        />
+      )}
 
       {/* Leave family confirmation dialog */}
       <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>
