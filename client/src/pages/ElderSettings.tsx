@@ -345,8 +345,8 @@ export default function ElderSettings() {
           </div>
         )}
 
-        {/* Gran+ subscription management — admin only, when paid */}
-        {isAdmin && isPaid && (
+        {/* Gran+ subscription management — admin only, when paid, web only */}
+        {isAdmin && isPaid && !isNativeApp && (
           <GranPlusSettingsCard elderId={elderId} elderName={elder.name} onManage={() => setGranPlusOpen(true)} />
         )}
 
