@@ -77,7 +77,7 @@ export default function Terms() {
           <ul className="text-muted-foreground space-y-1 list-disc list-inside">
             <li>Subscriptions are billed monthly and renew automatically</li>
             <li>You may cancel at any time; access continues until the end of the billing period</li>
-            <li>Payments are processed by Lemon Squeezy; their terms and policies apply to payment processing</li>
+            <li>Payments are processed by Lemon Squeezy (via granwatch.app); their terms and policies apply to payment processing</li>
             <li>Prices may vary by region and are subject to change with 30 days notice</li>
             <li>Refunds are handled at our discretion; contact us within 7 days of a charge if you believe there is an error</li>
           </ul>
