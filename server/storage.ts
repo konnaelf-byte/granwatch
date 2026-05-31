@@ -46,9 +46,14 @@ function appendHashSuffix(relKey: string): string {
 }
 
 /**
- * Upload a file to R2. Returns the storage key and a public URL.
- * The bucket must have public access enabled in Cloudflare for the URL to work;
- * otherwise use storageGet() to generate a signed URL on demand.
+ * Upload a file to R2. Returns the storage key and a permanent public URL.
+ *
+ * Requires R2_PUBLIC_URL to be set (e.g. https://pub-xxxx.r2.dev or a custom domain).
+ * Enable public access on the granwatch-media bucket in the Cloudflare R2 dashboard,
+ * then copy the public URL and set it as R2_PUBLIC_URL in Railway env vars.
+ *
+ * Falls back to a 7-day presigned URL if R2_PUBLIC_URL is not configured — but this
+ * causes photos to expire after 7 days, so always set R2_PUBLIC_URL in production.
  */
 export async function storagePut(
   relKey: string,
@@ -70,7 +75,15 @@ export async function storagePut(
     })
   );
 
-  // Presigned URL valid for 7 days — long enough for profile images.
+  // Use a permanent public URL if the bucket has public access configured.
+  if (ENV.r2PublicUrl) {
+    const publicBase = ENV.r2PublicUrl.replace(/\/$/, "");
+    return { key, url: `${publicBase}/${key}` };
+  }
+
+  // Fallback: presigned URL (expires in 7 days — photos will break after expiry).
+  // Set R2_PUBLIC_URL in Railway to fix this permanently.
+  console.warn("[storage] R2_PUBLIC_URL not set — falling back to presigned URL (expires in 7 days)");
   const signedUrl = await getSignedUrl(
     s3,
     new GetObjectCommand({ Bucket: ENV.r2BucketName, Key: key }),

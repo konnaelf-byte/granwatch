@@ -12,6 +12,9 @@ export const ENV = {
   r2AccessKeyId: process.env.R2_ACCESS_KEY_ID ?? "",
   r2SecretAccessKey: process.env.R2_SECRET_ACCESS_KEY ?? "",
   r2BucketName: process.env.R2_BUCKET_NAME ?? "granwatch-media",
+  // Public base URL for R2 bucket (e.g. https://pub-xxxx.r2.dev or https://media.granwatch.app)
+  // Enable public access on the bucket in Cloudflare dashboard, then paste the URL here.
+  r2PublicUrl: process.env.R2_PUBLIC_URL ?? "",
   // Email
   resendApiKey: process.env.RESEND_API_KEY ?? "",
   resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "noreply@granwatch.app",
