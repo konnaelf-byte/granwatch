@@ -122,21 +122,21 @@ describe("generateInviteCode", () => {
 });
 
 describe("splitCost", () => {
-  const MONTHLY_COST = 2700; // R27.00 in cents
+  const MONTHLY_COST = 3900; // R39.00 in cents — matches MONTHLY_COST_CENTS in shared/const.ts
 
   it("returns full cost with 1 contributor", () => {
-    expect(splitCost(MONTHLY_COST, 1)).toBe(2700);
+    expect(splitCost(MONTHLY_COST, 1)).toBe(3900);
   });
 
-  it("splits evenly with 9 contributors (R3 each)", () => {
-    expect(splitCost(MONTHLY_COST, 9)).toBe(300); // R3.00
+  it("splits evenly with 3 contributors (R13 each)", () => {
+    expect(splitCost(MONTHLY_COST, 3)).toBe(1300); // R13.00
   });
 
   it("rounds up for uneven splits", () => {
-    // 2700 / 4 = 675 (exact)
-    expect(splitCost(MONTHLY_COST, 4)).toBe(675);
-    // 2700 / 7 = 385.7 → ceil = 386
-    expect(splitCost(MONTHLY_COST, 7)).toBe(386);
+    // 3900 / 4 = 975 (exact)
+    expect(splitCost(MONTHLY_COST, 4)).toBe(975);
+    // 3900 / 7 = 557.1 → ceil = 558
+    expect(splitCost(MONTHLY_COST, 7)).toBe(558);
   });
 
   it("handles 0 contributors gracefully", () => {

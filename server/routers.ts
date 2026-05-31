@@ -1,4 +1,4 @@
-import { COOKIE_NAME } from "@shared/const";
+import { COOKIE_NAME, MONTHLY_COST_CENTS } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router, protectedProcedure } from "./_core/trpc";
@@ -9,6 +9,32 @@ import {
   subscriptionContributions, notifications, users
 } from "../drizzle/schema";
 import { eq, and, desc, gte, inArray } from "drizzle-orm";
+import { cancelLemonSqueezySubscription } from "./lemonSqueezyRoute";
+import { storageDelete } from "./storage";
+
+/**
+ * Extract the R2 storage key from a photo URL.
+ * Handles both public URL format (https://pub-xxx.r2.dev/key) and
+ * legacy presigned URLs (https://accountId.r2.cloudflarestorage.com/bucket/key?...).
+ * Returns null if the key can't be determined.
+ */
+function extractR2Key(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.endsWith(".r2.dev")) {
+      // Public URL: pathname is /<key>
+      return parsed.pathname.replace(/^\//, "");
+    }
+    if (parsed.hostname.endsWith(".r2.cloudflarestorage.com")) {
+      // Presigned URL: pathname is /<bucket>/<key>
+      const parts = parsed.pathname.replace(/^\//, "").split("/");
+      return parts.slice(1).join("/"); // strip bucket name
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 // Generate a random invite code
 function generateInviteCode(): string {
@@ -83,7 +109,16 @@ export const appRouter = router({
         const hasOtherAdmin = otherAdmins.length > 0;
 
         if (!hasOtherAdmin) {
-          // No other admin — delete the entire elder profile and all its data
+          // No other admin — cancel any active LS subscription first, then delete everything
+          const [elderRecord] = await db.select().from(elders).where(eq(elders.id, elderId)).limit(1);
+          if (elderRecord?.lemonsqueezySubscriptionId) {
+            await cancelLemonSqueezySubscription(elderRecord.lemonsqueezySubscriptionId);
+          }
+          // Delete elder profile photo from R2
+          if (elderRecord?.photoUrl) {
+            const key = extractR2Key(elderRecord.photoUrl);
+            if (key) await storageDelete(key).catch(() => {});
+          }
           await db.delete(visits).where(eq(visits.elderId, elderId));
           await db.delete(plannedVisits).where(eq(plannedVisits.elderId, elderId));
           await db.delete(notifications).where(eq(notifications.elderId, elderId));
@@ -491,6 +526,12 @@ export const appRouter = router({
 
         const visitDate = input.visitedAt ? new Date(input.visitedAt) : new Date();
 
+        // Reject future-dated visits — they would reset Gran's status to green
+        // and suppress alerts for the whole family.
+        if (visitDate > new Date()) {
+          throw new Error("Visit date cannot be in the future");
+        }
+
         const [result] = await db.insert(visits).values({
           elderId: input.elderId,
           userId: ctx.user.id,
@@ -694,8 +735,7 @@ export const appRouter = router({
           })
         );
 
-        const MONTHLY_COST = 7900; // R79.00 in cents
-        const perPerson = contributors.length > 0 ? Math.ceil(MONTHLY_COST / contributors.length) : MONTHLY_COST;
+        const perPerson = contributors.length > 0 ? Math.ceil(MONTHLY_COST_CENTS / contributors.length) : MONTHLY_COST_CENTS;
 
         return {
           isPaid: elder.isPaid,
@@ -737,19 +777,16 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Admin: manually toggle paid status (for demo/testing)
+    // Owner-admin only: manually toggle paid status (for support/testing purposes only)
     setPaid: protectedProcedure
       .input(z.object({ elderId: z.number(), isPaid: z.boolean() }))
       .mutation(async ({ ctx, input }) => {
+        // Security: only the global owner-admin can call this.
+        // Elder-admin check was removed — it was exploitable by any user who created a profile.
+        if (ctx.user.role !== "admin") throw new Error("Owner admin access required");
+
         const db = await getDb();
         if (!db) throw new Error("DB unavailable");
-
-        const [membership] = await db
-          .select()
-          .from(elderMembers)
-          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
-          .limit(1);
-        if (!membership || membership.role !== "admin") throw new Error("Admin access required");
 
         await db.update(elders).set({ isPaid: input.isPaid }).where(eq(elders.id, input.elderId));
         return { success: true };
@@ -843,12 +880,8 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("DB unavailable");
 
-        // Verify admin
-        const [membership] = await db
-          .select().from(elderMembers)
-          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
-          .limit(1);
-        if (!membership || membership.role !== "admin") throw new Error("Admin access required");
+        // Verify owner-admin only — elder-admins could use this to spam family members with emails
+        if (ctx.user.role !== "admin") throw new Error("Owner admin access required");
 
         const [elder] = await db.select().from(elders).where(eq(elders.id, input.elderId)).limit(1);
         if (!elder) throw new Error("Elder not found");

@@ -83,6 +83,34 @@ export async function buildLemonSqueezyCheckout(opts: {
   return data.data.attributes.url;
 }
 
+// ─── Subscription cancellation ───────────────────────────────────────────────
+
+/**
+ * Cancel a Lemon Squeezy subscription immediately.
+ * Called on account deletion to prevent billing the deleted user.
+ * Silently logs and returns on any error (deletion should proceed regardless).
+ */
+export async function cancelLemonSqueezySubscription(subscriptionId: string): Promise<void> {
+  if (!ENV.lemonSqueezyApiKey) return;
+  try {
+    const res = await fetch(`${LS_API_BASE}/subscriptions/${subscriptionId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${ENV.lemonSqueezyApiKey}`,
+        Accept: "application/vnd.api+json",
+      },
+    });
+    if (res.ok || res.status === 404) {
+      console.log(`[LemonSqueezy] Cancelled subscription ${subscriptionId}`);
+    } else {
+      const body = await res.text().catch(() => "");
+      console.warn(`[LemonSqueezy] Cancel subscription ${subscriptionId} returned ${res.status}: ${body}`);
+    }
+  } catch (err) {
+    console.error(`[LemonSqueezy] Failed to cancel subscription ${subscriptionId}:`, err);
+  }
+}
+
 // ─── Webhook verification ─────────────────────────────────────────────────────
 
 function verifyWebhookSignature(rawBody: Buffer, signature: string): boolean {

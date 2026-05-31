@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Star, Users, Sparkles, Split, CreditCard, XCircle, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { MONTHLY_COST_CENTS } from "@shared/const";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,8 +98,8 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
 
   const perPersonRands = subStatus
     ? (subStatus.perPersonCost / 100).toFixed(2)
-    : "79.00";
-  const totalRands = "79.00";
+    : (MONTHLY_COST_CENTS / 100).toFixed(2);
+  const totalRands = (MONTHLY_COST_CENTS / 100).toFixed(2);
   const contributorCount = subStatus?.contributorCount ?? 1;
   const isPaid = subStatus?.isPaid ?? false;
   const cancellationPending = !!subStatus?.cancellationRequestedAt;
@@ -185,7 +186,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
                   disabled={toggleContribution.isPending || createCheckout.isPending}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  {createCheckout.isPending ? "Redirecting..." : `Join split — R${((7900 / (contributorCount + 1)) / 100).toFixed(2)}/mo`}
+                  {createCheckout.isPending ? "Redirecting..." : `Join split — R${((MONTHLY_COST_CENTS / (contributorCount + 1)) / 100).toFixed(2)}/mo`}
                 </Button>
               )
             ) : (

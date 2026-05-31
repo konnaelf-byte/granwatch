@@ -1,4 +1,4 @@
-import { boolean, int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal } from "drizzle-orm/mysql-core";
+import { boolean, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -55,7 +55,10 @@ export const elderMembers = mysqlTable("elderMembers", {
   joinedAt: timestamp("joinedAt").defaultNow().notNull(),
   // Notification preferences — user can opt out per elder profile
   notificationsEnabled: boolean("notificationsEnabled").default(true).notNull(),
-});
+}, (table) => ({
+  elderIdIdx: index("elderMembers_elderId_idx").on(table.elderId),
+  userIdIdx: index("elderMembers_userId_idx").on(table.userId),
+}));
 
 export type ElderMember = typeof elderMembers.$inferSelect;
 export type InsertElderMember = typeof elderMembers.$inferInsert;
@@ -72,7 +75,10 @@ export const visits = mysqlTable("visits", {
   photoUrl: text("photoUrl"),
   wellbeingScore: int("wellbeingScore"), // 1-5, only if wellbeing enabled
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  elderIdIdx: index("visits_elderId_idx").on(table.elderId),
+  userIdIdx: index("visits_userId_idx").on(table.userId),
+}));
 
 export type Visit = typeof visits.$inferSelect;
 export type InsertVisit = typeof visits.$inferInsert;
@@ -89,7 +95,9 @@ export const plannedVisits = mysqlTable("plannedVisits", {
   recurringWeeks: int("recurringWeeks"), // recur every N weeks
   notes: text("notes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  elderIdIdx: index("plannedVisits_elderId_idx").on(table.elderId),
+}));
 
 export type PlannedVisit = typeof plannedVisits.$inferSelect;
 export type InsertPlannedVisit = typeof plannedVisits.$inferInsert;
@@ -104,7 +112,9 @@ export const subscriptionContributions = mysqlTable("subscriptionContributions",
   isActive: boolean("isActive").default(true).notNull(),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  elderIdIdx: index("subscriptionContributions_elderId_idx").on(table.elderId),
+}));
 
 export type SubscriptionContribution = typeof subscriptionContributions.$inferSelect;
 export type InsertSubscriptionContribution = typeof subscriptionContributions.$inferInsert;
@@ -119,7 +129,10 @@ export const notifications = mysqlTable("notifications", {
   type: mysqlEnum("type", ["nudge", "red_alert", "weekly_digest"]).notNull(),
   sentAt: timestamp("sentAt").defaultNow().notNull(),
   read: boolean("read").default(false).notNull(),
-});
+}, (table) => ({
+  userIdIdx: index("notifications_userId_idx").on(table.userId),
+  elderIdIdx: index("notifications_elderId_idx").on(table.elderId),
+}));
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;

@@ -16,6 +16,19 @@ Become the world's first family eldercare coordination network — used by famil
 
 ---
 
+## Post-MVP Roadmap
+
+Features locked in for after the native app ships. Not blocking launch — logged here so nothing gets forgotten.
+
+### 🟣 iOS Home Screen Widget *(post-MVP, high impact)*
+Mimic the Apple battery status widget layout: a grid of circular rings, each showing a gran's profile photo with the ring fill representing visit status — green (on track), yellow (getting overdue), red (overdue). Glanceable at a glance from the home screen without opening the app.
+
+**Why it matters:** This is a daily-driver feature. Users who add the widget to their home screen have it in front of them constantly — dramatically improving retention and word-of-mouth ("what's that widget?"). It's also a genuinely novel App Store differentiator.
+
+**Tech path:** WidgetKit extension (Swift) + App Groups to share visit data between the Capacitor app and the widget. Requires the native app to exist first. Estimated: 3–5 days developer work after native app is live.
+
+---
+
 ## CATEGORY 1 — What Your Head of Ops Can Do
 
 These are things I can build, write, or configure directly in the codebase. Just say the word.
@@ -57,7 +70,7 @@ These require your personal login, identity, payment, or direct human relationsh
 - [ ] **Apple Small Business Program** — apply at developer.apple.com/app-store/small-business-program/ after you have a Developer Account. Reduces Apple's cut from 30% to 15% (you qualify under $1M revenue).
 
 ### Credentials Still Missing
-- [ ] **Resend DNS records** — log into Cloudflare, add the 3 DNS records Resend gives you for `noreply@granwatch.app`. Until this is done, all email notifications are broken.
+- [x] **Resend DNS records** — DKIM/SPF/DMARC auto-configured in Cloudflare via Resend's Cloudflare integration (27 May 2026). Propagating — email live within a few hours. ✅
 - [ ] **Lemon Squeezy KYC** — complete identity verification in your LS dashboard so payouts are enabled.
 - [ ] **Clerk production keys** — flip from `pk_test_` / `sk_test_` to production keys in your Clerk dashboard, update in Railway environment variables.
 - [ ] **OWNER_CLERK_ID** — set this in Railway env vars after your first login on the production app (identifies your account as the super-admin).
@@ -112,7 +125,7 @@ A mobile developer with Xcode + Android Studio can:
 
 | # | Who | Action |
 |---|-----|--------|
-| 1 | **Konna** | Add Resend DNS records to Cloudflare — email is broken without this |
+| 1 | ✅ **Done** | Resend DNS records added to Cloudflare — propagating, email live within hours |
 | 2 | **Konna** | Sign up for Apple Developer Account ($99) and Google Play Console ($25) |
 | 3 | **Konna** | Create 7 regional Lemon Squeezy pricing variants |
 | 4 | **Me** | Wire up location-based pricing code (once #3 is done) |

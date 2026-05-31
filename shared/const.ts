@@ -3,3 +3,8 @@ export const ONE_YEAR_MS = 1000 * 60 * 60 * 24 * 365;
 export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = 'Please login (10001)';
 export const NOT_ADMIN_ERR_MSG = 'You do not have required permission (10002)';
+
+/** Gran+ monthly subscription price — single source of truth.
+ *  Must match the Lemon Squeezy variant price (variant ID 1681701).
+ *  Value is in cents (ZAR): 3900 = R39.00 */
+export const MONTHLY_COST_CENTS = 3900; // R39.00 — reduced from R79 for growth phase

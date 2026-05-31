@@ -47,18 +47,13 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<!-- Camera — used for uploading gran profile photos -->
+	<!-- Camera — web view file picker triggers this on iOS for profile photos -->
 	<key>NSCameraUsageDescription</key>
 	<string>GranWatch uses your camera to take a photo for a gran profile.</string>
-	<!-- Photo library — used for uploading gran profile photos -->
+	<!-- Photo library — web view file picker triggers this on iOS for profile photos -->
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>GranWatch accesses your photo library so you can choose a photo for a gran profile.</string>
-	<!-- Photo library add — used when saving visit photos -->
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>GranWatch saves visit photos to your photo library.</string>
-	<!-- Face ID — not used, but some Capacitor versions require this key -->
-	<!-- Notifications — used for family visit alerts -->
-	<key>NSUserNotificationUsageDescription</key>
-	<string>GranWatch sends you reminders when Gran hasn't been visited recently.</string>
+	<!-- NSPhotoLibraryAddUsageDescription omitted — app does not save to photo library -->
+	<!-- NSUserNotificationUsageDescription omitted — push notifications not yet implemented -->
 </dict>
 </plist>
