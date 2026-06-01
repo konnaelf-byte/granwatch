@@ -329,6 +329,10 @@ export const appRouter = router({
         if (input.photoUrl !== undefined) updateData.photoUrl = input.photoUrl;
         if (input.alertThresholdDays !== undefined) updateData.alertThresholdDays = input.alertThresholdDays;
         if (input.birthday !== undefined) updateData.birthday = input.birthday; // can be null to clear
+
+        // TEMP DEBUG — remove after photo bug is resolved
+        console.log(`[update elder ${input.elderId}] input.photoUrl=${JSON.stringify(input.photoUrl)} | updateData keys=${Object.keys(updateData).join(',')} | currentPhotoUrl=${currentElder.photoUrl?.slice(0,60)}`);
+
         // Gran+ only features
         if (input.wellbeingEnabled !== undefined) {
           if (!currentElder.isPaid) throw new Error("Wellbeing check-ins require Gran+");
