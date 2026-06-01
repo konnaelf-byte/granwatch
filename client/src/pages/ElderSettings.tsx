@@ -119,10 +119,11 @@ export default function ElderSettings() {
 
   const updateElder = trpc.elders.update.useMutation({
     onSuccess: () => {
-      toast.success("Settings saved!");
+      // Invalidate queries so all consumers get fresh data.
+      // Navigation (if needed) is handled at the call site, not here —
+      // this mutation is reused for both photo uploads and full settings saves.
       utils.elders.get.invalidate({ elderId });
       utils.elders.list.invalidate();
-      navigate(`/elder/${elderId}`);
     },
     onError: (e) => toast.error(e.message),
   });
@@ -160,6 +161,11 @@ export default function ElderSettings() {
         birthday,
         wellbeingEnabled: isPaid ? wellbeingEnabled : undefined,
         careNotes: isPaid ? careNotes : undefined,
+      }, {
+        onSuccess: () => {
+          toast.success("Settings saved!");
+          navigate(`/elder/${elderId}`);
+        },
       });
     }
     // Save notification preference (all members)
