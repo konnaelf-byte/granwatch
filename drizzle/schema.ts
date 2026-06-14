@@ -120,6 +120,46 @@ export type SubscriptionContribution = typeof subscriptionContributions.$inferSe
 export type InsertSubscriptionContribution = typeof subscriptionContributions.$inferInsert;
 
 /**
+ * Referral codes — each user gets one; tracks who invited whom.
+ */
+export const referrals = mysqlTable("referrals", {
+  id: int("id").autoincrement().primaryKey(),
+  // The user who owns this referral code
+  userId: int("userId").notNull().unique(),
+  // The shareable code (e.g. "KONNA42")
+  code: varchar("code", { length: 16 }).notNull().unique(),
+  // How many signups this code has generated
+  signupCount: int("signupCount").default(0).notNull(),
+  // How many of those signups converted to paid (triggering the reward)
+  convertedCount: int("convertedCount").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Referral = typeof referrals.$inferSelect;
+export type InsertReferral = typeof referrals.$inferInsert;
+
+/**
+ * Referral signups — tracks each new user who signed up via a referral code.
+ */
+export const referralSignups = mysqlTable("referralSignups", {
+  id: int("id").autoincrement().primaryKey(),
+  // The referral code used
+  referralCode: varchar("referralCode", { length: 16 }).notNull(),
+  // The user who signed up
+  newUserId: int("newUserId").notNull(),
+  // Whether this signup converted to a paid subscription (triggers referrer's reward)
+  converted: boolean("converted").default(false).notNull(),
+  // When the 1-month-free reward was applied to the referrer
+  rewardAppliedAt: timestamp("rewardAppliedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  referralCodeIdx: index("referralSignups_code_idx").on(table.referralCode),
+  newUserIdIdx: index("referralSignups_newUserId_idx").on(table.newUserId),
+}));
+
+export type ReferralSignup = typeof referralSignups.$inferSelect;
+
+/**
  * Notifications log — track what alerts have been sent.
  */
 export const notifications = mysqlTable("notifications", {

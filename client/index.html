@@ -27,10 +27,57 @@
     <meta property="og:image:height" content="1024" />
     <meta property="og:site_name" content="GranWatch" />
     <!-- Twitter Card -->
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="GranWatch — Let's take good care of Gran" />
     <meta name="twitter:description" content="Keep the whole family connected around the people who matter most. Log visits, set reminders, and make sure Gran is never forgotten. 💛" />
     <meta name="twitter:image" content="https://granwatch.app/icon-1024.png" />
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://granwatch.app" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "GranWatch",
+      "applicationCategory": "LifestyleApplication",
+      "operatingSystem": "iOS, Android, Web",
+      "url": "https://granwatch.app",
+      "description": "A simple family app to make sure Gran never goes unvisited. Colour-coded status ring, family alerts, and visit scheduling — keep the whole family connected around the people who matter most.",
+      "screenshot": "https://granwatch.app/icon-1024.png",
+      "featureList": [
+        "Visual status ring showing days since last visit",
+        "Automatic family alerts when Gran needs a visit",
+        "Visit scheduling and booking",
+        "Family coordination for up to 20 members",
+        "Wellbeing check-ins and care notes (Gran+)",
+        "Birthday reminders"
+      ],
+      "offers": [
+        {
+          "@type": "Offer",
+          "name": "Free",
+          "price": "0",
+          "priceCurrency": "ZAR",
+          "description": "Free forever for one gran profile"
+        },
+        {
+          "@type": "Offer",
+          "name": "Gran+",
+          "price": "39",
+          "priceCurrency": "ZAR",
+          "billingIncrement": "P1M",
+          "description": "Wellbeing check-ins, photos, multiple profiles, full history"
+        }
+      ],
+      "publisher": {
+        "@type": "Organization",
+        "name": "Better Creation (Pty) Ltd",
+        "url": "https://granwatch.app"
+      }
+    }
+    </script>
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.webmanifest" />

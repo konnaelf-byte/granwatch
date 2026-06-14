@@ -3,6 +3,7 @@ import { getSignInUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Heart, Bell, Calendar, Users, Camera, CheckCircle } from "lucide-react";
+import { MONTHLY_COST_CENTS } from "@shared/const";
 import StatusRing from "@/components/StatusRing";
 import { useEffect } from "react";
 
@@ -11,6 +12,15 @@ const GRAN_PHOTO = "/icon-1024.png";
 export default function Landing() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
+
+  // Persist referral code from ?ref= param so we can attribute the signup
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      sessionStorage.setItem("granwatch_ref", ref.toUpperCase());
+    }
+  }, []);
 
   // Navigate after render — calling navigate() during render triggers a React warning
   useEffect(() => {
@@ -135,10 +145,10 @@ export default function Landing() {
         <div className="mt-12 max-w-sm w-full bg-card border rounded-2xl p-6 text-left">
           <div className="flex items-center justify-between mb-3">
             <span className="font-bold text-foreground">Gran+</span>
-            <span className="text-primary font-bold">R79/month</span>
+            <span className="text-primary font-bold">R{(MONTHLY_COST_CENTS / 100).toFixed(0)}/month</span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">
-            Split between the whole family — could be as little as R13 each.
+            Split between the whole family — could be as little as R{Math.ceil(MONTHLY_COST_CENTS / 300).toFixed(0)} each.
           </p>
           <ul className="text-sm text-muted-foreground space-y-1">
             {["Wellbeing check-ins", "Visit photos & notes", "Multiple gran profiles", "Custom alert threshold", "Full visit history"].map(f => (

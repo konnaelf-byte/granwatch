@@ -3,6 +3,7 @@ import { getSignInUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Heart, ArrowLeft, LogOut, Mail, User, Share2, Trash2 } from "lucide-react";
+import { ReferralCard } from "@/components/ReferralCard";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -131,7 +132,10 @@ export default function Account() {
           To update your name or email, visit your account settings.
         </p>
 
-        {/* Share GranWatch */}
+        {/* Referral program */}
+        <ReferralCard />
+
+        {/* Share GranWatch (simple fallback share) */}
         <Button
           variant="outline"
           className="w-full"

@@ -11,6 +11,7 @@ import {
 import { eq, and, desc, gte, inArray } from "drizzle-orm";
 import { cancelLemonSqueezySubscription } from "./lemonSqueezyRoute";
 import { storageDelete } from "./storage";
+import { referralRouter } from "./referralRouter";
 
 /**
  * Extract the R2 storage key from a photo URL.
@@ -64,6 +65,7 @@ function getStatus(daysSinceVisit: number, threshold: number): "green" | "yellow
 
 export const appRouter = router({
   system: systemRouter,
+  referral: referralRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

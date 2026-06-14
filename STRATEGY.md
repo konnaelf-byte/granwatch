@@ -126,7 +126,7 @@ A mobile developer with Xcode + Android Studio can:
 | # | Who | Action |
 |---|-----|--------|
 | 1 | ✅ **Done** | Resend DNS records added to Cloudflare — propagating, email live within hours |
-| 2 | **Konna** | Sign up for Apple Developer Account ($99) and Google Play Console ($25) |
+| 2 | ✅ **Done** | Apple Developer Account approved (Better Creation Pty Ltd) — 1 June 2026 |
 | 3 | **Konna** | Create 7 regional Lemon Squeezy pricing variants |
 | 4 | **Me** | Wire up location-based pricing code (once #3 is done) |
 | 5 | **Outside** | Hire a developer for 2 weeks — Capacitor wrapper + App Store submission |

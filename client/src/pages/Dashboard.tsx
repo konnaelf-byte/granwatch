@@ -7,10 +7,21 @@ import { Heart, Plus, Bell, Crown, Cake } from "lucide-react";
 import StatusRing from "@/components/StatusRing";
 import type { VisitStatus } from "@/components/StatusRing";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useEffect } from "react";
 
 export default function Dashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
+
+  // Attribute referral signup — fire once if user arrived via a ref link
+  const recordSignup = trpc.referral.recordSignup.useMutation();
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const ref = sessionStorage.getItem("granwatch_ref");
+    if (!ref) return;
+    sessionStorage.removeItem("granwatch_ref"); // consume immediately to prevent re-firing
+    recordSignup.mutate({ code: ref });
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: elders, isLoading } = trpc.elders.list.useQuery(undefined, {
     enabled: isAuthenticated,

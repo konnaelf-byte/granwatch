@@ -158,6 +158,11 @@ async function activateGranPlus(elderId: number, userId: number, source: string)
   }
 
   console.log(`[LemonSqueezy ${source}] Gran+ activated for elder ${elderId} by user ${userId}`);
+
+  // Fire referral conversion — async, non-blocking
+  import("./referralRouter")
+    .then(({ applyReferralConversion }) => applyReferralConversion(userId))
+    .catch(e => console.error("[Referral] applyConversion failed:", e));
 }
 
 async function deactivateGranPlus(elderId: number, userId: number, source: string) {
