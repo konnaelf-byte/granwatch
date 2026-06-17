@@ -21,6 +21,15 @@ export const ENV = {
   // Lemon Squeezy
   lemonSqueezyApiKey: process.env.LEMONSQUEEZY_API_KEY ?? "",
   lemonSqueezyWebhookSecret: process.env.LEMONSQUEEZY_WEBHOOK_SECRET ?? "",
+  // Regional pricing variant IDs (set after creating variants in LS dashboard)
+  // Falls back to the default ZAR variant until each one is configured.
+  lsVariantZar: process.env.LS_VARIANT_ID         ?? "1681701",
+  lsVariantUsd: process.env.LS_VARIANT_ID_USD     ?? "",
+  lsVariantGbp: process.env.LS_VARIANT_ID_GBP     ?? "",
+  lsVariantEur: process.env.LS_VARIANT_ID_EUR     ?? "",
+  lsVariantBrl: process.env.LS_VARIANT_ID_BRL     ?? "",
+  lsVariantInr: process.env.LS_VARIANT_ID_INR     ?? "",
+  lsVariantLow: process.env.LS_VARIANT_ID_LOW     ?? "",
   // OpenAI (for LLM features — voice transcription, AI summaries, etc.)
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
   // Firebase Admin SDK — paste the service account JSON as a single-line string

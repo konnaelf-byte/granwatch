@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Star, Users, Sparkles, Split, CreditCard, XCircle, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { MONTHLY_COST_CENTS } from "@shared/const";
+import { useLocalizedPricing } from "@/utils/geolocation";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,6 +40,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const { user } = useAuth();
+  const pricing = useLocalizedPricing();
 
   const { data: subStatus } = trpc.subscription.status.useQuery(
     { elderId },
@@ -96,11 +97,14 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
     });
   };
 
-  const perPersonRands = subStatus
-    ? (subStatus.perPersonCost / 100).toFixed(2)
-    : (MONTHLY_COST_CENTS / 100).toFixed(2);
-  const totalRands = (MONTHLY_COST_CENTS / 100).toFixed(2);
+  // Localised pricing — falls back to ZAR R79 while loading
+  const totalDisplay = pricing.priceDisplay;          // e.g. "R79", "£3.99"
+  const symbol       = pricing.currencySymbol;        // e.g. "R", "£"
+  const totalAmount  = parseFloat(pricing.priceAmount); // e.g. 79, 3.99
+
   const contributorCount = subStatus?.contributorCount ?? 1;
+  // Divide the localised total price by contributor count for the split display
+  const perPersonDisplay = `${symbol}${(totalAmount / contributorCount).toFixed(2)}`;
   const isPaid = subStatus?.isPaid ?? false;
   const cancellationPending = !!subStatus?.cancellationRequestedAt;
 
@@ -117,11 +121,11 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
 
           {/* Price */}
           <div className="bg-primary/10 rounded-xl p-4 text-center mb-2">
-            <div className="text-3xl font-bold text-primary">R{totalRands}</div>
+            <div className="text-3xl font-bold text-primary">{totalDisplay}</div>
             <div className="text-sm text-muted-foreground">per month</div>
             {subStatus && subStatus.contributorCount > 1 && (
               <div className="mt-2 text-sm font-semibold text-primary">
-                = R{perPersonRands} each with {subStatus.contributorCount} contributors
+                = {perPersonDisplay} each with {subStatus.contributorCount} contributors
               </div>
             )}
           </div>
@@ -159,7 +163,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
                 {subStatus.contributors.map((c: any) => (
                   <div key={c.id} className="flex items-center justify-between text-sm">
                     <span className="text-foreground">{c.isMe ? "You" : c.userName}</span>
-                    <span className="text-muted-foreground">R{perPersonRands}/mo</span>
+                    <span className="text-muted-foreground">{perPersonDisplay}/mo</span>
                   </div>
                 ))}
               </div>
@@ -186,7 +190,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
                   disabled={toggleContribution.isPending || createCheckout.isPending}
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  {createCheckout.isPending ? "Redirecting..." : `Join split — R${((MONTHLY_COST_CENTS / (contributorCount + 1)) / 100).toFixed(2)}/mo`}
+                  {createCheckout.isPending ? "Redirecting..." : `Join split — ${symbol}${(totalAmount / (contributorCount + 1)).toFixed(2)}/mo`}
                 </Button>
               )
             ) : (
@@ -238,11 +242,11 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
                   disabled={!termsAccepted || createCheckout.isPending}
                 >
                   <CreditCard className="w-4 h-4" />
-                  {createCheckout.isPending ? "Redirecting..." : `Subscribe — R${perPersonRands}/mo`}
+                  {createCheckout.isPending ? "Redirecting..." : `Subscribe — ${perPersonDisplay}/mo`}
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">
                   Secure payment via Lemon Squeezy. Cancel anytime.
-                  {contributorCount > 1 && ` Your share: R${perPersonRands}/month (${contributorCount} contributors).`}
+                  {contributorCount > 1 && ` Your share: ${perPersonDisplay}/month (${contributorCount} contributors).`}
                 </p>
               </>
             ) : (

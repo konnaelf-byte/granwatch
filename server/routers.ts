@@ -860,21 +860,34 @@ export const appRouter = router({
         return { success: true };
       }),
 
-    // Create a Lemon Squeezy checkout URL for Gran+ subscription
+    // Create a Lemon Squeezy checkout URL for Gran+ subscription.
+    // Automatically selects the correct regional variant based on the user's IP.
     createCheckout: protectedProcedure
       .input(z.object({
         elderId: z.number(),
       }))
       .mutation(async ({ ctx, input }) => {
         const { buildLemonSqueezyCheckout } = await import("./lemonSqueezyRoute");
+        const { getPricingForIp, getClientIp } = await import("./geolocation");
+        const ip = getClientIp(ctx.req as { ip?: string; headers: Record<string, string | string[] | undefined> });
+        const pricing = await getPricingForIp(ip);
         const url = await buildLemonSqueezyCheckout({
           elderId: input.elderId,
           userId: ctx.user.id,
           userEmail: ctx.user.email ?? "",
           userName: ctx.user.name ?? "GranWatch User",
+          variantId: pricing.variantId,
         });
         return { url };
       }),
+
+    // Return localised pricing info for the current visitor's IP (no variant ID exposed to client).
+    pricingInfo: publicProcedure.query(async ({ ctx }) => {
+      const { getPricingForIp, getClientIp } = await import("./geolocation");
+      const ip = getClientIp(ctx.req as { ip?: string; headers: Record<string, string | string[] | undefined> });
+      const { variantId: _v, ...info } = await getPricingForIp(ip);
+      return info;
+    }),
   }),
 
   // ─── SMART NOTIFICATIONS ───────────────────────────────────────────────────

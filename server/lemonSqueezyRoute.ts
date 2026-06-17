@@ -36,10 +36,13 @@ export async function buildLemonSqueezyCheckout(opts: {
   userId: number;
   userEmail: string;
   userName: string;
+  /** Override the default variant ID (used for regional pricing). */
+  variantId?: string;
 }): Promise<string> {
   if (!ENV.lemonSqueezyApiKey) throw new Error("LEMONSQUEEZY_API_KEY not set");
   if (!STORE_ID) throw new Error("LS_STORE_ID not set");
-  if (!VARIANT_ID) throw new Error("LS_VARIANT_ID not set");
+  const resolvedVariantId = opts.variantId ?? VARIANT_ID;
+  if (!resolvedVariantId) throw new Error("LS_VARIANT_ID not set");
 
   const body = {
     data: {
@@ -59,7 +62,7 @@ export async function buildLemonSqueezyCheckout(opts: {
       },
       relationships: {
         store: { data: { type: "stores", id: STORE_ID } },
-        variant: { data: { type: "variants", id: VARIANT_ID } },
+        variant: { data: { type: "variants", id: resolvedVariantId } },
       },
     },
   };
