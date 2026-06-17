@@ -881,13 +881,6 @@ export const appRouter = router({
         return { url };
       }),
 
-    // Return localised pricing info for the current visitor's IP (no variant ID exposed to client).
-    pricingInfo: publicProcedure.query(async ({ ctx }) => {
-      const { getPricingForIp, getClientIp } = await import("./geolocation");
-      const ip = getClientIp(ctx.req as { ip?: string; headers: Record<string, string | string[] | undefined> });
-      const { variantId: _v, ...info } = await getPricingForIp(ip);
-      return info;
-    }),
   }),
 
   // ─── SMART NOTIFICATIONS ───────────────────────────────────────────────────

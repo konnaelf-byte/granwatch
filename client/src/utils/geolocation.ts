@@ -1,24 +1,23 @@
 /**
- * Client-side geolocation pricing hook.
+ * Pricing display for Gran+.
  *
- * Fetches the visitor's localised pricing tier from the server
- * (which uses their IP to determine region — no client-side IP lookup needed).
+ * Gran+ is priced at ZAR 79/month globally. Lemon Squeezy automatically
+ * converts this to the customer's local currency at checkout.
  *
- * Returns the price display string and currency symbol to show in the UI
- * before the user clicks Subscribe.
+ * True purchasing-power-parity variants (USD $4.99, GBP £3.99, etc.) will be
+ * added when the store upgrades to a paid Lemon Squeezy plan that supports
+ * multi-currency variant pricing.
  */
-
-import { trpc } from "@/lib/trpc";
 
 export interface LocalizedPricing {
   tier: string;
-  priceDisplay: string;   // e.g. "R79", "£3.99", "$4.99"
-  currencySymbol: string; // e.g. "R", "£", "$"
-  priceAmount: string;    // e.g. "79", "3.99"
-  currency: string;       // ISO 4217, e.g. "ZAR", "GBP"
+  priceDisplay: string;   // e.g. "R79"
+  currencySymbol: string; // e.g. "R"
+  priceAmount: string;    // e.g. "79"
+  currency: string;       // ISO 4217, e.g. "ZAR"
 }
 
-/** Default shown while loading — avoids layout shift. */
+/** The single global price. LS converts to local currency at checkout. */
 export const DEFAULT_PRICING: LocalizedPricing = {
   tier: "ZAR",
   priceDisplay: "R79",
@@ -28,14 +27,9 @@ export const DEFAULT_PRICING: LocalizedPricing = {
 };
 
 /**
- * Returns the localised pricing for the current user.
- * Falls back to ZAR R79 while loading or on error.
+ * Returns pricing display info.
+ * Currently a single global price — Lemon Squeezy handles currency conversion at checkout.
  */
 export function useLocalizedPricing(): LocalizedPricing {
-  const { data } = trpc.subscription.pricingInfo.useQuery(undefined, {
-    staleTime: 1000 * 60 * 60, // 1 hour — country doesn't change mid-session
-    retry: false,
-  });
-
-  return data ?? DEFAULT_PRICING;
+  return DEFAULT_PRICING;
 }
