@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
@@ -46,6 +46,11 @@ export default function ElderProfile() {
   const [transferTarget, setTransferTarget] = useState<{ userId: number; name: string } | null>(null);
   const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
 
+  // Partner affiliate URLs — swap these env vars once deals are signed.
+  // On native, window.open opens the system browser (Safari / Chrome) automatically.
+  const FLOWERS_URL = import.meta.env.VITE_PARTNER_FLOWERS_URL || "https://granwatch.app";
+  const GIFT_URL = import.meta.env.VITE_PARTNER_GIFT_URL || "https://granwatch.app";
+
   const utils = trpc.useUtils();
 
   // Configure RevenueCat once on native, keyed to the Clerk user id (openId).
@@ -61,7 +66,12 @@ export default function ElderProfile() {
   );
 
   const { data: visitHistory } = trpc.visits.list.useQuery(
-    { elderId, limit: 10 },
+    { elderId, limit: 20 },
+    { enabled: isAuthenticated && elderId > 0 }
+  );
+
+  const { data: giftHistory } = trpc.gifts.list.useQuery(
+    { elderId, limit: 20 },
     { enabled: isAuthenticated && elderId > 0 }
   );
 
@@ -127,6 +137,25 @@ export default function ElderProfile() {
     a.click();
     URL.revokeObjectURL(url);
     toast.success("Calendar event downloaded! Open it to add to your calendar.");
+  };
+
+  const logGift = trpc.gifts.log.useMutation({
+    onSuccess: () => {
+      utils.gifts.list.invalidate({ elderId });
+    },
+    // Error is shown as a toast below; we still open the partner URL regardless
+    onError: (e) => toast.error("Couldn't log gift: " + e.message),
+  });
+
+  const handleSendFlowers = async () => {
+    // Log first (best-effort), then open URL regardless of outcome
+    try { await logGift.mutateAsync({ elderId, giftType: "flowers" }); } catch { /* already toasted */ }
+    window.open(FLOWERS_URL, "_blank", "noopener,noreferrer");
+  };
+
+  const handleSendGift = async () => {
+    try { await logGift.mutateAsync({ elderId, giftType: "gift" }); } catch { /* already toasted */ }
+    window.open(GIFT_URL, "_blank", "noopener,noreferrer");
   };
 
   const cancelPlanned = trpc.planned.cancel.useMutation({
@@ -292,6 +321,34 @@ export default function ElderProfile() {
           </Button>
         </div>
 
+        {/* Gift / affiliate buttons — free tier, shown to all family members */}
+        <div className="mb-5">
+          <p className="text-xs text-muted-foreground text-center mb-2.5 font-medium uppercase tracking-wide">
+            Show Gran some love 💌
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 text-sm font-semibold border-pink-200 text-pink-700 hover:bg-pink-50 hover:border-pink-300 dark:border-pink-900 dark:text-pink-300 dark:hover:bg-pink-950"
+              onClick={handleSendFlowers}
+              disabled={logGift.isPending}
+            >
+              🌸 Send Flowers
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 text-sm font-semibold border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-900 dark:text-amber-300 dark:hover:bg-amber-950"
+              onClick={handleSendGift}
+              disabled={logGift.isPending}
+            >
+              <Gift className="w-4 h-4 mr-1.5" />
+              Send a Gift
+            </Button>
+          </div>
+        </div>
+
         {/* Invite code */}
         <div className="mb-6 bg-card border rounded-xl p-4 flex items-center justify-between">
           <div>
@@ -377,38 +434,90 @@ export default function ElderProfile() {
             )}
           </TabsContent>
 
-          {/* Visit history */}
+          {/* Activity history — visits + gifts merged into one timeline */}
           <TabsContent value="history">
-            {visitHistory && visitHistory.length > 0 ? (
-              <div className="space-y-2">
-                {visitHistory.map((v: any) => (
-                  <div key={v.id} className="bg-card border rounded-xl p-4">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="font-semibold text-sm text-foreground">{v.visitorName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(v.visitedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" })}
-                      </p>
-                    </div>
-                    {v.wellbeingScore && (
-                      <div className="flex gap-0.5 mb-1">
-                        {[1,2,3,4,5].map(s => (
-                          <Star key={s} className={`w-3.5 h-3.5 ${s <= v.wellbeingScore ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
-                        ))}
-                      </div>
-                    )}
-                    {v.notes && <p className="text-xs text-muted-foreground italic">"{v.notes}"</p>}
+            {(() => {
+              // Build a unified chronological timeline
+              const visitEvents = (visitHistory ?? []).map((v: any) => ({
+                _type: "visit" as const,
+                _key: `v-${v.id}`,
+                _date: new Date(v.visitedAt),
+                visitorName: v.visitorName as string,
+                notes: v.notes as string | null,
+                wellbeingScore: v.wellbeingScore as number | null,
+              }));
+              const giftEvents = (giftHistory ?? []).map((g: any) => ({
+                _type: "gift" as const,
+                _key: `g-${g.id}`,
+                _date: new Date(g.sentAt),
+                senderName: g.senderName as string,
+                giftType: g.giftType as "flowers" | "gift",
+              }));
+              const timeline = [...visitEvents, ...giftEvents]
+                .sort((a, b) => b._date.getTime() - a._date.getTime());
+
+              if (timeline.length === 0) {
+                return (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No activity yet.</p>
+                    <Button variant="link" size="sm" onClick={() => setLogVisitOpen(true)}>
+                      Log the first visit
+                    </Button>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">No visits logged yet.</p>
-                <Button variant="link" size="sm" onClick={() => setLogVisitOpen(true)}>
-                  Log the first visit
-                </Button>
-              </div>
-            )}
+                );
+              }
+
+              return (
+                <div className="space-y-2">
+                  {timeline.map((item) => {
+                    const dateStr = item._date.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+
+                    if (item._type === "visit") {
+                      return (
+                        <div key={item._key} className="bg-card border rounded-xl p-4">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                              {item.visitorName} visited Gran
+                            </p>
+                            <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">{dateStr}</p>
+                          </div>
+                          {item.wellbeingScore && (
+                            <div className="flex gap-0.5 mb-1 ml-5">
+                              {[1,2,3,4,5].map(s => (
+                                <Star key={s} className={`w-3.5 h-3.5 ${s <= item.wellbeingScore! ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`} />
+                              ))}
+                            </div>
+                          )}
+                          {item.notes && (
+                            <p className="text-xs text-muted-foreground italic ml-5">"{item.notes}"</p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    // Gift event
+                    const isFlowers = item.giftType === "flowers";
+                    return (
+                      <div
+                        key={item._key}
+                        className={`rounded-xl p-4 border flex items-center justify-between ${
+                          isFlowers
+                            ? "bg-pink-50 border-pink-100 dark:bg-pink-950/30 dark:border-pink-900"
+                            : "bg-amber-50 border-amber-100 dark:bg-amber-950/30 dark:border-amber-900"
+                        }`}
+                      >
+                        <p className={`font-semibold text-sm ${isFlowers ? "text-pink-800 dark:text-pink-300" : "text-amber-800 dark:text-amber-300"}`}>
+                          {isFlowers ? "🌸" : "🎁"} {item.senderName} sent Gran {isFlowers ? "flowers" : "a gift"}
+                        </p>
+                        <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">{dateStr}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </TabsContent>
 
           {/* Care schedule — Gran+ only */}

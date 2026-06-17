@@ -258,3 +258,26 @@ export const elderAppointments = mysqlTable("elderAppointments", {
 
 export type ElderAppointment = typeof elderAppointments.$inferSelect;
 export type InsertElderAppointment = typeof elderAppointments.$inferInsert;
+
+/**
+ * Gift logs — every "Send Flowers / Send a Gift" tap.
+ * Free-tier feature (no Gran+ gate). Used for the activity timeline
+ * and future affiliate/commission reporting once partner deals are signed.
+ */
+export const giftLogs = mysqlTable("giftLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  elderId: int("elderId").notNull(),
+  sentByUserId: int("sentByUserId").notNull(),
+  /** "flowers" = Send Flowers button, "gift" = Send a Gift button */
+  giftType: mysqlEnum("giftType", ["flowers", "gift"]).notNull(),
+  /** Filled once we have named partner agreements (e.g. "Interflora AU") */
+  partnerName: varchar("partnerName", { length: 255 }),
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  elderIdIdx: index("giftLogs_elderId_idx").on(table.elderId),
+  userIdIdx: index("giftLogs_sentByUserId_idx").on(table.sentByUserId),
+}));
+
+export type GiftLog = typeof giftLogs.$inferSelect;
+export type InsertGiftLog = typeof giftLogs.$inferInsert;
