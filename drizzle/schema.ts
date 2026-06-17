@@ -176,3 +176,22 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
+ * Push notification tokens — one row per device per user.
+ * Tokens are registered by the Capacitor PushNotifications plugin on native app launch.
+ * Used by the cron job to send native push alongside email/in-app nudges.
+ */
+export const pushTokens = mysqlTable("pushTokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  token: varchar("token", { length: 512 }).notNull().unique(),
+  platform: mysqlEnum("platform", ["ios", "android", "web"]).notNull().default("ios"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("pushTokens_userId_idx").on(table.userId),
+}));
+
+export type PushToken = typeof pushTokens.$inferSelect;
+export type InsertPushToken = typeof pushTokens.$inferInsert;

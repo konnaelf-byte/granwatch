@@ -17,10 +17,11 @@
  *     hasn't changed, we don't re-send.
  */
 
-import { and, desc, eq, gte, lt } from "drizzle-orm";
-import { elders, elderMembers, visits, plannedVisits, notifications } from "../drizzle/schema";
+import { and, desc, eq, gte, inArray } from "drizzle-orm";
+import { elders, elderMembers, visits, plannedVisits, notifications, pushTokens } from "../drizzle/schema";
 import { getDb } from "./db";
 import { sendVisitReminderEmails, sendBirthdayReminderEmails, type EmailRecipient } from "./email";
+import { sendPush } from "./push";
 
 // Calendar-day boundary comparison (same logic as routers.ts)
 function daysSince(date: Date): number {
@@ -184,6 +185,37 @@ async function runNightlyNotifications() {
             console.log(`[Cron] Elder ${elder.id} (${elder.name}) — sent ${inAppSent} in-app notification(s) [${isRed ? "RED ALERT" : "nudge"}]`);
           }
           totalInAppSent += inAppSent;
+
+          // ── NATIVE PUSH (FCM) ───────────────────────────────────────────────
+          // Mirror the same audience as in-app: nudge targets + red-alert all members
+          const pushTargetIds = isRed
+            ? notifyableMembers.map((m) => m.userId)
+            : nudgeTargets.map((m) => m.userId);
+
+          if (pushTargetIds.length > 0) {
+            const userTokens = await db
+              .select({ token: pushTokens.token })
+              .from(pushTokens)
+              .where(inArray(pushTokens.userId, pushTargetIds));
+
+            const tokens = userTokens.map((r) => r.token);
+            if (tokens.length > 0) {
+              const pushTitle = isRed
+                ? `⚠️ ${elder.name} needs a visit!`
+                : `💛 Time to visit ${elder.name}`;
+              const pushBody = isRed
+                ? `It's been ${daysSinceVisit} days — the whole family has been alerted.`
+                : `It's been ${daysSinceVisit} days since the last visit. Can you make it?`;
+              const pushed = await sendPush(tokens, {
+                title: pushTitle,
+                body: pushBody,
+                data: { path: `/elder/${elder.id}` },
+              });
+              if (pushed > 0) {
+                console.log(`[Cron] Elder ${elder.id} (${elder.name}) — sent ${pushed} native push notification(s)`);
+              }
+            }
+          }
 
           // ── EMAIL NOTIFICATIONS (visit reminders) ───────────────────────────
           // Deduplication: sentinel rows inserted after the last visit prevent re-sending.

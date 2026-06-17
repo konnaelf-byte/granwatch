@@ -23,4 +23,7 @@ export const ENV = {
   lemonSqueezyWebhookSecret: process.env.LEMONSQUEEZY_WEBHOOK_SECRET ?? "",
   // OpenAI (for LLM features — voice transcription, AI summaries, etc.)
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
+  // Firebase Admin SDK — paste the service account JSON as a single-line string
+  // Get it from: Firebase Console → Project Settings → Service Accounts → Generate new private key
+  firebaseServiceAccount: process.env.FIREBASE_SERVICE_ACCOUNT_JSON ?? "",
 };

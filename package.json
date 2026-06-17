@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
+    "firebase-admin": "^12.3.0",
     "@aws-sdk/s3-request-presigner": "^3.693.0",
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^8.3.4",
