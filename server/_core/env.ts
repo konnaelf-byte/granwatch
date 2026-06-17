@@ -30,6 +30,9 @@ export const ENV = {
   lsVariantBrl: process.env.LS_VARIANT_ID_BRL     ?? "",
   lsVariantInr: process.env.LS_VARIANT_ID_INR     ?? "",
   lsVariantLow: process.env.LS_VARIANT_ID_LOW     ?? "",
+  // RevenueCat (native in-app purchases — iOS + Android)
+  revenueCatSecretKey: process.env.REVENUECAT_SECRET_API_KEY ?? "",
+  revenueCatWebhookAuthHeader: process.env.REVENUECAT_WEBHOOK_AUTH_HEADER ?? "",
   // OpenAI (for LLM features — voice transcription, AI summaries, etc.)
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
   // Firebase Admin SDK — paste the service account JSON as a single-line string

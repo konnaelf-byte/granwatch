@@ -14,6 +14,7 @@ import { storageDelete } from "./storage";
 import { referralRouter } from "./referralRouter";
 import { pushRouter } from "./pushRouter";
 import { careRouter } from "./careRouter";
+import { revenueCatRouter } from "./revenueCatRouter";
 
 /**
  * Extract the R2 storage key from a photo URL.
@@ -70,6 +71,7 @@ export const appRouter = router({
   referral: referralRouter,
   pushToken: pushRouter,
   care: careRouter,
+  revenueCat: revenueCatRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

@@ -8,6 +8,7 @@ import path from "path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerPayfastRoutes } from "../payfastRoute";
 import { registerLemonSqueezyRoutes } from "../lemonSqueezyRoute";
+import { registerRevenueCatRoutes } from "../revenueCatRouter";
 import { registerOgRoutes } from "../ogRoute";
 import { registerUploadRoutes } from "../uploadRoute";
 import { appRouter } from "../routers";
@@ -46,6 +47,9 @@ async function startServer() {
 
   // Lemon Squeezy webhook: raw body required for signature verification.
   registerLemonSqueezyRoutes(app);
+
+  // RevenueCat webhook: native IAP lifecycle events (iOS + Android).
+  registerRevenueCatRoutes(app);
 
   // OG image generation.
   registerOgRoutes(app);

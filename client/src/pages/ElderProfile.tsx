@@ -4,12 +4,14 @@ import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
+import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
 import { isNativeApp } from "@/utils/platform";
+import { initRevenueCat } from "@/utils/iap";
 import StatusRing from "@/components/StatusRing";
 import type { VisitStatus } from "@/components/StatusRing";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -36,6 +38,7 @@ export default function ElderProfile() {
   const [logVisitOpen, setLogVisitOpen] = useState(false);
   const [bookVisitOpen, setBookVisitOpen] = useState(false);
   const [granPlusOpen, setGranPlusOpen] = useState(false);
+  const [nativeGranPlusOpen, setNativeGranPlusOpen] = useState(false);
   const [visitNotes, setVisitNotes] = useState("");
   const [wellbeingScore, setWellbeingScore] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -44,6 +47,13 @@ export default function ElderProfile() {
   const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
+
+  // Configure RevenueCat once on native, keyed to the Clerk user id (openId).
+  // No-op on web and after the first successful configure.
+  useEffect(() => {
+    if (!isNativeApp || !user?.openId) return;
+    void initRevenueCat(user.openId);
+  }, [user?.openId]);
 
   const { data: elder, isLoading } = trpc.elders.get.useQuery(
     { elderId },
@@ -185,8 +195,13 @@ export default function ElderProfile() {
         </Button>
         <h1 className="font-bold text-foreground">{elder.name}</h1>
         <div className="flex items-center gap-1">
-          {!elder.isPaid && !isNativeApp && (
-            <Button variant="ghost" size="sm" onClick={() => setGranPlusOpen(true)} className="text-primary font-semibold">
+          {!elder.isPaid && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => (isNativeApp ? setNativeGranPlusOpen(true) : setGranPlusOpen(true))}
+              className="text-primary font-semibold"
+            >
               <Sparkles className="w-4 h-4 mr-1" />
               Gran+
             </Button>
@@ -474,8 +489,15 @@ export default function ElderProfile() {
         </Tabs>
       </main>
 
-      {/* Gran+ Modal — web only; hidden in native app (Apple Reader App model) */}
-      {!isNativeApp && (
+      {/* Gran+ Modal — web uses Lemon Squeezy; native uses RevenueCat IAP. */}
+      {isNativeApp ? (
+        <NativeGranPlusModal
+          open={nativeGranPlusOpen}
+          onOpenChange={setNativeGranPlusOpen}
+          elderId={elderId}
+          elderName={elder.name}
+        />
+      ) : (
         <GranPlusModal
           open={granPlusOpen}
           onOpenChange={setGranPlusOpen}
