@@ -1,5 +1,5 @@
 # GranWatch — Action Plan
-*Your Head of Ops · Updated 24 May 2026*
+*Your Head of Ops · Updated 17 June 2026*
 
 ---
 
@@ -21,11 +21,48 @@ Become the world's first family eldercare coordination network — used by famil
 Features locked in for after the native app ships. Not blocking launch — logged here so nothing gets forgotten.
 
 ### 🟣 iOS Home Screen Widget *(post-MVP, high impact)*
-Mimic the Apple battery status widget layout: a grid of circular rings, each showing a gran's profile photo with the ring fill representing visit status — green (on track), yellow (getting overdue), red (overdue). Glanceable at a glance from the home screen without opening the app.
 
-**Why it matters:** This is a daily-driver feature. Users who add the widget to their home screen have it in front of them constantly — dramatically improving retention and word-of-mouth ("what's that widget?"). It's also a genuinely novel App Store differentiator.
+**Concept:** Identical layout to Apple's native battery status widget — a grid of circular ring indicators, one per gran profile. Where Apple shows a phone/watch icon inside each ring, GranWatch shows the **gran's profile photo**. The arc of the ring fills or drains to show her visit status at a glance, exactly as you'd check a device battery.
 
-**Tech path:** WidgetKit extension (Swift) + App Groups to share visit data between the Capacitor app and the widget. Requires the native app to exist first. Estimated: 3–5 days developer work after native app is live.
+A family member puts this on their home screen and knows — before they even open the app — whether Gran is doing fine or needs attention.
+
+**Ring behaviour:**
+
+| Ring fill | Status | Meaning |
+|-----------|--------|---------|
+| Full green arc | 🟢 Green | Gran visited recently — all good |
+| ~60% yellow arc | 🟡 Yellow | Getting close to threshold — someone should visit soon |
+| ~30% orange arc | 🟠 Orange | Overdue — nudge is due |
+| Empty / red arc | 🔴 Red | Alert threshold reached — family needs to act |
+
+This maps directly onto the existing `elder.status` field (`green / yellow / orange / red`) and `elder.daysSinceVisit` — no new data model needed. The ring fill percentage = `1 - (daysSinceVisit / alertThresholdDays)`, clamped to [0, 1].
+
+**Widget sizes to support:**
+
+- **Small** (2×2): single gran, large ring + status dot. Best for a family with one gran.
+- **Medium** (4×2): up to 3 grans in a row, like the Apple battery widget. This is the primary target.
+- **Large** (4×4): up to 6 grans — for power users or multi-elder families.
+
+The user picks which gran(s) to show in each widget slot, and how many widgets to add, just like they would with the battery widget.
+
+**Why it matters:**
+
+This is a daily-driver feature in the truest sense — the widget lives on the home screen permanently. It removes the activation energy of opening the app. A user who might check the app once a week will glance at the widget every time they unlock their phone. That turns passive retention into active habit. It's also a word-of-mouth hook: "what's that widget on your home screen?" is a natural conversation starter.
+
+It's also a genuine App Store differentiator. No eldercare or family coordination app has shipped a status-ring widget. It's novel, it's glanceable, and it's emotionally resonant in a way that a plain icon could never be.
+
+**Tech path:**
+
+1. **WidgetKit extension** (Swift, separate target in Xcode) — required for iOS home screen widgets; cannot be done in Capacitor/JS, must be native Swift.
+2. **App Groups** — shared UserDefaults/file container between the Capacitor app and the WidgetKit extension. The main app writes elder status data here on every fetch; the widget reads from it.
+3. **Data format in shared container** — JSON array of elder summaries: `[{ id, name, photoUrl, status, daysSinceVisit, alertThresholdDays }]`. Lightweight, no DB access from widget.
+4. **SwiftUI widget view** — circular `Circle()` with `trim(from:to:)` modifier for the arc, `AsyncImage` or cached `UIImage` for the gran photo, status colour from the existing palette.
+5. **Timeline provider** — widget refreshes every 15–60 minutes via `TimelineProvider`. No real-time needed; visit status changes slowly by design.
+6. **Tapthrough** — tapping a gran in the widget deep-links to `/elder/:id` in the app via URL scheme (`granwatch://elder/123`).
+
+**Prerequisites:** Native Capacitor app must be live first (the WidgetKit extension is added to the same Xcode project). Estimated dev effort: **3–5 days** for a developer who knows WidgetKit. Can be shipped as a 1.1 or 1.2 App Store update after the initial launch.
+
+**Android note:** Android home screen widgets use a different API (AppWidgetProvider). The same concept works on Android but requires separate implementation. Recommend iOS first since WidgetKit is more polished and the iOS audience is more widget-engaged.
 
 ---
 
@@ -38,9 +75,10 @@ These are things I can build, write, or configure directly in the codebase. Just
 - [x] **Terms of Service page** — live at granwatch.app/terms ✅
 - [x] **Account deletion flow** — Apple requirement, built and deployed ✅
 - [x] **App icon 1024×1024** — correct logo in place ✅
-- [ ] **Capacitor config files** — `capacitor.config.ts`, `Info.plist` permission strings, `AndroidManifest.xml` permissions. I can scaffold the full config; a developer then runs it on a Mac with Xcode installed.
+- [x] **Capacitor config files** — `capacitor.config.ts`, `Info.plist` permission strings, `AndroidManifest.xml` committed ✅
 - [ ] **Deep linking config** — `apple-app-site-association` file (iOS universal links) and `assetlinks.json` (Android) so `granwatch.app/join/CODE` opens the native app.
-- [ ] **App Store metadata** — write the full long description (4000 chars), short description (30 chars for Play Store), keywords (100 chars), "What's New" copy, and all 5 screenshot title overlays.
+- [x] **App Store metadata** — full long description, keywords, screenshot titles all written ✅
+- [x] **App Store Connect guide** — `APP-STORE-CONNECT-GUIDE.md` committed; developer can follow step-by-step ✅
 - [ ] **Age rating questionnaire answers** — prepare the answers for both Apple and Google (GranWatch rates 4+ / Everyone — no violence, no adult content).
 - [ ] **Offline support** — service worker upgrade to cache visit history and queue visit logs when offline. Improves App Store ratings significantly.
 - [ ] **Sentry error tracking** — install and configure so you know about crashes before App Store reviewers do.
@@ -48,12 +86,12 @@ These are things I can build, write, or configure directly in the codebase. Just
 
 ### Pricing & Growth Infrastructure
 - [ ] **Location-based pricing code** — once you create the 7 regional Lemon Squeezy variants, I write the `utils/geolocation.ts` (ipapi.co lookup) and wire it into `GranPlusModal.tsx` so users see local prices automatically.
-- [ ] **Referral program backend** — generate referral codes, track who invited whom, auto-apply 1-month free when a referral converts. Full backend + frontend.
+- [x] **Referral program backend** — referral codes, tracking, 1-month free on conversion. Full backend + frontend. ✅
 - [ ] **Multilingual i18n scaffold** — set up the translation framework (react-i18next) and extract all strings, ready for a translator to fill in Tagalog and Spanish.
 - [ ] **Care Coordinator dashboard** — the B2B2C professional view where a social worker can see visit status of referred families (aggregated, not individual data) and send referral links in one click.
-- [ ] **Push notification backend** — store push tokens per user, trigger push on the same events that currently send emails (14-day nudge, 21-day alert, birthday). Pairs with the Capacitor push plugin.
+- [x] **Push notification backend** — FCM via Firebase Admin SDK; pushTokens table; register/unregister tRPC endpoints; nightly cron fires push alongside in-app + email. ✅ *Note: Konna must add FIREBASE_SERVICE_ACCOUNT_JSON to Railway env vars to activate.*
 - [ ] **Landing page dynamic pricing** — replace the hardcoded "R79/month" with the user's local currency once geolocation is in.
-- [ ] **SEO improvements** — add JSON-LD structured data, meta descriptions, og:image to the landing page to improve organic search ranking.
+- [x] **SEO improvements** — JSON-LD structured data, meta descriptions, og:image on landing page. ✅
 
 ### Ongoing Ops
 - [x] **Weekly status cron** — runs every Monday 9am, checks app health, commits, blockers, and gives 3 growth suggestions ✅
@@ -65,13 +103,14 @@ These are things I can build, write, or configure directly in the codebase. Just
 These require your personal login, identity, payment, or direct human relationship.
 
 ### Accounts & Payments (one-time setup)
-- [ ] **Apple Developer Account** — sign up at developer.apple.com, $99/year. You need this before any iOS submission, TestFlight, or APNs push certificates. Takes 24–48 hours to activate.
+- [x] **Apple Developer Account** — ✅ APPROVED as Better Creation (Pty Ltd) — activated ~1 June 2026. $99/year paid.
 - [ ] **Google Play Console Account** — sign up at play.google.com/console, $25 one-time. Faster to activate than Apple.
 - [ ] **Apple Small Business Program** — apply at developer.apple.com/app-store/small-business-program/ after you have a Developer Account. Reduces Apple's cut from 30% to 15% (you qualify under $1M revenue).
 
 ### Credentials Still Missing
-- [x] **Resend DNS records** — DKIM/SPF/DMARC auto-configured in Cloudflare via Resend's Cloudflare integration (27 May 2026). Propagating — email live within a few hours. ✅
+- [x] **Resend DNS records** — DKIM/SPF/DMARC live ✅
 - [ ] **Lemon Squeezy KYC** — complete identity verification in your LS dashboard so payouts are enabled.
+- [ ] **FIREBASE_SERVICE_ACCOUNT_JSON** — add to Railway env vars to activate native push notifications. Firebase Console → Project Settings → Service Accounts → Generate new private key → paste JSON as single-line string.
 - [ ] **Clerk production keys** — flip from `pk_test_` / `sk_test_` to production keys in your Clerk dashboard, update in Railway environment variables.
 - [ ] **OWNER_CLERK_ID** — set this in Railway env vars after your first login on the production app (identifies your account as the super-admin).
 - [ ] **7 regional Lemon Squeezy pricing variants** — create these in your LS dashboard (ZAR R79, USD $4.99, GBP £3.99, EUR €4.49, BRL R$14.99, INR ₹149, LOW $2.99). Once done, I wire them up in the code immediately.
@@ -125,16 +164,19 @@ A mobile developer with Xcode + Android Studio can:
 
 | # | Who | Action |
 |---|-----|--------|
-| 1 | ✅ **Done** | Resend DNS records added to Cloudflare — propagating, email live within hours |
-| 2 | ✅ **Done** | Apple Developer Account approved (Better Creation Pty Ltd) — 1 June 2026 |
-| 3 | **Konna** | Create 7 regional Lemon Squeezy pricing variants |
-| 4 | **Me** | Wire up location-based pricing code (once #3 is done) |
-| 5 | **Outside** | Hire a developer for 2 weeks — Capacitor wrapper + App Store submission |
-| 6 | **Konna** | Contact 3 local social workers about B2B2C pilot |
-| 7 | **Me** | Build referral program backend |
-| 8 | **Konna** | Collect 5 testimonials from real users |
-| 9 | **Me** | Write full App Store metadata (descriptions, keywords, copy) |
-| 10 | **Outside** | Tagalog translator — biggest single growth unlock after app stores |
+| 1 | ✅ **Done** | Resend DNS records live — email working |
+| 2 | ✅ **Done** | Apple Developer Account approved (Better Creation Pty Ltd) |
+| 3 | ✅ **Done** | SEO improvements, referral program, push notification backend shipped |
+| 4 | ✅ **Done** | Full App Store metadata + App Store Connect guide written |
+| 5 | ✅ **Done** | GitHub auto-deploy fixed — Railway native integration active |
+| 6 | **Konna** | Add `FIREBASE_SERVICE_ACCOUNT_JSON` to Railway env vars (Firebase Console → Service Accounts) |
+| 7 | **Konna** | Complete Lemon Squeezy KYC so payouts are enabled |
+| 8 | **Konna** | Create 7 regional Lemon Squeezy pricing variants (ZAR/USD/GBP/EUR/BRL/INR/LOW) |
+| 9 | **Me** | Wire up location-based pricing code (once #8 is done) |
+| 10 | **Outside** | Hire a developer for 2 weeks — Capacitor wrapper + App Store submission (guide: APP-STORE-CONNECT-GUIDE.md) |
+| 11 | **Konna** | Contact 3 local social workers about B2B2C pilot |
+| 12 | **Konna** | Collect 5 testimonials from real users |
+| 13 | **Outside** | Tagalog translator — biggest single growth unlock after app stores |
 
 ---
 
