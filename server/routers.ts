@@ -13,6 +13,7 @@ import { cancelLemonSqueezySubscription } from "./lemonSqueezyRoute";
 import { storageDelete } from "./storage";
 import { referralRouter } from "./referralRouter";
 import { pushRouter } from "./pushRouter";
+import { careRouter } from "./careRouter";
 
 /**
  * Extract the R2 storage key from a photo URL.
@@ -68,6 +69,7 @@ export const appRouter = router({
   system: systemRouter,
   referral: referralRouter,
   pushToken: pushRouter,
+  care: careRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

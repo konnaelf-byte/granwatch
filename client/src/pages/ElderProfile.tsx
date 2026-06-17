@@ -2,8 +2,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
+import { CareSchedulePanel } from "@/components/CareSchedulePanel";
 import { isNativeApp } from "@/utils/platform";
 import StatusRing from "@/components/StatusRing";
 import type { VisitStatus } from "@/components/StatusRing";
@@ -288,19 +289,25 @@ export default function ElderProfile() {
           </Button>
         </div>
 
-        {/* Tabs: History / Planned / Members */}
+        {/* Tabs: Upcoming / History / Care / Family */}
         <Tabs defaultValue="planned">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="planned" className="flex-1">
-              <Calendar className="w-4 h-4 mr-1.5" />
-              Upcoming
+              <Calendar className="w-4 h-4 mr-1" />
+              Visits
             </TabsTrigger>
             <TabsTrigger value="history" className="flex-1">
-              <CheckCircle2 className="w-4 h-4 mr-1.5" />
+              <CheckCircle2 className="w-4 h-4 mr-1" />
               History
             </TabsTrigger>
+            {elder.isPaid && (
+              <TabsTrigger value="care" className="flex-1">
+                <Pill className="w-4 h-4 mr-1" />
+                Care
+              </TabsTrigger>
+            )}
             <TabsTrigger value="members" className="flex-1">
-              <Users className="w-4 h-4 mr-1.5" />
+              <Users className="w-4 h-4 mr-1" />
               Family
             </TabsTrigger>
           </TabsList>
@@ -388,6 +395,16 @@ export default function ElderProfile() {
               </div>
             )}
           </TabsContent>
+
+          {/* Care schedule — Gran+ only */}
+          {elder.isPaid && (
+            <TabsContent value="care">
+              <CareSchedulePanel
+                elderId={elderId}
+                isAdmin={elder.memberRole === "admin"}
+              />
+            </TabsContent>
+          )}
 
           {/* Family members */}
           <TabsContent value="members">

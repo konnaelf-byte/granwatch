@@ -195,3 +195,66 @@ export const pushTokens = mysqlTable("pushTokens", {
 
 export type PushToken = typeof pushTokens.$inferSelect;
 export type InsertPushToken = typeof pushTokens.$inferInsert;
+
+/**
+ * Gran+ care schedule — medications tracked per elder.
+ * Family members can mark meds as taken during or after a visit.
+ */
+export const elderMedications = mysqlTable("elderMedications", {
+  id: int("id").autoincrement().primaryKey(),
+  elderId: int("elderId").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),         // e.g. "Blood pressure meds"
+  dosage: varchar("dosage", { length: 100 }),                // e.g. "1 tablet"
+  frequency: mysqlEnum("frequency", ["daily", "twice_daily", "weekly", "as_needed"]).notNull().default("daily"),
+  notes: text("notes"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  elderIdIdx: index("elderMedications_elderId_idx").on(table.elderId),
+}));
+
+export type ElderMedication = typeof elderMedications.$inferSelect;
+export type InsertElderMedication = typeof elderMedications.$inferInsert;
+
+/**
+ * Log each time a medication is marked taken or missed.
+ */
+export const medicationLogs = mysqlTable("medicationLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  medicationId: int("medicationId").notNull(),
+  elderId: int("elderId").notNull(),
+  loggedByUserId: int("loggedByUserId").notNull(),
+  takenAt: timestamp("takenAt").notNull(),
+  status: mysqlEnum("status", ["taken", "missed"]).notNull().default("taken"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  medicationIdIdx: index("medicationLogs_medicationId_idx").on(table.medicationId),
+  elderIdIdx: index("medicationLogs_elderId_idx").on(table.elderId),
+}));
+
+export type MedicationLog = typeof medicationLogs.$inferSelect;
+export type InsertMedicationLog = typeof medicationLogs.$inferInsert;
+
+/**
+ * Gran+ care schedule — doctor / medical appointments.
+ * Visible to all family members; admin marks completed.
+ */
+export const elderAppointments = mysqlTable("elderAppointments", {
+  id: int("id").autoincrement().primaryKey(),
+  elderId: int("elderId").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),        // e.g. "GP check-up"
+  doctorName: varchar("doctorName", { length: 255 }),
+  location: varchar("location", { length: 255 }),
+  scheduledAt: timestamp("scheduledAt").notNull(),
+  completedAt: timestamp("completedAt"),
+  notes: text("notes"),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  elderIdIdx: index("elderAppointments_elderId_idx").on(table.elderId),
+}));
+
+export type ElderAppointment = typeof elderAppointments.$inferSelect;
+export type InsertElderAppointment = typeof elderAppointments.$inferInsert;
