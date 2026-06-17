@@ -37,13 +37,22 @@ A family member puts this on their home screen and knows — before they even op
 
 This maps directly onto the existing `elder.status` field (`green / yellow / orange / red`) and `elder.daysSinceVisit` — no new data model needed. The ring fill percentage = `1 - (daysSinceVisit / alertThresholdDays)`, clamped to [0, 1].
 
+**Dynamic ring count:**
+
+The number of rings shown is determined automatically by how many gran profiles the user belongs to as a family member — exactly the same way Apple's battery widget populates itself based on however many devices are paired. No manual configuration needed.
+
+- 1 gran → 1 ring (centred, large)
+- 2 grans → 2 rings side by side
+- 3 grans → 3 rings in a row (matches the Apple battery medium widget at full capacity)
+- 4–6 grans → 2-row grid
+
+If a user is a family member of 3 different grans (e.g. their own mum, their partner's gran, and an aunt), all three rings populate the widget automatically on install. Adding a new gran profile via the app triggers a widget timeline reload and the new ring appears.
+
 **Widget sizes to support:**
 
-- **Small** (2×2): single gran, large ring + status dot. Best for a family with one gran.
-- **Medium** (4×2): up to 3 grans in a row, like the Apple battery widget. This is the primary target.
-- **Large** (4×4): up to 6 grans — for power users or multi-elder families.
-
-The user picks which gran(s) to show in each widget slot, and how many widgets to add, just like they would with the battery widget.
+- **Small** (2×2): shows up to 1 ring. For users monitoring a single gran — the ring fills the tile with the photo and arc prominent.
+- **Medium** (4×2): shows up to 3 rings in a row. Primary target — matches the Apple battery widget layout exactly. If the user has fewer than 3 grans, the occupied slots fill left-to-right and remaining slots are empty (or hidden, matching Apple's behaviour).
+- **Large** (4×4): shows up to 6 rings in a 2×3 grid. For users in multiple families or managing several elder profiles.
 
 **Why it matters:**
 
