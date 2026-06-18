@@ -169,6 +169,80 @@ A mobile developer with Xcode + Android Studio can:
 
 ---
 
+## Australia — First International Market
+
+### Why Australia First
+
+Australia is the natural first international market for GranWatch:
+
+- **South African diaspora** — one of the largest SA communities outside Africa lives in Sydney, Melbourne, and Perth. They already have WhatsApp groups, Facebook groups, and community networks. Trust travels with them — an app built by a South African, solving a problem they feel acutely (family far away), starts with built-in credibility.
+- **High English literacy** — no localisation required. The existing English app ships as-is.
+- **Smartphone penetration** — 91%+ smartphone ownership. iOS is strong in AU (roughly 55% market share vs Android 45%), which aligns with our App Store priority.
+- **Strong eldercare sector** — Australia has a mature, government-funded aged care system (My Aged Care), a large professional care workforce, and high public awareness of elder wellbeing. GranWatch fits naturally into the family coordination layer alongside formal care services.
+- **AUD is strong** — AUD $4.99 is an easy price point. It feels cheap to Australians but represents real revenue.
+
+### Target AUD Price
+
+**Gran+ at AUD $4.99/month.**
+
+This is approximately ZAR R55–65 at direct exchange, but in purchasing-power terms it's a slight discount from USD $2.99 — deliberately so, to drive early adoption in a new market. It still nets ~AUD $3.49 after Apple/Google cut (70%), which is roughly USD $2.30 — very close to the USD net per subscriber.
+
+**Add this variant to Lemon Squeezy (web checkout fallback):**
+
+| Region | LS Variant | Price |
+|--------|-----------|-------|
+| South Africa | `LS_VARIANT_ID_ZAR` | ZAR R79 |
+| United States | `LS_VARIANT_ID_USD` | USD $4.99 |
+| United Kingdom | `LS_VARIANT_ID_GBP` | GBP £3.99 |
+| Euro zone | `LS_VARIANT_ID_EUR` | EUR €4.49 |
+| Brazil | `LS_VARIANT_ID_BRL` | BRL R$14.99 |
+| India | `LS_VARIANT_ID_INR` | INR ₹149 |
+| Low-income / fallback | `LS_VARIANT_ID_LOW` | USD $2.99 |
+| **Australia** | **`LS_VARIANT_ID_AUD`** | **AUD $4.99** |
+
+### Key Demographics to Target in Australia
+
+1. **South African expats in Sydney, Melbourne, Perth** — large, tight-knit communities active on WhatsApp and Facebook (groups like "South Africans in Australia", "SA Expats Sydney", "Perth SA Braai & Social"). Their parents are in SA. They feel guilt and anxiety about not being nearby. GranWatch is the product they didn't know existed. Reach them for free through these communities before spending a cent on ads.
+
+2. **Adult children aged 35–55 with ageing parents** — whether parents are in SA, Australia, or elsewhere. This is the universal use case: child moved away, parent is getting older, nobody is tracking whether Gran has been visited lately. In Australia, rural families (parents in outback Queensland or WA, kids in the city) feel this acutely.
+
+3. **Filipino OFW community in Australia** — Australia has one of the largest Filipino communities outside the Philippines (~400,000+). OFWs send money home and worry about parents left in the Philippines. GranWatch speaks to exactly that anxiety. This community is highly active on Facebook. A Spanish-equivalent opportunity but in Australia, now, with no extra localisation needed (English suffices to start).
+
+4. **Australian families with ageing parents in rural or remote areas** — a domestic AU use case entirely independent of diaspora. Families who visit parents in country towns, regional hospitals, or aged care facilities. The care gap between city kids and country parents is a known Australian social issue with coverage in mainstream media.
+
+### First 3 Marketing Moves for Australia
+
+**1. Post in SA expat Facebook groups in AU (free, zero ad spend, high-trust)**
+Search Facebook for: "South Africans in Australia", "South Africans in Sydney", "South Africans in Melbourne", "South Africans in Perth", "SA Expats Australia". Most groups allow introductory posts from members. Join as yourself (Konstand), introduce GranWatch honestly — "I built this because I know what it feels like to have family far away." Personal story + product link. One post per group. Do not use a brand account. High-trust communities respond to authentic founder posts, not marketing.
+
+**2. Approach a South African social worker or aged care organisation in AU for a referral partnership**
+There are South African-run community organisations and social workers in AU who support the SA diaspora. A referral partnership — where a care professional recommends GranWatch to the families they work with — is your highest-quality acquisition channel. It's free, it's trusted, and it produces users who are genuinely engaged. Search LinkedIn for "South African social worker Australia" or contact bodies like the South African Chamber of Commerce in Australia (SACCA). One meeting is all it takes.
+
+**3. Pitch a South African or diaspora-focused Australian journalist**
+Angle: *"South African founder builds app to make sure Gran is never forgotten — expats in Australia are using it to keep watch on parents back home."* This hits multiple editorial buckets: tech startup story, diaspora/community story, eldercare story, mental health story (family guilt). Target: Bhekiwe Mathondo (Bhekiwe is a placeholder — find the SA-focused reporter at ABC or a community publication like the Australian SA community newsletter). Cost: one personalised email. One article in a diaspora publication or mainstream AU outlet = hundreds of organic installs.
+
+### AU Partnership Counter-Proposal
+
+The AU contact proposed 50% of profits as their fee for representing GranWatch in Australia. Counter-proposal:
+
+**Offer: Non-exclusive 30% of net AU revenue, 12-month initial term, renewable.**
+
+- **30% of net AU revenue** — "net" means after Apple/Google's 30% platform cut. So on an AUD $4.99/month subscriber, Apple takes ~$1.50, leaving ~$3.49. The AU partner receives 30% of that: ~AUD $1.05/subscriber/month. At 100 paying AU subscribers that's ~AUD $105/month passive income for the partner. Scalable.
+- **Non-exclusive** — GranWatch retains the right to grow AU through other channels (ads, press, organic). The partner is not the only path to AU revenue.
+- **12-month initial term, renewable** — both parties review at the 12-month mark. If it's working, renew. If not, either party can walk away cleanly.
+- **Performance clause** — to retain any exclusivity rights (if ever granted), the partner must reach a minimum of 100 paying AU subscribers within year 1. Below that threshold, exclusivity lapses automatically. This protects you from a partner who takes 30% but does nothing.
+- **What the partner gets in return**: co-promotion credit on the AU app store listing, a referral link tracked to their account, and first right of refusal on any formal AU partnership should GranWatch raise capital or formalise international operations.
+
+Draft counter-proposal language: *"We'd love to bring you on as our AU growth partner. We're proposing a non-exclusive revenue share of 30% of net AU revenue (post-platform fees), on a 12-month renewable term. We'd include a performance benchmark of 100 paying AU users in year 1 to keep the arrangement active. Does that work as a starting point?"*
+
+### App Store Category for Australia
+
+- **Primary category: Health & Fitness** — ranks well in AU for eldercare, family wellness, and mental health adjacents. AU App Store users browse Health & Fitness for solutions to wellbeing problems, which is exactly how GranWatch should be positioned.
+- **Secondary category: Lifestyle** — captures users searching for family organisation and daily life coordination tools.
+- Avoid "Utilities" as a primary category — it undersells the emotional value of the product and ranks poorly for discovery in both AU and global markets.
+
+---
+
 ## Your Right-Now Priority List
 
 | # | Who | Action |

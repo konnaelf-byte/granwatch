@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["XXXXXXXXXX.app.granwatch"],
+        "components": [
+          {
+            "/": "/join/*",
+            "comment": "Invite join links open in the native app"
+          },
+          {
+            "/": "/elder/*",
+            "comment": "Deep links to elder profiles"
+          }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["XXXXXXXXXX.app.granwatch"]
+  }
+}

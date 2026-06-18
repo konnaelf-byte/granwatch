@@ -54,6 +54,6 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>GranWatch accesses your photo library so you can choose a photo for a gran profile.</string>
 	<!-- NSPhotoLibraryAddUsageDescription omitted — app does not save to photo library -->
-	<!-- NSUserNotificationUsageDescription omitted — push notifications not yet implemented -->
+	<!-- Push notifications implemented via FCM/Firebase — no plist key required; iOS requests permission at runtime -->
 </dict>
 </plist>
