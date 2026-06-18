@@ -94,8 +94,8 @@ export default function Account() {
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 border-b bg-card sticky top-0 z-10">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-            <ArrowLeft className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
+            <ArrowLeft className="w-5 h-5" aria-hidden="true" />
           </Button>
           <span className="font-bold text-foreground">My Account</span>
         </div>

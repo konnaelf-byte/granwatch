@@ -219,8 +219,8 @@ export default function ElderProfile() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 border-b bg-card sticky top-0 z-10">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-          <ArrowLeft className="w-5 h-5" />
+        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
+          <ArrowLeft className="w-5 h-5" aria-hidden="true" />
         </Button>
         <h1 className="font-bold text-foreground">{elder.name}</h1>
         <div className="flex items-center gap-1">
@@ -230,21 +230,22 @@ export default function ElderProfile() {
               size="sm"
               onClick={() => (isNativeApp ? setNativeGranPlusOpen(true) : setGranPlusOpen(true))}
               className="text-primary font-semibold"
+              aria-label="Upgrade to Gran Plus"
             >
-              <Sparkles className="w-4 h-4 mr-1" />
+              <Sparkles className="w-4 h-4 mr-1" aria-hidden="true" />
               Gran+
             </Button>
           )}
-          <Button variant="ghost" size="icon" onClick={() => navigate(`/elder/${elderId}/settings`)}>
-            <Settings className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={() => navigate(`/elder/${elderId}/settings`)} aria-label="Gran settings">
+            <Settings className="w-5 h-5" aria-hidden="true" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={handleShare}>
-            <Share2 className="w-5 h-5" />
+          <Button variant="ghost" size="icon" onClick={handleShare} aria-label="Copy invite link">
+            <Share2 className="w-5 h-5" aria-hidden="true" />
           </Button>
         </div>
       </header>
 
-      <main className="flex-1 px-5 py-6 max-w-lg mx-auto w-full">
+      <main id="main-content" className="flex-1 px-5 py-6 max-w-lg mx-auto w-full">
         {/* Status Ring — hero */}
         <div className="flex flex-col items-center mb-8">
           <StatusRing
@@ -415,8 +416,9 @@ export default function ElderProfile() {
                           size="icon"
                           className="text-destructive hover:text-destructive flex-shrink-0"
                           onClick={() => setDeleteVisitId(p.id)}
+                          aria-label="Cancel this planned visit"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </Button>
                       )}
                     </div>

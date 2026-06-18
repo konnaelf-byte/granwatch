@@ -76,10 +76,16 @@ export default function Dashboard() {
             size="icon"
             className="relative"
             onClick={() => navigate("/notifications")}
+            aria-label={unreadCount > 0 ? `Notifications — ${unreadCount} unread` : "Notifications"}
           >
-            <Bell className="w-5 h-5" />
+            <Bell className="w-5 h-5" aria-hidden="true" />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
+              <span
+                className="absolute -top-0.5 -right-0.5 bg-destructive text-destructive-foreground text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              >
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
@@ -87,14 +93,14 @@ export default function Dashboard() {
           <button
             onClick={() => navigate("/account")}
             className="w-9 h-9 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center flex-shrink-0 hover:opacity-80 transition-opacity"
-            title="My account"
+            aria-label="My account"
           >
             {user?.name ? user.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase() : "?"}
           </button>
         </div>
       </header>
 
-      <main className="flex-1 px-5 py-6 max-w-lg mx-auto w-full">
+      <main id="main-content" className="flex-1 px-5 py-6 max-w-lg mx-auto w-full">
         {/* Greeting */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">
@@ -131,6 +137,7 @@ export default function Dashboard() {
                   key={elder.id}
                   onClick={() => navigate(`/elder/${elder.id}`)}
                   className="w-full bg-card border rounded-2xl p-5 flex items-center gap-5 text-left hover:shadow-md transition-shadow active:scale-[0.99]"
+                  aria-label={`${elder.name} — ${elder.status === "green" ? "All good" : elder.status === "yellow" ? "Due soon" : elder.status === "orange" ? "Overdue" : "Alert"} — ${elder.daysSinceVisit === 0 ? "visited today" : elder.daysSinceVisit === 1 ? "1 day since last visit" : `${elder.daysSinceVisit} days since last visit`}`}
                 >
                   <StatusRing
                     photoUrl={elder.photoUrl}

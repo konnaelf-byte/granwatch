@@ -179,8 +179,9 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                       size="icon"
                       className="text-muted-foreground hover:text-destructive flex-shrink-0 h-8 w-8"
                       onClick={() => removeMed.mutate({ medicationId: med.id, elderId })}
+                      aria-label={`Remove ${med.name} from care schedule`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </Button>
                   )}
                 </div>
@@ -203,8 +204,9 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                     className="h-9 px-3"
                     onClick={() => logMed.mutate({ medicationId: med.id, elderId, status: "missed" })}
                     disabled={logMed.isPending}
+                    aria-label={med.todayStatus === "missed" ? "Medication missed ✗" : "Mark as missed"}
                   >
-                    <XCircle className="w-3.5 h-3.5" />
+                    <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
                   </Button>
                 </div>
               </div>
@@ -269,8 +271,9 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                       size="icon"
                       className="text-muted-foreground hover:text-destructive flex-shrink-0 h-8 w-8"
                       onClick={() => removeAppt.mutate({ appointmentId: appt.id, elderId })}
+                      aria-label={`Remove appointment: ${appt.title}`}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </Button>
                   )}
                 </div>
@@ -309,8 +312,9 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                           size="icon"
                           className="text-muted-foreground hover:text-destructive h-8 w-8"
                           onClick={() => removeAppt.mutate({ appointmentId: appt.id, elderId })}
+                          aria-label={`Remove past appointment: ${appt.title}`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                         </Button>
                       )}
                     </div>

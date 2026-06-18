@@ -44,8 +44,8 @@ export default function Notifications() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 border-b bg-card sticky top-0 z-10">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
-          <ArrowLeft className="w-5 h-5" />
+        <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
+          <ArrowLeft className="w-5 h-5" aria-hidden="true" />
         </Button>
         <h1 className="font-bold text-foreground">Notifications</h1>
         {unread.length > 0 ? (

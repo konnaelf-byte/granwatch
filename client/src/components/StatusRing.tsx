@@ -121,10 +121,17 @@ export function StatusRing({
       ? "1 day ago"
       : `${daysSinceVisit} days ago`;
 
+  // Accessible description for VoiceOver / TalkBack
+  const ringAriaLabel = `${name} — ${colors.label}. ${daysText}.`;
+
   return (
-    <div className={`flex flex-col items-center gap-3 ${className}`}>
-      {/* Ring + Photo */}
-      <div className="relative" style={{ width: size, height: size }}>
+    <div
+      className={`flex flex-col items-center gap-3 ${className}`}
+      role="img"
+      aria-label={ringAriaLabel}
+    >
+      {/* Ring + Photo — aria-hidden so VoiceOver reads the parent label only */}
+      <div className="relative" aria-hidden="true" style={{ width: size, height: size }}>
         {/* SVG ring — starts at top (rotated -90deg) */}
         <svg
           width={size}
