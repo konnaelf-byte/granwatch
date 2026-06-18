@@ -39,6 +39,29 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
+  // ── Well-known deep-linking verification files ─────────────────────────────
+  // These MUST be served before any auth middleware and must NOT redirect.
+  // Apple's AASA crawler and Google's Digital Asset Links verifier both
+  // require a direct 200 response with Content-Type: application/json.
+
+  // iOS Universal Links — Apple App Site Association
+  app.get("/.well-known/apple-app-site-association", (_req, res) => {
+    const filePath = path.resolve(import.meta.dirname, "public", ".well-known", "apple-app-site-association");
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "no-store");
+    res.sendFile(filePath);
+  });
+
+  // Android App Links — Digital Asset Links
+  app.get("/.well-known/assetlinks.json", (_req, res) => {
+    const filePath = path.resolve(import.meta.dirname, "public", ".well-known", "assetlinks.json");
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "no-store");
+    res.sendFile(filePath);
+  });
+
+  // ── Auth + application middleware ──────────────────────────────────────────
+
   // Clerk authentication middleware — must be first so getAuth() works everywhere.
   app.use(clerkMiddleware());
 
