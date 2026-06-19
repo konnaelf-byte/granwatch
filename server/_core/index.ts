@@ -1,7 +1,9 @@
 import "dotenv/config";
 import { clerkMiddleware } from "@clerk/express";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import fs from "fs";
+import helmet from "helmet";
 import { createServer } from "http";
 import net from "net";
 import path from "path";
@@ -35,9 +37,28 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
   throw new Error(`No available port found starting from ${startPort}`);
 }
 
+// ── Rate limiter — tRPC API (not webhooks, which have their own auth) ────────
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300,                  // 300 requests per IP per window — generous for a family app
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests — please try again in a few minutes." },
+});
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
+
+  // ── Security headers (helmet) ──────────────────────────────────────────────
+  // CSP disabled — Vite SPA uses inline scripts + dynamic imports.
+  // crossOriginEmbedderPolicy disabled — Capacitor WebView compatibility.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+    })
+  );
 
   // ── Well-known deep-linking verification files ─────────────────────────────
   // These MUST be served before any auth middleware and must NOT redirect.
@@ -84,9 +105,10 @@ async function startServer() {
   // Photo upload route.
   registerUploadRoutes(app);
 
-  // tRPC API.
+  // tRPC API — rate-limited.
   app.use(
     "/api/trpc",
+    apiLimiter,
     createExpressMiddleware({
       router: appRouter,
       createContext,
