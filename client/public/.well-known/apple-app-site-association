@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appIDs": ["XXXXXXXXXX.app.granwatch"],
+        "appIDs": ["BFA6JYY9YD.app.granwatch"],
         "components": [
           {
             "/": "/join/*",
@@ -18,6 +18,6 @@
     ]
   },
   "webcredentials": {
-    "apps": ["XXXXXXXXXX.app.granwatch"]
+    "apps": ["BFA6JYY9YD.app.granwatch"]
   }
 }
