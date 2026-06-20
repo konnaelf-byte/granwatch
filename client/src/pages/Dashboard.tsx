@@ -8,8 +8,11 @@ import StatusRing from "@/components/StatusRing";
 import type { VisitStatus } from "@/components/StatusRing";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect } from "react";
+import { useWidgetSync } from "@/hooks/useWidgetSync";
 
 export default function Dashboard() {
+  // Sync elder data to iOS home-screen widget whenever the list changes
+  useWidgetSync();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
 
