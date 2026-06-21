@@ -3,6 +3,8 @@
   "appName": "GranWatch",
   "webDir": "dist/public",
   "server": {
+    "url": "https://granwatch.app",
+    "cleartext": false,
     "androidScheme": "https"
   },
   "ios": {

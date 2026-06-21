@@ -18,11 +18,32 @@ import Admin from "./pages/Admin";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import InstallPrompt from "./components/InstallPrompt";
+import { Capacitor } from "@capacitor/core";
+import { ArrowLeft } from "lucide-react";
+import { useLocation } from "wouter";
 
 function SignInPage() {
+  const [, navigate] = useLocation();
+  const isNative = Capacitor.isNativePlatform();
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <SignIn routing="path" path="/sign-in" />
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Back button — only shown in native app (not web), and not on sso-callback */}
+      {isNative && typeof window !== "undefined" && !window.location.pathname.includes("sso-callback") && (
+        <div className="px-4 pt-safe pt-4">
+          <button
+            onClick={() => navigate("/")}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+            aria-label="Back to home"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back
+          </button>
+        </div>
+      )}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <SignIn routing="path" path="/sign-in" />
+      </div>
     </div>
   );
 }
