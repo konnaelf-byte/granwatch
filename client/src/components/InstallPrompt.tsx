@@ -12,6 +12,12 @@ interface BeforeInstallPromptEvent extends Event {
 function detectPlatform() {
   const ua = navigator.userAgent;
 
+  // Native app (Capacitor WKWebView) — never show the web "Add to Home Screen"
+  // prompt; the user is already in the installed native app.
+  if ((window as any).Capacitor?.isNativePlatform?.()) {
+    return "standalone";
+  }
+
   // Already installed as standalone PWA
   if (window.matchMedia("(display-mode: standalone)").matches) {
     return "standalone";
