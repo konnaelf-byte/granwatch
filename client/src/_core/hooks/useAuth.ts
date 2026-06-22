@@ -1,6 +1,7 @@
 import { getSignInUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
+import { useClerk } from "@clerk/react";
 import { useCallback, useEffect, useMemo } from "react";
 
 type UseAuthOptions = {
@@ -12,6 +13,7 @@ export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = getSignInUrl() } =
     options ?? {};
   const utils = trpc.useUtils();
+  const clerk = useClerk();
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
@@ -25,21 +27,28 @@ export function useAuth(options?: UseAuthOptions) {
   });
 
   const logout = useCallback(async () => {
+    // Best-effort legacy/server session clear (no-op for Clerk-based sessions).
     try {
       await logoutMutation.mutateAsync();
     } catch (error: unknown) {
       if (
-        error instanceof TRPCClientError &&
-        error.data?.code === "UNAUTHORIZED"
+        !(error instanceof TRPCClientError && error.data?.code === "UNAUTHORIZED")
       ) {
-        return;
+        console.warn("[useAuth] legacy logout failed (continuing):", error);
       }
-      throw error;
     } finally {
       utils.auth.me.setData(undefined, null);
-      await utils.auth.me.invalidate();
+      await utils.auth.me.invalidate().catch(() => {});
+      // Clear the Clerk session — this is the real source of auth. With
+      // afterSignOutUrl="/" on <ClerkProvider>, this also redirects home.
+      try {
+        await clerk.signOut();
+      } catch (e) {
+        console.error("[useAuth] clerk.signOut failed:", e);
+        if (typeof window !== "undefined") window.location.href = "/";
+      }
     }
-  }, [logoutMutation, utils]);
+  }, [logoutMutation, utils, clerk]);
 
   const state = useMemo(() => {
     return {
