@@ -61,7 +61,10 @@ const trpcClient = trpc.createClient({
 // ─── Service Worker Registration ─────────────────────────────────────────────
 // Register the SW in both the browser and Capacitor WebView (iOS / Android).
 // We skip registration in local dev (Vite HMR) to avoid caching stale builds.
-if ("serviceWorker" in navigator && import.meta.env.PROD) {
+// Skip SW in Capacitor native shells — the app loads from server.url directly,
+// so the SW adds no value and its controllerchange reload can break Clerk init.
+const isCapacitorNative = !!(window as any).Capacitor?.isNative || !!(window as any).Capacitor?.isNativePlatform?.();
+if ("serviceWorker" in navigator && import.meta.env.PROD && !isCapacitorNative) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
       .register("/sw.js", { scope: "/" })

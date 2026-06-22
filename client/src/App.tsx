@@ -42,7 +42,8 @@ function SignInPage() {
         </div>
       )}
       <div className="flex-1 flex items-center justify-center p-4">
-        <SignIn routing="path" path="/sign-in" />
+        {/* routing="virtual" on native: avoids WKWebView URL-handling conflicts with Clerk's path router */}
+        <SignIn routing={isNative ? "virtual" : "path"} path={isNative ? undefined : "/sign-in"} />
       </div>
     </div>
   );
