@@ -8,6 +8,8 @@ import superjson from "superjson";
 import App from "./App";
 import { getSignInUrl } from "./const";
 import "./index.css";
+import { Capacitor } from "@capacitor/core";
+import { SocialLogin } from "@capgo/capacitor-social-login";
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
 
@@ -57,6 +59,23 @@ const trpcClient = trpc.createClient({
     }),
   ],
 });
+
+// ─── SocialLogin initialisation (native only) ────────────────────────────────
+// Must run before any sign-in attempt. Safe to call multiple times (idempotent).
+// iOS Google: iOSClientId = iOS OAuth client; iOSServerClientId = web client so
+// the returned idToken aud matches the web client ID that Clerk trusts.
+// Apple: uses bundle id `app.granwatch` automatically on iOS (no clientId needed).
+if (Capacitor.isNativePlatform()) {
+  SocialLogin.initialize({
+    google: {
+      iOSClientId: "156428600768-kk8a2atra3haubsa91aoncmg6d7073rv.apps.googleusercontent.com",
+      iOSServerClientId: "156428600768-4bdsso544vgd5o6ri81r97kqp27a351u.apps.googleusercontent.com",
+    },
+    apple: {
+      // clientId is only needed for web/Android; iOS uses the bundle id automatically
+    },
+  }).catch((err) => console.warn("[SocialLogin] initialize error:", err));
+}
 
 // ─── Service Worker Registration ─────────────────────────────────────────────
 // Register the SW in both the browser and Capacitor WebView (iOS / Android).

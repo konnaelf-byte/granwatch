@@ -21,7 +21,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<string>5</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -55,5 +55,17 @@
 	<string>GranWatch accesses your photo library so you can choose a photo for a gran profile.</string>
 	<!-- NSPhotoLibraryAddUsageDescription omitted — app does not save to photo library -->
 	<!-- Push notifications implemented via FCM/Firebase — no plist key required; iOS requests permission at runtime -->
+	<!-- Google Sign-In: reversed iOS OAuth client ID as a URL scheme (required for GIDSignIn redirect) -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.156428600768-kk8a2atra3haubsa91aoncmg6d7073rv</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

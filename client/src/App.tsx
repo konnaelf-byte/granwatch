@@ -18,6 +18,7 @@ import Admin from "./pages/Admin";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import InstallPrompt from "./components/InstallPrompt";
+import NativeSignIn from "./components/NativeSignIn";
 import { Capacitor } from "@capacitor/core";
 import { ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
@@ -42,8 +43,13 @@ function SignInPage() {
         </div>
       )}
       <div className="flex-1 flex items-center justify-center p-4">
-        {/* routing="virtual" on native: avoids WKWebView URL-handling conflicts with Clerk's path router */}
-        <SignIn routing={isNative ? "virtual" : "path"} path={isNative ? undefined : "/sign-in"} />
+        {/* Native: use custom sign-in to avoid Safari bounce and Google's embedded-WebView block */}
+        {isNative ? (
+          <NativeSignIn />
+        ) : (
+          /* Web: keep Clerk's standard SignIn component exactly as before */
+          <SignIn routing="path" path="/sign-in" />
+        )}
       </div>
     </div>
   );

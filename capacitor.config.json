@@ -17,6 +17,12 @@
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 0
+    },
+    "SocialLogin": {
+      "apple": {},
+      "google": {
+        "iOSClientId": "156428600768-kk8a2atra3haubsa91aoncmg6d7073rv.apps.googleusercontent.com"
+      }
     }
   }
 }
