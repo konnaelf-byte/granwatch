@@ -12,7 +12,9 @@ import { PhotoUpload } from "@/components/PhotoUpload";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { GranPlusModal } from "@/components/GranPlusModal";
+import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { isNativeApp } from "@/utils/platform";
+import { initRevenueCat } from "@/utils/iap";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -73,10 +75,19 @@ function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { el
 export default function ElderSettings() {
   const { id } = useParams<{ id: string }>();
   const elderId = parseInt(id ?? "0");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [, navigate] = useLocation();
 
   const [granPlusOpen, setGranPlusOpen] = useState(false);
+  const [nativeGranPlusOpen, setNativeGranPlusOpen] = useState(false);
+  // Open the correct Gran+ upgrade UI: RevenueCat IAP on native, Lemon Squeezy on web.
+  const openGranPlus = () => (isNativeApp ? setNativeGranPlusOpen(true) : setGranPlusOpen(true));
+  // Configure RevenueCat once on native so the upgrade modal can load pricing/purchase.
+  // No-op on web and after the first successful configure (idempotent in iap.ts).
+  useEffect(() => {
+    if (!isNativeApp || !user?.openId) return;
+    void initRevenueCat(user.openId);
+  }, [user?.openId]);
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [name, setName] = useState("");
@@ -308,14 +319,14 @@ export default function ElderSettings() {
               rows={4}
               className="resize-none"
               disabled={!isPaid}
-              onClick={() => { if (!isPaid && !isNativeApp) setGranPlusOpen(true); }}
+              onClick={() => { if (!isPaid) openGranPlus(); }}
             />
-            {!isPaid && !isNativeApp && (
+            {!isPaid && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-primary font-semibold p-0 h-auto"
-                onClick={() => setGranPlusOpen(true)}
+                onClick={openGranPlus}
               >
                 <Sparkles className="w-3.5 h-3.5 mr-1" />
                 Unlock with Gran+
@@ -324,9 +335,9 @@ export default function ElderSettings() {
           </div>
         )}
 
-        {/* Gran+ subscription management — admin only, when paid, web only */}
-        {isAdmin && isPaid && !isNativeApp && (
-          <GranPlusSettingsCard elderId={elderId} elderName={elder.name} onManage={() => setGranPlusOpen(true)} />
+        {/* Gran+ subscription management — admin only, when paid */}
+        {isAdmin && isPaid && (
+          <GranPlusSettingsCard elderId={elderId} elderName={elder.name} onManage={openGranPlus} />
         )}
 
         {/* Test notifications — admin only */}
@@ -408,8 +419,15 @@ export default function ElderSettings() {
         )}
       </main>
 
-      {/* Gran+ Modal — web only; hidden in native app (Apple Reader App model) */}
-      {!isNativeApp && (
+      {/* Gran+ Modal — web uses Lemon Squeezy; native uses RevenueCat IAP. */}
+      {isNativeApp ? (
+        <NativeGranPlusModal
+          open={nativeGranPlusOpen}
+          onOpenChange={setNativeGranPlusOpen}
+          elderId={elderId}
+          elderName={elder.name}
+        />
+      ) : (
         <GranPlusModal
           open={granPlusOpen}
           onOpenChange={setGranPlusOpen}

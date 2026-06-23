@@ -1,11 +1,9 @@
 /**
  * Platform detection utilities for Capacitor native app vs. web browser.
  *
- * Use these to gate features that are not allowed in the native iOS/Android
- * app — particularly any payment or subscription UI (Apple IAP rules).
- *
- * The Reader App model requires ZERO purchase UI in the native app.
- * All payment flows must be web-only (via granwatch.app).
+ * Use these to branch behaviour between native and web — notably the payment
+ * path: native iOS/Android must use Apple/Google in-app purchase via RevenueCat
+ * (see utils/iap.ts), while web uses Lemon Squeezy (see GranPlusModal).
  */
 
 import { Capacitor } from "@capacitor/core";
