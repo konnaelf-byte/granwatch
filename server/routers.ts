@@ -465,6 +465,58 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Permanently delete an elder profile and ALL associated data, for every
+    // family member. Admin-only — matches the strictest write pattern in this
+    // router (update / requestCancellation / confirmCancellation).
+    //
+    // Cascade notes: the care tables (elderMedications, medicationLogs,
+    // elderAppointments) and giftLogs have ON DELETE CASCADE on elders.id
+    // (migrations 0010/0011), so they are removed automatically. The older
+    // tables (visits, plannedVisits, notifications, subscriptionContributions,
+    // elderMembers) have NO foreign keys, so we delete those rows explicitly
+    // first — same approach as auth.deleteAccount.
+    delete: protectedProcedure
+      .input(z.object({ elderId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+
+        // Must be an admin of this elder profile
+        const [membership] = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
+          .limit(1);
+        if (!membership || membership.role !== "admin") throw new Error("Admin access required");
+
+        const [elder] = await db.select().from(elders).where(eq(elders.id, input.elderId)).limit(1);
+        if (!elder) throw new Error("Elder not found");
+
+        // Cancel any active Lemon Squeezy subscription before deleting.
+        if (elder.lemonsqueezySubscriptionId) {
+          await cancelLemonSqueezySubscription(elder.lemonsqueezySubscriptionId);
+        }
+
+        // Delete the elder's profile photo from R2 (best-effort).
+        if (elder.photoUrl) {
+          const key = extractR2Key(elder.photoUrl);
+          if (key) await storageDelete(key).catch(() => {});
+        }
+
+        // Explicitly delete children that lack ON DELETE CASCADE.
+        await db.delete(visits).where(eq(visits.elderId, input.elderId));
+        await db.delete(plannedVisits).where(eq(plannedVisits.elderId, input.elderId));
+        await db.delete(notifications).where(eq(notifications.elderId, input.elderId));
+        await db.delete(subscriptionContributions).where(eq(subscriptionContributions.elderId, input.elderId));
+        await db.delete(elderMembers).where(eq(elderMembers.elderId, input.elderId));
+
+        // Delete the elder. FK cascade removes elderMedications, medicationLogs,
+        // elderAppointments and giftLogs automatically.
+        await db.delete(elders).where(eq(elders.id, input.elderId));
+
+        return { success: true };
+      }),
+
     // Update notification preferences for the current user on an elder profile
     updateNotificationPrefs: protectedProcedure
       .input(z.object({ elderId: z.number(), notificationsEnabled: z.boolean() }))

@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Sparkles, Lock, Bell, BellOff, LogOut, AlertTriangle, Users, CheckCircle2, Cake } from "lucide-react";
+import { ArrowLeft, Sparkles, Lock, Bell, BellOff, LogOut, AlertTriangle, Users, CheckCircle2, Cake, Trash2 } from "lucide-react";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -78,6 +78,7 @@ export default function ElderSettings() {
 
   const [granPlusOpen, setGranPlusOpen] = useState(false);
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [name, setName] = useState("");
   const [threshold, setThreshold] = useState(21);
   const [wellbeingEnabled, setWellbeingEnabled] = useState(false);
@@ -138,6 +139,15 @@ export default function ElderSettings() {
   const leaveFamily = trpc.elders.leave.useMutation({
     onSuccess: () => {
       toast.success("You have left this family.");
+      utils.elders.list.invalidate();
+      navigate("/dashboard");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const deleteElder = trpc.elders.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Profile deleted.");
       utils.elders.list.invalidate();
       navigate("/dashboard");
     },
@@ -388,6 +398,30 @@ export default function ElderSettings() {
           {updateElder.isPending || updateNotifPrefs.isPending ? "Saving..." : "Save Settings"}
         </Button>
 
+        {/* Delete this gran — admin only. Destructive: removes the profile and
+            all its data for the WHOLE family. */}
+        {isAdmin && (
+          <div className="rounded-xl border border-destructive/30 p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Trash2 className="w-4 h-4 text-destructive" />
+              <Label className="text-sm font-semibold text-destructive">Delete this gran</Label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Permanently removes {elder.name}'s profile and all visits, photos, care notes, medications,
+              appointments and history — for every family member. This cannot be undone.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full border-destructive/40 text-destructive hover:bg-destructive/5"
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete {elder.name}'s profile
+            </Button>
+          </div>
+        )}
+
         {/* Leave Family — non-admin members only */}
         {!isAdmin && (
           <div className="rounded-xl border border-destructive/30 p-4 space-y-3">
@@ -441,6 +475,32 @@ export default function ElderSettings() {
               onClick={() => leaveFamily.mutate({ elderId })}
             >
               {leaveFamily.isPending ? "Leaving..." : "Yes, leave family"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete gran confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Delete {elder.name}'s profile?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes {elder.name} and ALL of her data — visits, photos, care notes,
+              medications, appointments and history — for every family member, not just you.
+              This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteElder.mutate({ elderId })}
+            >
+              {deleteElder.isPending ? "Deleting..." : "Yes, delete forever"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

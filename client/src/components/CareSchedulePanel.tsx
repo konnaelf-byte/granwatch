@@ -43,7 +43,6 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
   // ── Medication state ───────────────────────────────────────────────────────
   const [addMedOpen, setAddMedOpen] = useState(false);
   const [medName, setMedName] = useState("");
-  const [medDosage, setMedDosage] = useState("");
   const [medFrequency, setMedFrequency] = useState<"daily" | "twice_daily" | "weekly" | "as_needed">("daily");
   const [medNotes, setMedNotes] = useState("");
 
@@ -69,7 +68,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
       toast.success("Routine added");
       utils.care.medications.list.invalidate({ elderId });
       setAddMedOpen(false);
-      setMedName(""); setMedDosage(""); setMedNotes(""); setMedFrequency("daily");
+      setMedName(""); setMedNotes(""); setMedFrequency("daily");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -345,14 +344,6 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
               />
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Dosage</p>
-              <Input
-                placeholder="e.g. 1 tablet"
-                value={medDosage}
-                onChange={e => setMedDosage(e.target.value)}
-              />
-            </div>
-            <div>
               <p className="text-xs font-medium text-foreground mb-1">Frequency</p>
               <Select value={medFrequency} onValueChange={(v: any) => setMedFrequency(v)}>
                 <SelectTrigger>
@@ -380,7 +371,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
           <DialogFooter>
             <Button
               className="w-full"
-              onClick={() => addMed.mutate({ elderId, name: medName, dosage: medDosage || undefined, frequency: medFrequency, notes: medNotes || undefined })}
+              onClick={() => addMed.mutate({ elderId, name: medName, frequency: medFrequency, notes: medNotes || undefined })}
               disabled={!medName.trim() || addMed.isPending}
             >
               {addMed.isPending ? "Adding…" : "Add routine"}
