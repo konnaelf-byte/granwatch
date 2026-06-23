@@ -22,7 +22,7 @@ import { giftRouter } from "./giftRouter";
  * Kept in sync with the client picker in ElderProfile.tsx.
  * 😀 great / 🙂 okay / 😐 so-so / 🤒 unwell / ❤️ loved
  */
-export const ALLOWED_MOOD_EMOJIS = ["😀", "🙂", "😐", "🤒", "❤️"] as const;
+export const ALLOWED_MOOD_EMOJIS = ["🤒", "😔", "😕", "😊", "😄", "🥰"] as const;
 
 /**
  * Extract the R2 storage key from a photo URL.

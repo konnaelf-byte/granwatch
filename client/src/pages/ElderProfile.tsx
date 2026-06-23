@@ -60,11 +60,12 @@ export default function ElderProfile() {
 
   // Fixed mood set — kept in sync with ALLOWED_MOOD_EMOJIS in server/routers.ts.
   const MOOD_OPTIONS = [
-    { emoji: "😀", label: "Great", score: 5 },
-    { emoji: "🙂", label: "Okay", score: 4 },
-    { emoji: "😐", label: "So-so", score: 3 },
     { emoji: "🤒", label: "Unwell", score: 1 },
-    { emoji: "❤️", label: "Loved", score: 5 },
+    { emoji: "😔", label: "Poor", score: 2 },
+    { emoji: "😕", label: "Low", score: 3 },
+    { emoji: "😊", label: "Okay", score: 4 },
+    { emoji: "😄", label: "Good", score: 5 },
+    { emoji: "🥰", label: "Great", score: 6 },
   ];
   const MOOD_SCORE: Record<string, number> = Object.fromEntries(MOOD_OPTIONS.map((m) => [m.emoji, m.score]));
 
@@ -355,10 +356,10 @@ export default function ElderProfile() {
               </p>
               <div className="flex items-end justify-between gap-1.5 h-20">
                 {moodVisits.map((v: any, i: number) => {
-                  const score = MOOD_SCORE[v.moodEmoji]; // 1..5
-                  const heightPct = 20 + (score - 1) * 20; // 20%..100%
+                  const score = MOOD_SCORE[v.moodEmoji]; // 1..6
+                  const heightPct = Math.round((score / 6) * 100); // ~17%..100%
                   const color =
-                    score >= 4 ? "#22c55e" : score === 3 ? "#eab308" : "#f97316";
+                    score >= 5 ? "#22c55e" : score >= 3 ? "#eab308" : "#f97316";
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
                       <span className="text-xs mb-1">{v.moodEmoji}</span>
@@ -701,36 +702,9 @@ export default function ElderProfile() {
             <DialogTitle>Log a visit to {elder.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {elder.wellbeingEnabled && (
-              <div>
-                <p className="text-sm font-medium text-foreground mb-2">How was Gran feeling?</p>
-                <div className="flex gap-2 justify-center">
-                  {[
-                    { score: 1, emoji: "😔", label: "Poor" },
-                    { score: 2, emoji: "😕", label: "Low" },
-                    { score: 3, emoji: "😊", label: "OK" },
-                    { score: 4, emoji: "😄", label: "Good" },
-                    { score: 5, emoji: "🥰", label: "Great" },
-                  ].map(({ score, emoji, label }) => (
-                    <button
-                      key={score}
-                      onClick={() => setWellbeingScore(score)}
-                      className={`flex flex-col items-center p-2 rounded-xl transition-all ${
-                        wellbeingScore === score
-                          ? "bg-primary/15 ring-2 ring-primary"
-                          : "hover:bg-muted"
-                      }`}
-                    >
-                      <span className="text-2xl">{emoji}</span>
-                      <span className="text-xs text-muted-foreground mt-0.5">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {/* Mood — emoji is free for everyone; selecting one is optional. */}
+            {/* Mood — emoji is free for everyone; selecting one is optional. Feeds the mood trend chart. */}
             <div>
-              <p className="text-sm font-medium text-foreground mb-2">Gran's mood (optional)</p>
+              <p className="text-sm font-medium text-foreground mb-2">How was Gran feeling?</p>
               <div className="flex gap-2 justify-center">
                 {MOOD_OPTIONS.map(({ emoji, label }) => (
                   <button
