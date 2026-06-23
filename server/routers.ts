@@ -83,6 +83,44 @@ export const appRouter = router({
   gifts: giftRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
+
+    /**
+     * Update the current user's display name (and ONLY the name).
+     * Email, role and paid status are intentionally NOT editable here.
+     *
+     * This matters most for "Sign in with Apple" using Private Relay:
+     * Apple only sends the name on the very first auth, so many users end up
+     * with a blank/"-" name and a relay email. This lets them set it later.
+     */
+    updateProfile: protectedProcedure
+      .input(
+        z.object({
+          name: z
+            .string()
+            .trim()
+            .min(1, "Please enter your name")
+            .max(100, "Name is too long (max 100 characters)"),
+        }),
+      )
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+
+        // Authorize via ctx.user — a user can only update their own record.
+        await db
+          .update(users)
+          .set({ name: input.name })
+          .where(eq(users.id, ctx.user.id));
+
+        const [updated] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, ctx.user.id))
+          .limit(1);
+
+        return updated ?? { ...ctx.user, name: input.name };
+      }),
+
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

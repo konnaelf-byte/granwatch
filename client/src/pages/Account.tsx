@@ -1,10 +1,12 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getSignInUrl } from "@/const";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useLocation } from "wouter";
-import { Heart, ArrowLeft, LogOut, Mail, User, Share2, Trash2 } from "lucide-react";
+import { Heart, ArrowLeft, LogOut, Mail, User, Share2, Trash2, Check } from "lucide-react";
 import { ReferralCard } from "@/components/ReferralCard";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
@@ -21,12 +23,52 @@ import {
 
 const OG_SHARE_URL = "https://granwatch.app";
 
+// A name is considered "missing" if it's empty or just a placeholder dash.
+// This is common for Sign in with Apple + Private Relay, where Apple only
+// shares the name on first auth.
+function isNameMissing(name: string | null | undefined): boolean {
+  const trimmed = (name ?? "").trim();
+  return trimmed === "" || trimmed === "-" || trimmed === "—";
+}
+
 export default function Account() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
   const [copied, setCopied] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const deleteAccountMutation = trpc.auth.deleteAccount.useMutation();
+
+  const utils = trpc.useUtils();
+  const [nameInput, setNameInput] = useState("");
+  const updateProfileMutation = trpc.auth.updateProfile.useMutation();
+
+  // Pre-fill the name field once the user loads (and keep in sync if it changes).
+  useEffect(() => {
+    if (isNameMissing(user?.name)) {
+      setNameInput("");
+    } else {
+      setNameInput(user?.name ?? "");
+    }
+  }, [user?.name]);
+
+  const nameMissing = isNameMissing(user?.name);
+  const trimmedName = nameInput.trim();
+  const nameChanged = trimmedName !== (user?.name ?? "").trim();
+  const canSaveName =
+    trimmedName.length > 0 && trimmedName.length <= 100 && nameChanged && !updateProfileMutation.isPending;
+
+  async function handleSaveName() {
+    if (!canSaveName) return;
+    try {
+      const updated = await updateProfileMutation.mutateAsync({ name: trimmedName });
+      // Update the cached current user so the new name shows immediately.
+      utils.auth.me.setData(undefined, updated);
+      await utils.auth.me.invalidate().catch(() => {});
+      toast.success("Name saved 💛");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not save your name. Please try again.");
+    }
+  }
 
   async function handleDeleteAccount() {
     setDeleting(true);
@@ -107,16 +149,55 @@ export default function Account() {
           <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-2xl font-bold select-none">
             {initials}
           </div>
-          <h1 className="text-xl font-bold text-foreground">{user?.name ?? "—"}</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            {nameMissing ? "Welcome 💛" : user?.name}
+          </h1>
         </div>
+
+        {/* Gentle prompt when the name is missing (common for Apple Private Relay) */}
+        {nameMissing && (
+          <div className="bg-primary/10 border border-primary/20 rounded-2xl px-5 py-4">
+            <p className="text-sm font-medium text-foreground mb-0.5">Add your name</p>
+            <p className="text-xs text-muted-foreground">
+              Looks like we don't have your name yet. Adding it helps your family
+              recognise your visits and notes. You can set it below 👇
+            </p>
+          </div>
+        )}
 
         {/* Details card */}
         <div className="bg-card border rounded-2xl divide-y">
-          <div className="flex items-center gap-4 px-5 py-4">
-            <User className="w-5 h-5 text-muted-foreground flex-shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground mb-0.5">Full name</p>
-              <p className="text-sm font-medium text-foreground truncate">{user?.name ?? "—"}</p>
+          {/* Editable full name */}
+          <div className="flex items-start gap-4 px-5 py-4">
+            <User className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-6" aria-hidden="true" />
+            <div className="min-w-0 flex-1">
+              <Label htmlFor="account-name" className="text-xs text-muted-foreground mb-1.5 block">
+                Full name
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="account-name"
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter") handleSaveName();
+                  }}
+                  placeholder="Your name"
+                  maxLength={100}
+                  autoComplete="name"
+                  className="flex-1"
+                />
+                <Button onClick={handleSaveName} disabled={!canSaveName} className="flex-shrink-0">
+                  {updateProfileMutation.isPending ? (
+                    "Saving…"
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-1.5" aria-hidden="true" />
+                      Save
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-4 px-5 py-4">
@@ -127,10 +208,6 @@ export default function Account() {
             </div>
           </div>
         </div>
-
-        <p className="text-xs text-muted-foreground text-center px-4">
-          To update your name or email, visit your account settings.
-        </p>
 
         {/* Referral program */}
         <ReferralCard />

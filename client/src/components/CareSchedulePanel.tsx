@@ -22,12 +22,16 @@ import {
 import { toast } from "sonner";
 import {
   Pill, CheckCircle2, XCircle, Plus, Trash2,
-  Stethoscope, CalendarCheck, Clock
+  Stethoscope, CalendarCheck, Clock, Sparkles, Lock
 } from "lucide-react";
 
 interface Props {
   elderId: number;
   isAdmin: boolean;
+  /** When true (free elders), the panel is read-only: actions are disabled and tapping them opens the Gran+ upsell. */
+  locked?: boolean;
+  /** Opens the Gran+ upgrade modal. Called when a locked user taps a primary action / the unlock CTA. */
+  onUnlock?: () => void;
 }
 
 const FREQUENCY_LABELS: Record<string, string> = {
@@ -37,8 +41,13 @@ const FREQUENCY_LABELS: Record<string, string> = {
   as_needed: "As needed",
 };
 
-export function CareSchedulePanel({ elderId, isAdmin }: Props) {
+export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }: Props) {
   const utils = trpc.useUtils();
+
+  // On free (locked) elders the Care panel is shown so families understand the feature,
+  // but every logging action is disabled and routes to the Gran+ upsell instead.
+  // (Server already enforces isPaid — this is purely UX.)
+  const handleLockedTap = () => onUnlock?.();
 
   // ── Medication state ───────────────────────────────────────────────────────
   const [addMedOpen, setAddMedOpen] = useState(false);
@@ -126,6 +135,24 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
   return (
     <div className="space-y-6">
 
+      {/* ── GRAN+ UPSELL (free elders only) ──────────────────────────────── */}
+      {locked && (
+        <button
+          type="button"
+          onClick={handleLockedTap}
+          className="w-full text-left bg-primary/5 border border-dashed border-primary/40 rounded-xl p-4 flex items-center gap-3 hover:bg-primary/10 transition-colors"
+        >
+          <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">Unlock Care with Gran+</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Track Gran's routines and appointments. Upgrade to <span className="font-semibold text-primary">Gran+</span> to start logging.
+            </p>
+          </div>
+          <Lock className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
+        </button>
+      )}
+
       {/* ── MEDICATIONS ─────────────────────────────────────────────────── */}
       <section>
         <div className="flex items-center justify-between mb-3">
@@ -133,9 +160,14 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
             <Pill className="w-4 h-4 text-primary" />
             <h3 className="font-semibold text-sm text-foreground">Routines</h3>
           </div>
-          {isAdmin && (
-            <Button variant="ghost" size="sm" onClick={() => setAddMedOpen(true)} className="text-primary h-8 px-2">
-              <Plus className="w-4 h-4 mr-1" />
+          {(isAdmin || locked) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => (locked ? handleLockedTap() : setAddMedOpen(true))}
+              className="text-primary h-8 px-2"
+            >
+              {locked ? <Lock className="w-3.5 h-3.5 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
               Add
             </Button>
           )}
@@ -147,7 +179,11 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
           <div className="text-center py-6 text-muted-foreground border rounded-xl">
             <Pill className="w-7 h-7 mx-auto mb-2 opacity-30" />
             <p className="text-sm">No routines added yet.</p>
-            {isAdmin && (
+            {locked ? (
+              <Button variant="link" size="sm" onClick={handleLockedTap}>
+                Unlock with Gran+
+              </Button>
+            ) : isAdmin && (
               <Button variant="link" size="sm" onClick={() => setAddMedOpen(true)}>
                 Add the first one
               </Button>
@@ -172,7 +208,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                       <p className="text-xs text-muted-foreground mt-1 italic">"{med.notes}"</p>
                     )}
                   </div>
-                  {isAdmin && (
+                  {isAdmin && !locked && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -191,18 +227,18 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                     size="sm"
                     variant={med.todayStatus === "taken" ? "default" : "outline"}
                     className="flex-1 h-9"
-                    onClick={() => logMed.mutate({ medicationId: med.id, elderId, status: "taken" })}
-                    disabled={logMed.isPending}
+                    onClick={() => (locked ? handleLockedTap() : logMed.mutate({ medicationId: med.id, elderId, status: "taken" }))}
+                    disabled={locked ? false : logMed.isPending}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
+                    {locked ? <Lock className="w-3.5 h-3.5 mr-1.5" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />}
                     {med.todayStatus === "taken" ? "Taken ✓" : "Mark taken"}
                   </Button>
                   <Button
                     size="sm"
                     variant={med.todayStatus === "missed" ? "destructive" : "ghost"}
                     className="h-9 px-3"
-                    onClick={() => logMed.mutate({ medicationId: med.id, elderId, status: "missed" })}
-                    disabled={logMed.isPending}
+                    onClick={() => (locked ? handleLockedTap() : logMed.mutate({ medicationId: med.id, elderId, status: "missed" }))}
+                    disabled={locked ? false : logMed.isPending}
                     aria-label={med.todayStatus === "missed" ? "Routine missed ✗" : "Mark as missed"}
                   >
                     <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
@@ -221,9 +257,14 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
             <Stethoscope className="w-4 h-4 text-primary" />
             <h3 className="font-semibold text-sm text-foreground">Appointments</h3>
           </div>
-          {isAdmin && (
-            <Button variant="ghost" size="sm" onClick={() => setAddApptOpen(true)} className="text-primary h-8 px-2">
-              <Plus className="w-4 h-4 mr-1" />
+          {(isAdmin || locked) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => (locked ? handleLockedTap() : setAddApptOpen(true))}
+              className="text-primary h-8 px-2"
+            >
+              {locked ? <Lock className="w-3.5 h-3.5 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
               Add
             </Button>
           )}
@@ -235,7 +276,11 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
           <div className="text-center py-6 text-muted-foreground border rounded-xl">
             <Stethoscope className="w-7 h-7 mx-auto mb-2 opacity-30" />
             <p className="text-sm">No appointments added yet.</p>
-            {isAdmin && (
+            {locked ? (
+              <Button variant="link" size="sm" onClick={handleLockedTap}>
+                Unlock with Gran+
+              </Button>
+            ) : isAdmin && (
               <Button variant="link" size="sm" onClick={() => setAddApptOpen(true)}>
                 Add one
               </Button>
@@ -264,7 +309,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                       <p className="text-xs text-muted-foreground italic mt-1">"{appt.notes}"</p>
                     )}
                   </div>
-                  {isAdmin && (
+                  {isAdmin && !locked && (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -280,10 +325,10 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                   size="sm"
                   variant="outline"
                   className="w-full mt-3 h-9"
-                  onClick={() => completeAppt.mutate({ appointmentId: appt.id, elderId })}
-                  disabled={completeAppt.isPending}
+                  onClick={() => (locked ? handleLockedTap() : completeAppt.mutate({ appointmentId: appt.id, elderId }))}
+                  disabled={locked ? false : completeAppt.isPending}
                 >
-                  <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />
+                  {locked ? <Lock className="w-3.5 h-3.5 mr-1.5" /> : <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />}
                   Mark as attended
                 </Button>
               </div>
@@ -305,7 +350,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                         )}
                         <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(appt.scheduledAt)}</p>
                       </div>
-                      {isAdmin && (
+                      {isAdmin && !locked && (
                         <Button
                           variant="ghost"
                           size="icon"

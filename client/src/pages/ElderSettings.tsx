@@ -293,43 +293,6 @@ export default function ElderSettings() {
           </div>
         </div>
 
-        {/* Wellbeing toggle — Gran+ only, admin only */}
-        {isAdmin && (
-          <div className={`rounded-xl border p-4 ${!isPaid ? "opacity-75" : ""}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-semibold">Wellbeing check-ins</Label>
-                  {!isPaid && <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Ask visitors to rate Gran's mood (1–5) after each visit.
-                </p>
-              </div>
-              <Switch
-                checked={wellbeingEnabled}
-                onCheckedChange={(v) => {
-                  if (!isPaid) {
-                    if (!isNativeApp) setGranPlusOpen(true);
-                    return;
-                  }
-                  setWellbeingEnabled(v);
-                }}
-              />
-            </div>
-            {!isPaid && !isNativeApp && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-2 text-primary font-semibold p-0 h-auto"
-                onClick={() => setGranPlusOpen(true)}
-              >
-                <Sparkles className="w-3.5 h-3.5 mr-1" />
-                Unlock with Gran+
-              </Button>
-            )}
-          </div>
-        )}
 
         {/* Care notes — Gran+ only, admin only */}
         {isAdmin && (

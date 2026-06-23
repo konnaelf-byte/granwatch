@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
@@ -341,58 +341,6 @@ export default function ElderProfile() {
           </Button>
         </div>
 
-        {/* Mood trend — Gran+ only. Free elders see a locked teaser. */}
-        {elder.isPaid ? (() => {
-          const moodVisits = (visitHistory ?? [])
-            .filter((v: any) => v.moodEmoji && MOOD_SCORE[v.moodEmoji])
-            .slice(0, 14)
-            .reverse(); // oldest → newest, left → right
-          if (moodVisits.length === 0) return null;
-          return (
-            <div className="mb-6 bg-card border rounded-xl p-4">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-3 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-primary" />
-                Mood trend
-              </p>
-              <div className="flex items-end justify-between gap-1.5 h-20">
-                {moodVisits.map((v: any, i: number) => {
-                  const score = MOOD_SCORE[v.moodEmoji]; // 1..6
-                  const heightPct = Math.round((score / 6) * 100); // ~17%..100%
-                  const color =
-                    score >= 5 ? "#22c55e" : score >= 3 ? "#eab308" : "#f97316";
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
-                      <span className="text-xs mb-1">{v.moodEmoji}</span>
-                      <div
-                        className="w-full rounded-t-md"
-                        style={{ height: `${heightPct}%`, background: color, minHeight: 6 }}
-                        title={new Date(v.visitedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-2 text-center">
-                Last {moodVisits.length} visit{moodVisits.length !== 1 ? "s" : ""} with a mood logged
-              </p>
-            </div>
-          );
-        })() : (
-          <button
-            type="button"
-            onClick={openGranPlus}
-            className="mb-6 w-full text-left bg-card border border-dashed border-primary/40 rounded-xl p-4 flex items-center gap-3 hover:bg-primary/5 transition-colors"
-          >
-            <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-foreground">See Gran's mood trend</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Track how Gran's been feeling over time with <span className="font-semibold text-primary">Gran+</span>
-              </p>
-            </div>
-          </button>
-        )}
-
         {/* Gift / affiliate buttons — free tier, shown to all family members */}
         <div className="mb-5">
           <p className="text-xs text-muted-foreground text-center mb-2.5 font-medium uppercase tracking-wide">
@@ -433,7 +381,7 @@ export default function ElderProfile() {
           </Button>
         </div>
 
-        {/* Tabs: Upcoming / History / Care / Family */}
+        {/* Tabs: Visits / History / Family / Care (Care last; gated as Gran+ teaser on free) */}
         <Tabs defaultValue="planned">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="planned" className="flex-1">
@@ -444,15 +392,20 @@ export default function ElderProfile() {
               <CheckCircle2 className="w-4 h-4 mr-1" />
               History
             </TabsTrigger>
-            {elder.isPaid && (
-              <TabsTrigger value="care" className="flex-1">
-                <Pill className="w-4 h-4 mr-1" />
-                Care
-              </TabsTrigger>
-            )}
             <TabsTrigger value="members" className="flex-1">
               <Users className="w-4 h-4 mr-1" />
               Family
+            </TabsTrigger>
+            <TabsTrigger
+              value="care"
+              className={`flex-1 ${!elder.isPaid ? "text-muted-foreground/70" : ""}`}
+            >
+              {elder.isPaid ? (
+                <Pill className="w-4 h-4 mr-1" />
+              ) : (
+                <Lock className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
+              )}
+              Care
             </TabsTrigger>
           </TabsList>
 
@@ -599,15 +552,15 @@ export default function ElderProfile() {
             })()}
           </TabsContent>
 
-          {/* Care schedule — Gran+ only */}
-          {elder.isPaid && (
-            <TabsContent value="care">
-              <CareSchedulePanel
-                elderId={elderId}
-                isAdmin={elder.memberRole === "admin"}
-              />
-            </TabsContent>
-          )}
+          {/* Care schedule — visible to all, but non-functional (locked) on free elders */}
+          <TabsContent value="care">
+            <CareSchedulePanel
+              elderId={elderId}
+              isAdmin={elder.memberRole === "admin"}
+              locked={!elder.isPaid}
+              onUnlock={openGranPlus}
+            />
+          </TabsContent>
 
           {/* Family members */}
           <TabsContent value="members">
@@ -675,6 +628,58 @@ export default function ElderProfile() {
             </Button>
           </TabsContent>
         </Tabs>
+
+        {/* Mood trend — Gran+ only. Free elders see a locked teaser. Relocated to bottom of page. */}
+        {elder.isPaid ? (() => {
+          const moodVisits = (visitHistory ?? [])
+            .filter((v: any) => v.moodEmoji && MOOD_SCORE[v.moodEmoji])
+            .slice(0, 14)
+            .reverse(); // oldest → newest, left → right
+          if (moodVisits.length === 0) return null;
+          return (
+            <div className="mt-6 bg-card border rounded-xl p-4">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                Mood trend
+              </p>
+              <div className="flex items-end justify-between gap-1.5 h-20">
+                {moodVisits.map((v: any, i: number) => {
+                  const score = MOOD_SCORE[v.moodEmoji]; // 1..6
+                  const heightPct = Math.round((score / 6) * 100); // ~17%..100%
+                  const color =
+                    score >= 5 ? "#22c55e" : score >= 3 ? "#eab308" : "#f97316";
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                      <span className="text-xs mb-1">{v.moodEmoji}</span>
+                      <div
+                        className="w-full rounded-t-md"
+                        style={{ height: `${heightPct}%`, background: color, minHeight: 6 }}
+                        title={new Date(v.visitedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                Last {moodVisits.length} visit{moodVisits.length !== 1 ? "s" : ""} with a mood logged
+              </p>
+            </div>
+          );
+        })() : (
+          <button
+            type="button"
+            onClick={openGranPlus}
+            className="mt-6 w-full text-left bg-card border border-dashed border-primary/40 rounded-xl p-4 flex items-center gap-3 hover:bg-primary/5 transition-colors"
+          >
+            <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">See Gran's mood trend</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Track how Gran's been feeling over time with <span className="font-semibold text-primary">Gran+</span>
+              </p>
+            </div>
+          </button>
+        )}
       </main>
 
       {/* Gran+ Modal — web uses Lemon Squeezy; native uses RevenueCat IAP. */}
