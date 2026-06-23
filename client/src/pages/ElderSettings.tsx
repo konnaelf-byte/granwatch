@@ -112,8 +112,8 @@ export default function ElderSettings() {
       setWellbeingEnabled(elder.wellbeingEnabled);
       setCareNotes(elder.careNotes ?? "");
       setNotificationsEnabled(elder.notificationsEnabled ?? true);
-      // birthday stored as "MM-DD", input needs "YYYY-MM-DD" (use a dummy year)
-      setBirthdayInput(elder.birthday ? `2000-${elder.birthday}` : "");
+      // birthday stored as "YYYY-MM-DD"; legacy records may be "MM-DD" — clear those so the user re-enters with year
+      setBirthdayInput(elder.birthday && elder.birthday.length === 10 ? elder.birthday : "");
       setInitialized(true);
     }
   }, [elder, initialized]);
@@ -173,8 +173,8 @@ export default function ElderSettings() {
   const handleSave = () => {
     // Save elder settings (admin only)
     if (isAdmin) {
-      // Convert "YYYY-MM-DD" → "MM-DD", or null to clear
-      const birthday = birthdayInput ? birthdayInput.slice(5) : null;
+      // Save full "YYYY-MM-DD", or null to clear
+      const birthday = birthdayInput || null;
       updateElder.mutate({
         elderId,
         name: name.trim(),
@@ -253,6 +253,8 @@ export default function ElderSettings() {
               type="date"
               value={birthdayInput}
               onChange={e => setBirthdayInput(e.target.value)}
+              min="1900-01-01"
+              max={new Date().toISOString().split("T")[0]}
               className="h-12"
             />
             <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before her birthday. Leave blank to disable.</p>

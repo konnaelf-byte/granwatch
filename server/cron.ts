@@ -301,7 +301,10 @@ async function runNightlyNotifications() {
         // a sentAt in the current calendar year prevent re-sending.
         if (elder.birthday) {
           const now = new Date();
-          const [bdMm, bdDd] = elder.birthday.split("-").map(Number);
+          // birthday is "YYYY-MM-DD" (new) or legacy "MM-DD" — extract month and day from the last two segments
+          const bdParts = elder.birthday.split("-");
+          const bdMm = Number(bdParts[bdParts.length - 2]);
+          const bdDd = Number(bdParts[bdParts.length - 1]);
           const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           const bdThisYear = new Date(now.getFullYear(), bdMm - 1, bdDd);
           const bdNextYear = new Date(now.getFullYear() + 1, bdMm - 1, bdDd);

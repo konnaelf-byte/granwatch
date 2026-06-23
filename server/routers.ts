@@ -340,7 +340,7 @@ export const appRouter = router({
         name: z.string().min(1).max(128),
         photoUrl: z.string().optional(),
         alertThresholdDays: z.number().min(1).max(365).default(21),
-        birthday: z.string().regex(/^\d{2}-\d{2}$/).optional(), // "MM-DD"
+        birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // "YYYY-MM-DD"
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -379,7 +379,7 @@ export const appRouter = router({
         alertThresholdDays: z.number().min(1).max(365).optional(),
         wellbeingEnabled: z.boolean().optional(),
         careNotes: z.string().optional(),
-        birthday: z.string().regex(/^\d{2}-\d{2}$/).nullable().optional(), // "MM-DD" or null to clear
+        birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(), // "YYYY-MM-DD" or null to clear
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
