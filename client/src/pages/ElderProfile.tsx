@@ -41,6 +41,8 @@ export default function ElderProfile() {
   const [nativeGranPlusOpen, setNativeGranPlusOpen] = useState(false);
   const [visitNotes, setVisitNotes] = useState("");
   const [wellbeingScore, setWellbeingScore] = useState<number | null>(null);
+  const [moodEmoji, setMoodEmoji] = useState<string | null>(null);
+  const [moodNote, setMoodNote] = useState("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookedDate, setBookedDate] = useState<Date | null>(null);
   const [transferTarget, setTransferTarget] = useState<{ userId: number; name: string } | null>(null);
@@ -52,6 +54,19 @@ export default function ElderProfile() {
   const GIFT_URL = import.meta.env.VITE_PARTNER_GIFT_URL || "https://petalandpost.co.za/gifts-flowers/gift-set-hamper-delivery/";
 
   const utils = trpc.useUtils();
+
+  // Reuse the existing Gran+ upsell modal (web = Lemon Squeezy, native = RevenueCat).
+  const openGranPlus = () => (isNativeApp ? setNativeGranPlusOpen(true) : setGranPlusOpen(true));
+
+  // Fixed mood set — kept in sync with ALLOWED_MOOD_EMOJIS in server/routers.ts.
+  const MOOD_OPTIONS = [
+    { emoji: "😀", label: "Great", score: 5 },
+    { emoji: "🙂", label: "Okay", score: 4 },
+    { emoji: "😐", label: "So-so", score: 3 },
+    { emoji: "🤒", label: "Unwell", score: 1 },
+    { emoji: "❤️", label: "Loved", score: 5 },
+  ];
+  const MOOD_SCORE: Record<string, number> = Object.fromEntries(MOOD_OPTIONS.map((m) => [m.emoji, m.score]));
 
   // Configure RevenueCat once on native, keyed to the Clerk user id (openId).
   // No-op on web and after the first successful configure.
@@ -94,6 +109,8 @@ export default function ElderProfile() {
       setLogVisitOpen(false);
       setVisitNotes("");
       setWellbeingScore(null);
+      setMoodEmoji(null);
+      setMoodNote("");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -323,6 +340,58 @@ export default function ElderProfile() {
           </Button>
         </div>
 
+        {/* Mood trend — Gran+ only. Free elders see a locked teaser. */}
+        {elder.isPaid ? (() => {
+          const moodVisits = (visitHistory ?? [])
+            .filter((v: any) => v.moodEmoji && MOOD_SCORE[v.moodEmoji])
+            .slice(0, 14)
+            .reverse(); // oldest → newest, left → right
+          if (moodVisits.length === 0) return null;
+          return (
+            <div className="mb-6 bg-card border rounded-xl p-4">
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                Mood trend
+              </p>
+              <div className="flex items-end justify-between gap-1.5 h-20">
+                {moodVisits.map((v: any, i: number) => {
+                  const score = MOOD_SCORE[v.moodEmoji]; // 1..5
+                  const heightPct = 20 + (score - 1) * 20; // 20%..100%
+                  const color =
+                    score >= 4 ? "#22c55e" : score === 3 ? "#eab308" : "#f97316";
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center justify-end h-full">
+                      <span className="text-xs mb-1">{v.moodEmoji}</span>
+                      <div
+                        className="w-full rounded-t-md"
+                        style={{ height: `${heightPct}%`, background: color, minHeight: 6 }}
+                        title={new Date(v.visitedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                Last {moodVisits.length} visit{moodVisits.length !== 1 ? "s" : ""} with a mood logged
+              </p>
+            </div>
+          );
+        })() : (
+          <button
+            type="button"
+            onClick={openGranPlus}
+            className="mb-6 w-full text-left bg-card border border-dashed border-primary/40 rounded-xl p-4 flex items-center gap-3 hover:bg-primary/5 transition-colors"
+          >
+            <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-foreground">See Gran's mood trend</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Track how Gran's been feeling over time with <span className="font-semibold text-primary">Gran+</span>
+              </p>
+            </div>
+          </button>
+        )}
+
         {/* Gift / affiliate buttons — free tier, shown to all family members */}
         <div className="mb-5">
           <p className="text-xs text-muted-foreground text-center mb-2.5 font-medium uppercase tracking-wide">
@@ -448,6 +517,8 @@ export default function ElderProfile() {
                 visitorName: v.visitorName as string,
                 notes: v.notes as string | null,
                 wellbeingScore: v.wellbeingScore as number | null,
+                moodEmoji: v.moodEmoji as string | null,
+                moodNote: v.moodNote as string | null,
               }));
               const giftEvents = (giftHistory ?? []).map((g: any) => ({
                 _type: "gift" as const,
@@ -483,9 +554,13 @@ export default function ElderProfile() {
                             <p className="font-semibold text-sm text-foreground flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
                               {item.visitorName} visited Gran
+                              {item.moodEmoji && <span className="text-base leading-none ml-0.5">{item.moodEmoji}</span>}
                             </p>
                             <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">{dateStr}</p>
                           </div>
+                          {item.moodNote && (
+                            <p className="text-xs text-muted-foreground ml-5 mb-1">Mood: "{item.moodNote}"</p>
+                          )}
                           {item.wellbeingScore && (
                             <div className="flex gap-0.5 mb-1 ml-5">
                               {[1,2,3,4,5].map(s => (
@@ -653,6 +728,51 @@ export default function ElderProfile() {
                 </div>
               </div>
             )}
+            {/* Mood — emoji is free for everyone; selecting one is optional. */}
+            <div>
+              <p className="text-sm font-medium text-foreground mb-2">Gran's mood (optional)</p>
+              <div className="flex gap-2 justify-center">
+                {MOOD_OPTIONS.map(({ emoji, label }) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => setMoodEmoji(moodEmoji === emoji ? null : emoji)}
+                    className={`flex flex-col items-center p-2 rounded-xl transition-all ${
+                      moodEmoji === emoji ? "bg-primary/15 ring-2 ring-primary" : "hover:bg-muted"
+                    }`}
+                    aria-pressed={moodEmoji === emoji}
+                  >
+                    <span className="text-2xl">{emoji}</span>
+                    <span className="text-xs text-muted-foreground mt-0.5">{label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Mood note — Gran+ only. Locked teaser for free elders. */}
+              {elder.isPaid ? (
+                <Textarea
+                  placeholder="Add a note about Gran's mood (optional)..."
+                  value={moodNote}
+                  onChange={e => setMoodNote(e.target.value)}
+                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300)}
+                  rows={2}
+                  maxLength={500}
+                  className="resize-none mt-3"
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={openGranPlus}
+                  className="mt-3 w-full text-left rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3 flex items-center gap-2 hover:bg-primary/10 transition-colors"
+                >
+                  <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
+                  <span className="text-xs text-muted-foreground">
+                    Add a mood note with <span className="font-semibold text-primary">Gran+</span>
+                  </span>
+                </button>
+              )}
+            </div>
+
             <div>
               <p className="text-sm font-medium text-foreground mb-2">Notes (optional)</p>
               <Textarea
@@ -672,6 +792,8 @@ export default function ElderProfile() {
                 elderId,
                 notes: visitNotes || undefined,
                 wellbeingScore: wellbeingScore ?? undefined,
+                moodEmoji: (moodEmoji as any) ?? undefined,
+                moodNote: elder.isPaid && moodNote ? moodNote : undefined,
               })}
               disabled={logVisit.isPending}
             >

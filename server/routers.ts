@@ -18,6 +18,13 @@ import { revenueCatRouter } from "./revenueCatRouter";
 import { giftRouter } from "./giftRouter";
 
 /**
+ * Fixed set of mood emojis a family member can attach to a visit.
+ * Kept in sync with the client picker in ElderProfile.tsx.
+ * 😀 great / 🙂 okay / 😐 so-so / 🤒 unwell / ❤️ loved
+ */
+export const ALLOWED_MOOD_EMOJIS = ["😀", "🙂", "😐", "🤒", "❤️"] as const;
+
+/**
  * Extract the R2 storage key from a photo URL.
  * Handles both public URL format (https://pub-xxx.r2.dev/key) and
  * legacy presigned URLs (https://accountId.r2.cloudflarestorage.com/bucket/key?...).
@@ -593,6 +600,10 @@ export const appRouter = router({
         visitedAt: z.string().optional(), // ISO date string, defaults to now
         notes: z.string().optional(),
         wellbeingScore: z.number().min(1).max(5).optional(),
+        // Mood attached to the visit. Emoji is free for everyone; restricted to a
+        // fixed allowed set. moodNote is Gran+ only (enforced below on elder.isPaid).
+        moodEmoji: z.enum(ALLOWED_MOOD_EMOJIS).optional(),
+        moodNote: z.string().max(500).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -613,12 +624,27 @@ export const appRouter = router({
           throw new Error("Visit date cannot be in the future");
         }
 
+        // Gran+ gate for the mood note: only paid elders may attach a custom note.
+        // Match the rest of the codebase — silently drop it for free elders rather
+        // than rejecting the whole visit, so the free emoji still saves.
+        let moodNote: string | null = null;
+        if (input.moodNote) {
+          const [elder] = await db
+            .select({ isPaid: elders.isPaid })
+            .from(elders)
+            .where(eq(elders.id, input.elderId))
+            .limit(1);
+          if (elder?.isPaid) moodNote = input.moodNote;
+        }
+
         const [result] = await db.insert(visits).values({
           elderId: input.elderId,
           userId: ctx.user.id,
           visitedAt: visitDate,
           notes: input.notes ?? null,
           wellbeingScore: input.wellbeingScore ?? null,
+          moodEmoji: input.moodEmoji ?? null,
+          moodNote,
         });
 
         return { success: true, visitId: (result as any).insertId };

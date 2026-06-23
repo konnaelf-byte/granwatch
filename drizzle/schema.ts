@@ -74,6 +74,8 @@ export const visits = mysqlTable("visits", {
   notes: text("notes"),
   photoUrl: text("photoUrl"),
   wellbeingScore: int("wellbeingScore"), // 1-5, only if wellbeing enabled
+  moodEmoji: varchar("moodEmoji", { length: 16 }), // mood attached to the visit — free for everyone
+  moodNote: text("moodNote"), // optional note about the mood — Gran+ only (enforced server-side)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   elderIdIdx: index("visits_elderId_idx").on(table.elderId),
