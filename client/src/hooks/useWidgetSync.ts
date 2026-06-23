@@ -49,7 +49,7 @@ function computeRingFraction(daysSinceVisit: number, alertThresholdDays: number)
 function buildLastVisitLabel(daysSinceVisit: number): string {
   if (daysSinceVisit <= 0)  return 'Today';
   if (daysSinceVisit === 1) return 'Yesterday';
-  if (daysSinceVisit >= 999) return 'Never visited';
+  if (daysSinceVisit >= 999) return 'No visits yet';
   return `${daysSinceVisit}d ago`;
 }
 

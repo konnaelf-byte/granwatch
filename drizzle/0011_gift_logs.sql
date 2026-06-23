@@ -2,7 +2,7 @@
 -- Tracks every time a family member taps "Send Flowers" or "Send a Gift"
 -- for an elder. Used to build the activity timeline and future commission reporting.
 
-CREATE TABLE `giftLogs` (
+CREATE TABLE IF NOT EXISTS `giftLogs` (
   `id`            INT NOT NULL AUTO_INCREMENT,
   `elderId`       INT NOT NULL,
   `sentByUserId`  INT NOT NULL,

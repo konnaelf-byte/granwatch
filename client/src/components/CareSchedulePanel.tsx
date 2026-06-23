@@ -1,7 +1,7 @@
 /**
  * CareSchedulePanel — Gran+ feature.
  *
- * Shows medication tracking and doctor appointment management.
+ * Shows routine tracking and appointment management.
  * Rendered inside the "Care" tab on ElderProfile (Gran+ subscribers only).
  */
 
@@ -66,7 +66,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
   // ── Mutations ──────────────────────────────────────────────────────────────
   const addMed = trpc.care.medications.add.useMutation({
     onSuccess: () => {
-      toast.success("Medication added");
+      toast.success("Routine added");
       utils.care.medications.list.invalidate({ elderId });
       setAddMedOpen(false);
       setMedName(""); setMedDosage(""); setMedNotes(""); setMedFrequency("daily");
@@ -76,7 +76,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
 
   const removeMed = trpc.care.medications.remove.useMutation({
     onSuccess: () => {
-      toast.success("Medication removed");
+      toast.success("Routine removed");
       utils.care.medications.list.invalidate({ elderId });
     },
     onError: (e) => toast.error(e.message),
@@ -132,7 +132,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Pill className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold text-sm text-foreground">Medications</h3>
+            <h3 className="font-semibold text-sm text-foreground">Routines</h3>
           </div>
           {isAdmin && (
             <Button variant="ghost" size="sm" onClick={() => setAddMedOpen(true)} className="text-primary h-8 px-2">
@@ -147,7 +147,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
         ) : medications.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-xl">
             <Pill className="w-7 h-7 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No medications added yet.</p>
+            <p className="text-sm">No routines added yet.</p>
             {isAdmin && (
               <Button variant="link" size="sm" onClick={() => setAddMedOpen(true)}>
                 Add the first one
@@ -204,7 +204,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                     className="h-9 px-3"
                     onClick={() => logMed.mutate({ medicationId: med.id, elderId, status: "missed" })}
                     disabled={logMed.isPending}
-                    aria-label={med.todayStatus === "missed" ? "Medication missed ✗" : "Mark as missed"}
+                    aria-label={med.todayStatus === "missed" ? "Routine missed ✗" : "Mark as missed"}
                   >
                     <XCircle className="w-3.5 h-3.5" aria-hidden="true" />
                   </Button>
@@ -220,7 +220,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Stethoscope className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold text-sm text-foreground">Doctor Appointments</h3>
+            <h3 className="font-semibold text-sm text-foreground">Appointments</h3>
           </div>
           {isAdmin && (
             <Button variant="ghost" size="sm" onClick={() => setAddApptOpen(true)} className="text-primary h-8 px-2">
@@ -332,14 +332,14 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pill className="w-4 h-4 text-primary" />
-              Add Medication
+              Add Routine
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-1">
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Medication name *</p>
+              <p className="text-xs font-medium text-foreground mb-1">Routine name *</p>
               <Input
-                placeholder="e.g. Blood pressure meds"
+                placeholder="e.g. Medication, Blood pressure check, Physio stretches"
                 value={medName}
                 onChange={e => setMedName(e.target.value)}
               />
@@ -383,7 +383,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
               onClick={() => addMed.mutate({ elderId, name: medName, dosage: medDosage || undefined, frequency: medFrequency, notes: medNotes || undefined })}
               disabled={!medName.trim() || addMed.isPending}
             >
-              {addMed.isPending ? "Adding…" : "Add medication"}
+              {addMed.isPending ? "Adding…" : "Add routine"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -402,7 +402,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
             <div>
               <p className="text-xs font-medium text-foreground mb-1">Title *</p>
               <Input
-                placeholder="e.g. GP check-up"
+                placeholder="e.g. Doctor's Appointment, Physio, Hairdresser"
                 value={apptTitle}
                 onChange={e => setApptTitle(e.target.value)}
               />

@@ -15,7 +15,7 @@
  *   If signUp.isTransferable is true, call signIn.create({ transfer: true }).
  */
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useClerk } from "@clerk/react";
 import { SocialLogin } from "@capgo/capacitor-social-login";
 import { useLocation } from "wouter";
@@ -70,6 +70,33 @@ export default function NativeSignIn() {
   const [error, setError] = useState<string | null>(null);
   // Track which Clerk resource (signIn or signUp) is in progress for email-code
   const [emailFlowMode, setEmailFlowMode] = useState<"signIn" | "signUp">("signIn");
+  // Resend-code cooldown (seconds remaining; 0 = button enabled)
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const cooldownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const RESEND_COOLDOWN_SECONDS = 30;
+
+  // Tick down the resend cooldown each second while active.
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      if (cooldownTimer.current) {
+        clearInterval(cooldownTimer.current);
+        cooldownTimer.current = null;
+      }
+      return;
+    }
+    if (!cooldownTimer.current) {
+      cooldownTimer.current = setInterval(() => {
+        setResendCooldown((s) => (s <= 1 ? 0 : s - 1));
+      }, 1000);
+    }
+    return () => {
+      if (cooldownTimer.current) {
+        clearInterval(cooldownTimer.current);
+        cooldownTimer.current = null;
+      }
+    };
+  }, [resendCooldown]);
 
   // clerk.loaded is true once Clerk has initialized
   const isReady = clerk.loaded;
@@ -78,6 +105,28 @@ export default function NativeSignIn() {
 
   function clearError() {
     setError(null);
+  }
+
+  /**
+   * Detect whether a native social-login error is just the user cancelling
+   * (dismissing the Apple/Google sheet). Different platforms/plugins surface
+   * this differently, so check the common codes and messages.
+   */
+  function isUserCancellation(err: unknown): boolean {
+    const e = err as { code?: string | number; message?: string };
+    const code = String(e?.code ?? "");
+    if (code === "USER_CANCELLED" || code === "CANCELED" || code === "1001" || code === "12501") {
+      return true;
+    }
+    const msg = (e?.message ?? "").toLowerCase();
+    return (
+      msg.includes("cancel") ||
+      msg.includes("canceled") ||
+      msg.includes("cancelled") ||
+      msg.includes("user closed") ||
+      msg.includes("the user canceled the sign-in flow") ||
+      msg.includes("aborted")
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,12 +175,15 @@ export default function NativeSignIn() {
       });
       // The redirect + the /sso-callback route finish the sign-in.
     } catch (err: unknown) {
-      const e = err as { code?: string; message?: string; errors?: Array<{ message: string }> };
-      if (e?.code === "USER_CANCELLED") {
-        // user dismissed the sheet — not an error
+      if (isUserCancellation(err)) {
+        // User dismissed the sheet — not an error. Return to the sign-in options
+        // with no error banner and no stuck spinner (cleared in finally).
+        setScreen("buttons");
       } else {
+        const e = err as { message?: string; errors?: Array<{ message: string }> };
         const msg = e?.errors?.[0]?.message ?? e?.message ?? "Apple sign-in failed. Please try again.";
         setError(msg);
+        setScreen("buttons");
         console.error("[NativeSignIn] Apple error:", err);
       }
     } finally {
@@ -146,6 +198,16 @@ export default function NativeSignIn() {
     clearError();
     setLoading("google");
     try {
+      // BUG FIX: After a user deletes/switches accounts, the native Google plugin
+      // silently reuses the previously signed-in Google account (no chooser) and
+      // then errors. Sign out of the native Google session first so the account
+      // chooser always appears. Best-effort: ignore errors (e.g. not logged in).
+      try {
+        await SocialLogin.logout({ provider: "google" });
+      } catch (logoutErr) {
+        console.warn("[NativeSignIn] Google pre-login logout skipped:", logoutErr);
+      }
+
       const result = await SocialLogin.login({ provider: "google", options: {} });
       const googleResult = result.result;
       if (googleResult.responseType !== "online") {
@@ -173,12 +235,15 @@ export default function NativeSignIn() {
 
       throw new Error("Google sign-in completed but session could not be established.");
     } catch (err: unknown) {
-      const e = err as { code?: string; message?: string; errors?: Array<{ message: string }> };
-      if (e?.code === "USER_CANCELLED") {
-        // user dismissed
+      if (isUserCancellation(err)) {
+        // User dismissed the chooser — not an error. Return to the sign-in options
+        // with no error banner and no stuck spinner (cleared in finally).
+        setScreen("buttons");
       } else {
+        const e = err as { message?: string; errors?: Array<{ message: string }> };
         const msg = e?.errors?.[0]?.message ?? e?.message ?? "Google sign-in failed. Please try again.";
         setError(msg);
+        setScreen("buttons");
         console.error("[NativeSignIn] Google error:", err);
       }
     } finally {
@@ -199,6 +264,7 @@ export default function NativeSignIn() {
       const res = await signIn.create({ strategy: "email_code", identifier: email.trim() });
       if (res.status === "needs_first_factor") {
         setEmailFlowMode("signIn");
+        setResendCooldown(RESEND_COOLDOWN_SECONDS);
         setScreen("email-code");
         return;
       }
@@ -216,6 +282,7 @@ export default function NativeSignIn() {
           await signUp.create({ emailAddress: email.trim() });
           await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
           setEmailFlowMode("signUp");
+          setResendCooldown(RESEND_COOLDOWN_SECONDS);
           setScreen("email-code");
         } catch (signUpErr: unknown) {
           const sue = signUpErr as { errors?: Array<{ message?: string }>; message?: string };
@@ -228,6 +295,40 @@ export default function NativeSignIn() {
         setError(msg);
         console.error("[NativeSignIn] Email submit error:", err);
       }
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  /**
+   * BUG FIX: Re-send the email verification code from the code-entry step so a
+   * user who never received the first code is not dead-ended. Re-runs the same
+   * preparation used initially (signIn email_code create, or signUp
+   * prepareEmailAddressVerification), depending on which flow we're in. Starts a
+   * 30s cooldown to avoid spamming, and surfaces a clear error on failure.
+   */
+  async function handleResendCode() {
+    if (!isReady || loading !== null || resendCooldown > 0 || !email.trim()) return;
+    clearError();
+    setLoading("resend");
+    try {
+      if (emailFlowMode === "signIn") {
+        const signIn = getSignIn();
+        const res = await signIn.create({ strategy: "email_code", identifier: email.trim() });
+        if (res.status !== "needs_first_factor") {
+          throw new Error(`Unexpected sign-in status: ${res.status}`);
+        }
+      } else {
+        const signUp = getSignUp();
+        await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+      }
+      // Success → start cooldown.
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
+    } catch (err: unknown) {
+      const e = err as { errors?: Array<{ message?: string }>; message?: string };
+      const msg = e?.errors?.[0]?.message ?? e?.message ?? "Could not resend the code. Please try again.";
+      setError(msg);
+      console.error("[NativeSignIn] Resend code error:", err);
     } finally {
       setLoading(null);
     }
@@ -448,12 +549,31 @@ export default function NativeSignIn() {
             {loading === "code" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify code"}
           </Button>
 
+          {/* Resend code (with 30s cooldown to avoid spamming) */}
           <Button
             type="button"
             variant="ghost"
             size="sm"
             className="w-full text-muted-foreground"
-            onClick={() => { clearError(); setScreen("email-entry"); setCode(""); }}
+            onClick={handleResendCode}
+            disabled={!isReady || loading !== null || resendCooldown > 0}
+            aria-busy={loading === "resend"}
+          >
+            {loading === "resend" ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : resendCooldown > 0 ? (
+              `Resend code in ${resendCooldown}s`
+            ) : (
+              "Resend code"
+            )}
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground"
+            onClick={() => { clearError(); setResendCooldown(0); setScreen("email-entry"); setCode(""); }}
             disabled={loading !== null}
           >
             Change email

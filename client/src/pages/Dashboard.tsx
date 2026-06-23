@@ -140,7 +140,7 @@ export default function Dashboard() {
                   key={elder.id}
                   onClick={() => navigate(`/elder/${elder.id}`)}
                   className="w-full bg-card border rounded-2xl p-5 flex items-center gap-5 text-left hover:shadow-md transition-shadow active:scale-[0.99]"
-                  aria-label={`${elder.name} — ${elder.status === "green" ? "All good" : elder.status === "yellow" ? "Due soon" : elder.status === "orange" ? "Overdue" : "Alert"} — ${elder.daysSinceVisit === 0 ? "visited today" : elder.daysSinceVisit === 1 ? "1 day since last visit" : `${elder.daysSinceVisit} days since last visit`}`}
+                  aria-label={`${elder.name} — ${elder.daysSinceVisit >= 999 ? "No visits logged yet" : `${elder.status === "green" ? "All good" : elder.status === "yellow" ? "Due soon" : elder.status === "orange" ? "Overdue" : "Alert"} — ${elder.daysSinceVisit === 0 ? "visited today" : elder.daysSinceVisit === 1 ? "1 day since last visit" : `${elder.daysSinceVisit} days since last visit`}`}`}
                 >
                   <StatusRing
                     photoUrl={elder.photoUrl}
@@ -169,18 +169,21 @@ export default function Dashboard() {
                         className="text-xs font-semibold px-2 py-0.5 rounded-full"
                         style={{
                           background:
+                            elder.daysSinceVisit >= 999 ? "rgba(148,163,184,0.15)" :
                             elder.status === "green" ? "rgba(34,197,94,0.15)" :
                             elder.status === "yellow" ? "rgba(234,179,8,0.15)" :
                             elder.status === "orange" ? "rgba(249,115,22,0.15)" :
                             "rgba(239,68,68,0.15)",
                           color:
+                            elder.daysSinceVisit >= 999 ? "#64748b" :
                             elder.status === "green" ? "#16a34a" :
                             elder.status === "yellow" ? "#a16207" :
                             elder.status === "orange" ? "#c2410c" :
                             "#dc2626",
                         }}
                       >
-                        {elder.status === "green" ? "All good" :
+                        {elder.daysSinceVisit >= 999 ? "No visits yet" :
+                         elder.status === "green" ? "All good" :
                          elder.status === "yellow" ? "Due soon" :
                          elder.status === "orange" ? "Overdue" :
                          "⚠ Alert!"}

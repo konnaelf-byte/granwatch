@@ -266,8 +266,9 @@ export default function ElderProfile() {
           </div>
         </div>
 
-        {/* Red alert banner */}
-        {elder.status === "red" && (
+        {/* Red alert banner — only once there's a real visit baseline.
+            New profiles (no visit yet, daysSinceVisit === 999) stay calm. */}
+        {elder.status === "red" && elder.daysSinceVisit < 999 && (
           <div className="mb-6 bg-destructive/10 border border-destructive/30 rounded-xl p-4 text-center">
             <p className="font-semibold text-destructive text-sm">
               ⚠ {elder.name} hasn't had a visitor in {elder.daysSinceVisit} days!

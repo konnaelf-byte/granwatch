@@ -64,6 +64,27 @@
       "when": 1749168000000,
       "tag": "0008_referrals",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1750118400000,
+      "tag": "0009_push_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1750119000000,
+      "tag": "0010_care_schedules",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1750119600000,
+      "tag": "0011_gift_logs",
+      "breakpoints": true
     }
   ]
 }

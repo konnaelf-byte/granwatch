@@ -56,6 +56,15 @@ function GrandmaAvatar({ size }: { size: number }) {
   );
 }
 
+// Neutral "no visits yet" state — calm grey, no alarm. Shown for brand-new
+// profiles that have no logged visit to compare against (API sentinel = 999).
+const NO_VISITS_COLORS = {
+  stroke: "#94a3b8", // slate-400
+  glow: "none",
+  label: "No visits yet",
+  overlay: "transparent",
+};
+
 const STATUS_COLORS: Record<VisitStatus, { stroke: string; glow: string; label: string; overlay: string }> = {
   green: {
     stroke: "#22c55e",
@@ -92,7 +101,10 @@ export function StatusRing({
   size = 160,
   className = "",
 }: StatusRingProps) {
-  const colors = STATUS_COLORS[status];
+  // No logged visit yet (server sends 999 as the "never visited" sentinel).
+  // In that case show a calm neutral ring instead of a scary red alert.
+  const hasNoVisits = daysSinceVisit >= 999;
+  const colors = hasNoVisits ? NO_VISITS_COLORS : STATUS_COLORS[status];
   const strokeWidth = Math.max(size * 0.06, 8);
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -102,19 +114,21 @@ export function StatusRing({
   // At day 0 → full circle (360°). At threshold → 0° (empty / gap open).
   // We clamp so it never goes below 0.
   const clampedDays = Math.min(daysSinceVisit, threshold);
-  // fillRatio: 1.0 = full green ring, 0.0 = completely drained (red)
-  const fillRatio = Math.max(0, 1 - clampedDays / threshold);
+  // fillRatio: 1.0 = full green ring, 0.0 = completely drained (red).
+  // For a brand-new profile (no visits yet) show a full neutral ring rather
+  // than a fully drained one — there's no baseline to drain against.
+  const fillRatio = hasNoVisits ? 1 : Math.max(0, 1 - clampedDays / threshold);
   const strokeDashoffset = circumference * (1 - fillRatio);
 
   // Track arc (the grey "empty" portion)
   const trackDashoffset = circumference * fillRatio;
 
-  const isRed = status === "red";
+  const isRed = !hasNoVisits && status === "red";
   const imgSize = size - strokeWidth * 2.5;
 
   const daysText =
-    daysSinceVisit >= 999
-      ? "Never visited"
+    hasNoVisits
+      ? "No visits logged yet"
       : daysSinceVisit === 0
       ? "Visited today!"
       : daysSinceVisit === 1
