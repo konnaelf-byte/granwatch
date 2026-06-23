@@ -5,7 +5,8 @@
   "server": {
     "url": "https://granwatch.app",
     "cleartext": false,
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "allowNavigation": ["appleid.apple.com", "*.apple.com", "clerk.granwatch.app", "accounts.granwatch.app"]
   },
   "ios": {
     "contentInset": "automatic",

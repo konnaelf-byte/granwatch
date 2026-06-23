@@ -113,39 +113,18 @@ export default function NativeSignIn() {
     clearError();
     setLoading("apple");
     try {
-      // Nonce: Apple embeds the SHA-256 HASH of the nonce in the identity token;
-      // Clerk validates against the RAW nonce we pass to signIn.create.
-      const rawNonce = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-        .map((b) => b.toString(16).padStart(2, "0")).join("");
-      const hashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawNonce));
-      const hashedNonce = Array.from(new Uint8Array(hashBuf))
-        .map((b) => b.toString(16).padStart(2, "0")).join("");
-
-      const result = await SocialLogin.login({ provider: "apple", options: { scopes: ["name", "email"], nonce: hashedNonce } as any });
-      const identityToken = result.result.idToken;
-      if (!identityToken) throw new Error("Apple sign-in did not return an identity token.");
-
-      // Exchange with Clerk using the Apple ID token strategy (+ raw nonce).
+      // Apple via Clerk WEB OAuth (uses the Services ID, which Clerk trusts).
+      // Apple — unlike Google — permits Sign in with Apple inside a WebView, so it
+      // stays in-app (capacitor.config server.allowNavigation whitelists the apple
+      // + clerk domains). Clerk's web SDK does NOT accept native Apple ID tokens,
+      // so the redirect flow is the correct path here.
       const signIn = getSignIn();
-      const signInRes = await signIn.create({ strategy: "oauth_token_apple", token: identityToken, nonce: rawNonce } as any);
-
-      if (signInRes.status === "complete") {
-        await completeSignIn(signInRes.createdSessionId!);
-        return;
-      }
-
-      // New user: sign-in is transferable to sign-up
-      if (signInRes.firstFactorVerification.status === "transferable") {
-        const signUp = getSignUp();
-        const signUpRes = await signUp.create({ transfer: true });
-        if (signUpRes.status === "complete") {
-          await completeSignUp(signUpRes.createdSessionId!);
-          return;
-        }
-        throw new Error(`Unexpected sign-up status after Apple transfer: ${signUpRes.status}`);
-      }
-
-      throw new Error(`Unexpected Apple sign-in status: ${signInRes.status}`);
+      await signIn.authenticateWithRedirect({
+        strategy: "oauth_apple",
+        redirectUrl: "https://granwatch.app/sso-callback",
+        redirectUrlComplete: "https://granwatch.app/dashboard",
+      });
+      // The redirect + the /sso-callback route finish the sign-in.
     } catch (err: unknown) {
       const e = err as { code?: string; message?: string; errors?: Array<{ message: string }> };
       if (e?.code === "USER_CANCELLED") {

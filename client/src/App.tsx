@@ -1,4 +1,4 @@
-import { SignIn } from "@clerk/react";
+import { SignIn, AuthenticateWithRedirectCallback } from "@clerk/react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -55,12 +55,27 @@ function SignInPage() {
   );
 }
 
+// Completes an OAuth redirect (used by native Apple sign-in). Clerk finalizes the
+// session here and forwards to redirectUrlComplete (/dashboard).
+function SSOCallbackPage() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <AuthenticateWithRedirectCallback
+        signInFallbackRedirectUrl="/dashboard"
+        signUpFallbackRedirectUrl="/dashboard"
+      />
+      <p className="text-sm text-muted-foreground">Signing you in…</p>
+    </div>
+  );
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
       <Route path="/sign-in" component={SignInPage} />
       <Route path="/sign-in/sso-callback" component={SignInPage} />
+      <Route path="/sso-callback" component={SSOCallbackPage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/elder/:id" component={ElderProfile} />
       <Route path="/create" component={CreateElder} />
