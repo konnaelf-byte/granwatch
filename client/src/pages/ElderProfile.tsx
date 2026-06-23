@@ -48,8 +48,8 @@ export default function ElderProfile() {
 
   // Partner affiliate URLs — swap these env vars once deals are signed.
   // On native, window.open opens the system browser (Safari / Chrome) automatically.
-  const FLOWERS_URL = import.meta.env.VITE_PARTNER_FLOWERS_URL || "https://granwatch.app";
-  const GIFT_URL = import.meta.env.VITE_PARTNER_GIFT_URL || "https://granwatch.app";
+  const FLOWERS_URL = import.meta.env.VITE_PARTNER_FLOWERS_URL || "https://petalandpost.co.za/product/todays-cape-town-posy/";
+  const GIFT_URL = import.meta.env.VITE_PARTNER_GIFT_URL || "https://petalandpost.co.za/gifts-flowers/gift-set-hamper-delivery/";
 
   const utils = trpc.useUtils();
 

@@ -249,7 +249,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm text-foreground">{appt.title}</p>
                     {appt.doctorName && (
-                      <p className="text-xs text-muted-foreground mt-0.5">Dr {appt.doctorName}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{appt.doctorName}</p>
                     )}
                     <div className="flex items-center gap-1 mt-1">
                       <Clock className="w-3 h-3 text-primary" />
@@ -301,7 +301,7 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
                           <p className="font-semibold text-sm text-foreground">{appt.title}</p>
                         </div>
                         {appt.doctorName && (
-                          <p className="text-xs text-muted-foreground mt-0.5">Dr {appt.doctorName}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{appt.doctorName}</p>
                         )}
                         <p className="text-xs text-muted-foreground mt-0.5">{fmtDate(appt.scheduledAt)}</p>
                       </div>
@@ -417,9 +417,9 @@ export function CareSchedulePanel({ elderId, isAdmin }: Props) {
               </div>
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Doctor name</p>
+              <p className="text-xs font-medium text-foreground mb-1">Name</p>
               <Input
-                placeholder="e.g. Dr Smith"
+                placeholder="e.g. Dr Smith, physio, salon"
                 value={apptDoctor}
                 onChange={e => setApptDoctor(e.target.value)}
               />
