@@ -6,7 +6,8 @@ import { z } from "zod";
 import { getDb } from "./db";
 import {
   elders, elderMembers, visits, plannedVisits,
-  subscriptionContributions, notifications, users
+  subscriptionContributions, notifications, users,
+  pushTokens, giftLogs, medicationLogs, referrals, referralSignups
 } from "../drizzle/schema";
 import { eq, and, desc, gte, inArray } from "drizzle-orm";
 import { cancelLemonSqueezySubscription } from "./lemonSqueezyRoute";
@@ -195,6 +196,19 @@ export const appRouter = router({
       await db.delete(plannedVisits).where(eq(plannedVisits.userId, userId));
       await db.delete(notifications).where(eq(notifications.userId, userId));
       await db.delete(subscriptionContributions).where(eq(subscriptionContributions.userId, userId));
+
+      // 3b. Delete rows in tables that have NO foreign key to users — these would
+      // otherwise be left orphaned after the user record is gone. Best-effort:
+      // a failure here must not abort the rest of the account deletion.
+      try {
+        await db.delete(pushTokens).where(eq(pushTokens.userId, userId));
+        await db.delete(giftLogs).where(eq(giftLogs.sentByUserId, userId));
+        await db.delete(medicationLogs).where(eq(medicationLogs.loggedByUserId, userId));
+        await db.delete(referrals).where(eq(referrals.userId, userId));
+        await db.delete(referralSignups).where(eq(referralSignups.newUserId, userId));
+      } catch (e) {
+        console.error("[deleteAccount] Failed to delete orphan rows:", e);
+      }
 
       // 4. Delete the user record
       await db.delete(users).where(eq(users.id, userId));
@@ -864,6 +878,13 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("DB unavailable");
 
+        const [membership] = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
+          .limit(1);
+        if (!membership) throw new Error("Not a member");
+
         const [elder] = await db.select().from(elders).where(eq(elders.id, input.elderId)).limit(1);
         if (!elder) throw new Error("Elder not found");
 
@@ -899,6 +920,13 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error("DB unavailable");
+
+        const [membership] = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
+          .limit(1);
+        if (!membership) throw new Error("Not a member");
 
         const [existing] = await db
           .select()
@@ -1006,6 +1034,16 @@ export const appRouter = router({
         elderId: z.number(),
       }))
       .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+
+        const [membership] = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
+          .limit(1);
+        if (!membership) throw new Error("Not a member");
+
         const { buildLemonSqueezyCheckout } = await import("./lemonSqueezyRoute");
         const { getPricingForIp, getClientIp } = await import("./geolocation");
         const ip = getClientIp(ctx.req as { ip?: string; headers: Record<string, string | string[] | undefined> });
