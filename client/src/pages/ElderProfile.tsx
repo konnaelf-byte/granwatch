@@ -721,30 +721,6 @@ export default function ElderProfile() {
                   </button>
                 ))}
               </div>
-
-              {/* Mood note — Gran+ only. Locked teaser for free elders. */}
-              {elder.isPaid ? (
-                <Textarea
-                  placeholder="Add a note about Gran's mood (optional)..."
-                  value={moodNote}
-                  onChange={e => setMoodNote(e.target.value)}
-                  onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300)}
-                  rows={2}
-                  maxLength={500}
-                  className="resize-none mt-3"
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={openGranPlus}
-                  className="mt-3 w-full text-left rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3 flex items-center gap-2 hover:bg-primary/10 transition-colors"
-                >
-                  <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground">
-                    Add a mood note with <span className="font-semibold text-primary">Gran+</span>
-                  </span>
-                </button>
-              )}
             </div>
 
             <div>
