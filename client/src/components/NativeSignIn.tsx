@@ -113,13 +113,21 @@ export default function NativeSignIn() {
     clearError();
     setLoading("apple");
     try {
-      const result = await SocialLogin.login({ provider: "apple", options: { scopes: ["name", "email"] } });
+      // Nonce: Apple embeds the SHA-256 HASH of the nonce in the identity token;
+      // Clerk validates against the RAW nonce we pass to signIn.create.
+      const rawNonce = Array.from(crypto.getRandomValues(new Uint8Array(32)))
+        .map((b) => b.toString(16).padStart(2, "0")).join("");
+      const hashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawNonce));
+      const hashedNonce = Array.from(new Uint8Array(hashBuf))
+        .map((b) => b.toString(16).padStart(2, "0")).join("");
+
+      const result = await SocialLogin.login({ provider: "apple", options: { scopes: ["name", "email"], nonce: hashedNonce } as any });
       const identityToken = result.result.idToken;
       if (!identityToken) throw new Error("Apple sign-in did not return an identity token.");
 
-      // Exchange with Clerk using the Apple ID token strategy
+      // Exchange with Clerk using the Apple ID token strategy (+ raw nonce).
       const signIn = getSignIn();
-      const signInRes = await signIn.create({ strategy: "oauth_token_apple", token: identityToken });
+      const signInRes = await signIn.create({ strategy: "oauth_token_apple", token: identityToken, nonce: rawNonce } as any);
 
       if (signInRes.status === "complete") {
         await completeSignIn(signInRes.createdSessionId!);

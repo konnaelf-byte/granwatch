@@ -154,6 +154,23 @@ export const appRouter = router({
       // 4. Delete the user record
       await db.delete(users).where(eq(users.id, userId));
 
+      // 4b. Delete the Clerk user so the account is FULLY removed. Apple requires
+      // real account deletion; without this the Clerk identity lingers and the
+      // user appears "still signed in" / can't truly delete. Best-effort: a Clerk
+      // failure must not abort the DB cleanup above.
+      try {
+        const clerkId = (ctx.user as { openId?: string }).openId;
+        if (clerkId) {
+          const { clerkClient } = await import("./_core/sdk");
+          await clerkClient.users.deleteUser(clerkId);
+          console.log(`[deleteAccount] Clerk user ${clerkId} deleted.`);
+        } else {
+          console.warn("[deleteAccount] No Clerk ID (openId) on user; skipped Clerk deletion.");
+        }
+      } catch (e) {
+        console.error("[deleteAccount] Failed to delete Clerk user:", e);
+      }
+
       // 5. Clear the session cookie
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -754,7 +771,7 @@ export const appRouter = router({
           cancellationRequestedAt: elder.cancellationRequestedAt ?? null,
           contributors: contributorDetails,
           contributorCount: contributors.length,
-          monthlyTotal: MONTHLY_COST,
+          monthlyTotal: MONTHLY_COST_CENTS,
           perPersonCost: perPerson,
           amIContributing: contributors.some(c => c.userId === ctx.user.id),
         };
