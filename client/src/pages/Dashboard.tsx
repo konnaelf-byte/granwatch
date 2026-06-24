@@ -153,7 +153,12 @@ export default function Dashboard() {
                     <div className="flex items-center gap-2">
                       <h2 className="font-bold text-lg text-foreground truncate">{elder.name}</h2>
                       {birthdayDaysUntil !== null && (
-                        <Cake className="w-4 h-4 text-pink-500 flex-shrink-0" title={birthdayDaysUntil === 0 ? "Birthday today!" : `Birthday in ${birthdayDaysUntil} days`} />
+                        <span
+                          className="inline-flex flex-shrink-0"
+                          title={birthdayDaysUntil === 0 ? "Birthday today!" : `Birthday in ${birthdayDaysUntil} days`}
+                        >
+                          <Cake className="w-4 h-4 text-pink-500" aria-label={birthdayDaysUntil === 0 ? "Birthday today!" : `Birthday in ${birthdayDaysUntil} days`} />
+                        </span>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-0.5">

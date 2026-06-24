@@ -739,14 +739,22 @@ export const appRouter = router({
     book: protectedProcedure
       .input(z.object({
         elderId: z.number(),
-        plannedDate: z.string(), // ISO date string
+        plannedDate: z.string().refine((s) => !isNaN(new Date(s).getTime()), {
+          message: "Invalid date",
+        }), // ISO date string
         notes: z.string().optional(),
         isRecurring: z.boolean().default(false),
-        recurringWeeks: z.number().optional(),
+        recurringWeeks: z.number().int().min(1).max(52).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error("DB unavailable");
+
+        // Reject dates in the past (mirror visits.log's future-date guard, inverted)
+        const plannedDate = new Date(input.plannedDate);
+        if (plannedDate.getTime() < Date.now()) {
+          throw new Error("Planned visit date cannot be in the past");
+        }
 
         const [membership] = await db
           .select()
