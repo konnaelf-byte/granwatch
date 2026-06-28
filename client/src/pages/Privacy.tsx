@@ -33,8 +33,10 @@ export default function Privacy() {
           <p className="text-muted-foreground mb-2"><strong>Account information</strong> — When you sign in we collect your name, email address, and a unique user identifier provided by our authentication provider (Clerk).</p>
           <p className="text-muted-foreground mb-2"><strong>Gran profile data</strong> — Name, photo, birthday (optional), visit threshold, and care notes you choose to enter.</p>
           <p className="text-muted-foreground mb-2"><strong>Visit records</strong> — Timestamps, optional notes, and optional photos from logged visits.</p>
-          <p className="text-muted-foreground mb-2"><strong>Payment information</strong> — Subscription payments are processed by Lemon Squeezy. We do not store your card details; we only store a subscription ID and customer ID.</p>
-          <p className="text-muted-foreground mb-2"><strong>Usage data</strong> — We use privacy-respecting analytics (Umami) that does not use cookies or collect personally identifiable information. No IP addresses are stored.</p>
+          <p className="text-muted-foreground mb-2"><strong>Payment information</strong> — On the web, subscription payments are processed by Lemon Squeezy. In the iOS and Android apps, subscriptions are processed through the App Store / Google Play and managed via RevenueCat. We never see or store your card details; we only store your subscription status and the related subscription/customer identifiers.</p>
+          <p className="text-muted-foreground mb-2"><strong>Care information</strong> — Medications, dosages, schedules, care routines, appointments, mood notes, and wellbeing notes you choose to enter. This is organisational data you provide; it is not health data collected from a device or from Apple HealthKit.</p>
+          <p className="text-muted-foreground mb-2"><strong>Device push token</strong> — If you enable notifications, we collect a unique push token from your device, used solely to deliver reminder and birthday notifications.</p>
+          <p className="text-muted-foreground mb-2"><strong>Analytics</strong> — We do not use any third-party analytics, advertising, or tracking tools, and we do not track you across other apps or websites.</p>
         </section>
 
         <section className="mb-8">
@@ -59,8 +61,10 @@ export default function Privacy() {
           <h2 className="text-lg font-bold mb-3">4. Sharing of Information</h2>
           <p className="text-muted-foreground mb-2">We share information with the following third-party service providers, only to the extent necessary:</p>
           <ul className="text-muted-foreground space-y-1 list-disc list-inside">
-            <li><strong>Clerk</strong> — authentication and user management</li>
-            <li><strong>Lemon Squeezy</strong> — subscription payment processing</li>
+            <li><strong>Clerk</strong> — authentication and user management (name, email, user ID)</li>
+            <li><strong>RevenueCat</strong> — in-app purchase processing and subscription management in the native apps (keyed to your user ID)</li>
+            <li><strong>Lemon Squeezy</strong> — web subscription payment processing</li>
+            <li><strong>Firebase Cloud Messaging (Google)</strong> — push notification delivery (device push token)</li>
             <li><strong>Resend</strong> — transactional email delivery</li>
             <li><strong>Cloudflare R2</strong> — photo storage</li>
             <li><strong>Railway</strong> — cloud hosting and database</li>
@@ -92,7 +96,7 @@ export default function Privacy() {
 
         <section className="mb-8">
           <h2 className="text-lg font-bold mb-3">8. Cookies</h2>
-          <p className="text-muted-foreground">GranWatch uses a single session cookie to keep you signed in. We do not use advertising cookies or third-party tracking cookies. Our analytics tool (Umami) is cookieless.</p>
+          <p className="text-muted-foreground">GranWatch uses a single session cookie to keep you signed in. We do not use advertising cookies, analytics cookies, or third-party tracking cookies.</p>
         </section>
 
         <section className="mb-8">

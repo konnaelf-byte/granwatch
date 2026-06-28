@@ -115,9 +115,10 @@ export default function Terms() {
           <ul className="text-muted-foreground space-y-1 list-disc list-inside">
             <li>Subscriptions are billed monthly and renew automatically</li>
             <li>You may cancel at any time; access continues until the end of the billing period</li>
-            <li>Payments are processed by Lemon Squeezy (via granwatch.app); their terms and policies apply to payment processing</li>
+            <li>On the web, payments are processed by Lemon Squeezy (via granwatch.app); their terms and policies apply to payment processing</li>
+            <li>In the iOS app, Gran+ is sold as an auto-renewing subscription through Apple In-App Purchase. Payment is charged to your Apple ID account, and the subscription renews automatically unless cancelled at least 24 hours before the end of the current period. You can manage or cancel your subscription in your device's subscription settings (Settings &gt; Apple ID &gt; Subscriptions). In the Android app, Gran+ is sold as an auto-renewing subscription through Google Play, billed to your Google account and managed in the Play Store subscription settings</li>
+            <li>For purchases made through the Apple App Store, refunds are handled by Apple in accordance with their policies; for web and Google Play purchases, contact us within 7 days of a charge if you believe there is an error and refunds are otherwise handled at our discretion</li>
             <li>Prices may vary by region and are subject to change with 30 days notice</li>
-            <li>Refunds are handled at our discretion; contact us within 7 days of a charge if you believe there is an error</li>
           </ul>
         </section>
 
