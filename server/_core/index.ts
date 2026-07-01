@@ -17,6 +17,9 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startCronJobs } from "../cron";
 import { runMigrations } from "./migrateDb";
+import { getDb } from "../db";
+import { pushTokens } from "../../drizzle/schema";
+import { ENV } from "./env";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -79,6 +82,63 @@ async function startServer() {
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Cache-Control", "no-store");
     res.sendFile(filePath);
+  });
+
+  // ── Notification diagnostics (public: booleans + counts only, no secrets) ────
+  // Turns "nothing arrives, no idea why" into a concrete checklist. Reports
+  // whether the email/push credentials are wired and whether ANY device has
+  // registered a push token — without exposing any credential values.
+  app.get("/api/health/notifications", async (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+
+    // Firebase: present AND valid JSON carrying the fields the Admin SDK needs.
+    let firebaseConfigured = false;
+    let firebaseProjectId: string | null = null;
+    if (ENV.firebaseServiceAccount) {
+      try {
+        const parsed = JSON.parse(ENV.firebaseServiceAccount);
+        firebaseProjectId = parsed.project_id ?? null;
+        firebaseConfigured = !!(parsed.project_id && parsed.private_key && parsed.client_email);
+      } catch {
+        firebaseConfigured = false; // present but not parseable (minification/escaping issue)
+      }
+    }
+
+    // How many devices have registered for push (any user).
+    let pushTokenCount = 0;
+    const pushByPlatform: Record<string, number> = {};
+    try {
+      const db = await getDb();
+      if (db) {
+        const rows = await db.select({ platform: pushTokens.platform }).from(pushTokens);
+        pushTokenCount = rows.length;
+        for (const r of rows) {
+          const p = r.platform ?? "unknown";
+          pushByPlatform[p] = (pushByPlatform[p] ?? 0) + 1;
+        }
+      }
+    } catch {
+      /* leave count at 0 */
+    }
+
+    res.json({
+      email: {
+        resendKeySet: !!ENV.resendApiKey,
+        fromEmail: ENV.resendFromEmail,
+      },
+      push: {
+        firebaseJsonPresent: !!ENV.firebaseServiceAccount,
+        firebaseConfigured,
+        firebaseProjectId,
+        pushTokenCount,
+        pushByPlatform,
+      },
+      cron: {
+        schedule: "Daily 18:00 UTC (20:00 SAST)",
+        note: "Push/email only fire when a gran crosses a 14/21-day or birthday threshold.",
+      },
+      serverTimeUtc: new Date().toISOString(),
+    });
   });
 
   // ── Auth + application middleware ──────────────────────────────────────────
