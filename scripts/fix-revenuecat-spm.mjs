@@ -84,10 +84,10 @@ const capPkgContent = `\
 import PackageDescription
 
 let package = Package(
-    name: "PurchasesCapacitor",
+    name: "RevenuecatPurchasesCapacitor",
     platforms: [.iOS(.v15)],
     products: [
-        .library(name: "PurchasesCapacitor", targets: ["PurchasesCapacitor"])
+        .library(name: "RevenuecatPurchasesCapacitor", targets: ["RevenuecatPurchasesCapacitor"])
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.4.0"),
@@ -96,7 +96,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "PurchasesCapacitor",
+            name: "RevenuecatPurchasesCapacitor",
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
@@ -211,7 +211,7 @@ extension PurchasesPlugin: CAPBridgedPlugin {
 writeFileSync(bridgePath, bridgeContent, "utf8");
 console.log("[fix-revenuecat-spm] ✅ Patch 2b: Wrote PurchasesPlugin+Bridge.swift (CAPBridgedPlugin conformance).");
 
-// 2c) Patch CapApp-SPM/Package.swift to add PurchasesCapacitor as a dependency.
+// 2c) Patch CapApp-SPM/Package.swift to add RevenuecatPurchasesCapacitor as a dependency.
 const capAppSpmPath = resolve(projectRoot, "ios/App/CapApp-SPM/Package.swift");
 let capAppSrc;
 try {
@@ -221,8 +221,8 @@ try {
   process.exit(0);
 }
 
-if (capAppSrc.includes("PurchasesCapacitor")) {
-  console.log("[fix-revenuecat-spm] Patch 2c: CapApp-SPM/Package.swift already references PurchasesCapacitor.");
+if (capAppSrc.includes("RevenuecatPurchasesCapacitor")) {
+  console.log("[fix-revenuecat-spm] Patch 2c: CapApp-SPM/Package.swift already references RevenuecatPurchasesCapacitor.");
 } else {
   // Compute path relative to CapApp-SPM/Package.swift's directory.
   const capAppSpmDir = resolve(projectRoot, "ios/App/CapApp-SPM");
@@ -233,17 +233,17 @@ if (capAppSrc.includes("PurchasesCapacitor")) {
   // on whether it was the last entry — normalise it to always have one.
   capAppSrc = capAppSrc.replace(
     /(.package\(name: "CordovaPluginPurchases",[^\n]+?),?\s*\n/,
-    `$1,\n        .package(name: "PurchasesCapacitor", path: "${relPath}"),\n`
+    `$1,\n        .package(name: "RevenuecatPurchasesCapacitor", path: "${relPath}"),\n`
   );
 
   // Add product dependency after the CordovaPluginPurchases product line.
   capAppSrc = capAppSrc.replace(
     /(.product\(name: "CordovaPluginPurchases",[^\n]+?),?\s*\n/,
-    `$1,\n                .product(name: "PurchasesCapacitor", package: "PurchasesCapacitor"),\n`
+    `$1,\n                .product(name: "RevenuecatPurchasesCapacitor", package: "RevenuecatPurchasesCapacitor"),\n`
   );
 
   writeFileSync(capAppSpmPath, capAppSrc, "utf8");
-  console.log("[fix-revenuecat-spm] ✅ Patch 2c: CapApp-SPM/Package.swift updated with PurchasesCapacitor dependency.");
+  console.log("[fix-revenuecat-spm] ✅ Patch 2c: CapApp-SPM/Package.swift updated with RevenuecatPurchasesCapacitor dependency.");
 }
 
 console.log("[fix-revenuecat-spm] All patches applied.");
