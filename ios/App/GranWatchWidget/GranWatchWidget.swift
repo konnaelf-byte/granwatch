@@ -16,6 +16,11 @@
 
 import WidgetKit
 import SwiftUI
+import os.log // TEMP DIAGNOSTIC — remove after widget bridge confirmed
+
+// TEMP DIAGNOSTIC — same subsystem as GranWidgetPlugin so both sides show up in one filter.
+// Filter the device console with subsystem:app.granwatch.widget
+private let granWidgetLog = OSLog(subsystem: "app.granwatch.widget", category: "widget")
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MARK: - Shared data model (must match JSON written by GranWidgetPlugin.swift)
@@ -63,17 +68,26 @@ private extension GranEntry {
 // ─────────────────────────────────────────────────────────────────────────────
 
 private func loadPayload() -> WidgetPayload {
-    guard
-        let suite  = UserDefaults(suiteName: kAppGroup),
-        let data   = suite.data(forKey: kDataKey),
-        let parsed = try? JSONDecoder().decode(WidgetPayload.self, from: data)
-    else {
+    // TEMP DIAGNOSTIC — step through each failure point so the device console reveals
+    // exactly where the read breaks (nil suite = App Group not shared with the widget;
+    // nil data = app never wrote / wrote to a different suite; decode fail = shape mismatch).
+    guard let suite = UserDefaults(suiteName: kAppGroup) else {
+        os_log("READ: UserDefaults(suiteName: %{public}@) NIL — widget can't see App Group", log: granWidgetLog, type: .error, kAppGroup)
         return WidgetPayload(grans: [])
     }
+    guard let data = suite.data(forKey: kDataKey) else {
+        os_log("READ: suite is non-nil but NO data for key %{public}@ — app never wrote here", log: granWidgetLog, type: .error, kDataKey)
+        return WidgetPayload(grans: [])
+    }
+    guard let parsed = try? JSONDecoder().decode(WidgetPayload.self, from: data) else {
+        os_log("READ: found %{public}d bytes but DECODE failed — JSON shape mismatch", log: granWidgetLog, type: .error, data.count)
+        return WidgetPayload(grans: [])
+    }
+    os_log("READ: OK — %{public}d bytes, decoded %{public}d grans", log: granWidgetLog, type: .info, data.count, parsed.grans.count)
     return parsed
 }
 
-private func placeholder() -> WidgetPayload {
+private func placeholderPayload() -> WidgetPayload {
     WidgetPayload(grans: [
         GranEntry(id: "1", name: "Gran",   status: "green",  lastVisitLabel: "Today",      ringFraction: 0.90),
         GranEntry(id: "2", name: "Nan",    status: "yellow", lastVisitLabel: "3 days ago",  ringFraction: 0.45),
@@ -94,11 +108,11 @@ struct GranTimelineEntry: TimelineEntry {
 struct GranTimelineProvider: TimelineProvider {
 
     func placeholder(in context: Context) -> GranTimelineEntry {
-        GranTimelineEntry(date: .now, payload: placeholder())
+        GranTimelineEntry(date: .now, payload: placeholderPayload())
     }
 
     func getSnapshot(in context: Context, completion: @escaping (GranTimelineEntry) -> Void) {
-        let p = context.isPreview ? placeholder() : loadPayload()
+        let p = context.isPreview ? placeholderPayload() : loadPayload()
         completion(GranTimelineEntry(date: .now, payload: p))
     }
 
@@ -280,6 +294,6 @@ struct GranWatchWidget: Widget {
 // MARK: - Previews
 // ─────────────────────────────────────────────────────────────────────────────
 
-#Preview("Small",  as: .systemSmall)  { GranWatchWidget() } timeline: { GranTimelineEntry(date: .now, payload: placeholder()) }
-#Preview("Medium", as: .systemMedium) { GranWatchWidget() } timeline: { GranTimelineEntry(date: .now, payload: placeholder()) }
-#Preview("Large",  as: .systemLarge)  { GranWatchWidget() } timeline: { GranTimelineEntry(date: .now, payload: placeholder()) }
+#Preview("Small",  as: .systemSmall)  { GranWatchWidget() } timeline: { GranTimelineEntry(date: .now, payload: placeholderPayload()) }
+#Preview("Medium", as: .systemMedium) { GranWatchWidget() } timeline: { GranTimelineEntry(date: .now, payload: placeholderPayload()) }
+#Preview("Large",  as: .systemLarge)  { GranWatchWidget() } timeline: { GranTimelineEntry(date: .now, payload: placeholderPayload()) }

@@ -9,11 +9,12 @@ android {
 
 apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
+    implementation project(':capgo-capacitor-social-login')
     implementation project(':revenuecat-purchases-capacitor')
     implementation "com.revenuecat.purchases:purchases-hybrid-common:18.15.1"
     implementation "androidx.annotation:annotation:[1.4.0]"
 }
-
+apply from: "../../node_modules/.pnpm/cordova-annotated-plugin-android@1.0.4/node_modules/cordova-annotated-plugin-android/build.gradle"
 
 if (hasProperty('postBuildExtras')) {
   postBuildExtras()

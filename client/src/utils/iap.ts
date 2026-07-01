@@ -31,6 +31,14 @@ const IOS_KEY = import.meta.env.VITE_REVENUECAT_IOS_KEY as string | undefined;
 const ANDROID_KEY = import.meta.env.VITE_REVENUECAT_ANDROID_KEY as string | undefined;
 
 let configured = false;
+// Diagnostic: the real reason configuration didn't succeed, surfaced to the UI so
+// we can tell "no key in bundle" (rebuild) apart from "configure() threw" (native SDK).
+let initError: string | null = null;
+
+/** Expose configuration state + the underlying failure reason for debugging. */
+export function getRevenueCatStatus(): { configured: boolean; error: string | null; keyPresent: boolean } {
+  return { configured, error: initError, keyPresent: !!resolveApiKey() };
+}
 
 /** Resolve the correct platform API key, or null on web/unsupported. */
 function resolveApiKey(): string | null {
@@ -48,7 +56,8 @@ export async function initRevenueCat(clerkUserId: string): Promise<void> {
 
   const apiKey = resolveApiKey();
   if (!apiKey) {
-    console.warn(`[RevenueCat] No API key configured for platform "${currentPlatform}"`);
+    initError = `No API key in this build for "${currentPlatform}" — VITE_REVENUECAT_${currentPlatform === "android" ? "ANDROID" : "IOS"}_KEY was missing when the web bundle was built. (Rebuild/redeploy needed.)`;
+    console.warn(`[RevenueCat] ${initError}`);
     return;
   }
 
@@ -56,8 +65,11 @@ export async function initRevenueCat(clerkUserId: string): Promise<void> {
     await Purchases.setLogLevel({ level: LOG_LEVEL.WARN });
     await Purchases.configure({ apiKey, appUserID: clerkUserId });
     configured = true;
+    initError = null;
     console.log(`[RevenueCat] Configured for user ${clerkUserId} on ${currentPlatform}`);
   } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    initError = `configure() threw: ${msg} — the native RevenueCat SDK isn't linked into this build. (New native build needed.)`;
     console.error("[RevenueCat] configure failed:", err);
   }
 }
@@ -88,7 +100,7 @@ export async function purchaseGranPlus(
   activate: (input: { elderId: number; revenueCatUserId: string }) => Promise<void>
 ): Promise<void> {
   if (!isNativeApp) throw new Error("Native purchases are only available in the app.");
-  if (!configured) throw new Error("RevenueCat is not configured yet.");
+  if (!configured) throw new Error(initError ?? "RevenueCat is not configured yet.");
 
   // Tag the subscriber so the webhook can route lifecycle events to the
   // correct elder/user even when no client session is present.
@@ -132,7 +144,7 @@ export async function restorePurchases(
   activate: (input: { elderId: number; revenueCatUserId: string }) => Promise<void>
 ): Promise<boolean> {
   if (!isNativeApp) throw new Error("Restore is only available in the app.");
-  if (!configured) throw new Error("RevenueCat is not configured yet.");
+  if (!configured) throw new Error(initError ?? "RevenueCat is not configured yet.");
 
   const { customerInfo } = await Purchases.restorePurchases();
   const isActive = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;

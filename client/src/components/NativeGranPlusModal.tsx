@@ -15,6 +15,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   getGranPlusOffering,
+  getRevenueCatStatus,
   purchaseGranPlus,
   restorePurchases,
 } from "@/utils/iap";
@@ -72,10 +73,23 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
           offering?.availablePackages.find((p) => p.product.identifier === "gran_plus_monthly") ??
           offering?.availablePackages[0] ??
           null;
-        setPriceString(pkg?.product.priceString ?? null);
+        const price = pkg?.product.priceString ?? null;
+        setPriceString(price);
+        // No price → surface the real RevenueCat reason so we know what to fix.
+        if (!price) {
+          const status = getRevenueCatStatus();
+          if (status.error) setError(status.error);
+          else if (!status.configured)
+            setError("RevenueCat is still initializing — reopen in a moment.");
+          else if (!offering)
+            setError("No Gran+ offering is available from the store yet.");
+        }
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Could not load pricing.");
+        if (cancelled) return;
+        // getOfferings throws when the SDK isn't configured — show why.
+        const status = getRevenueCatStatus();
+        setError(status.error ?? (e instanceof Error ? e.message : "Could not load pricing."));
       })
       .finally(() => {
         if (!cancelled) setLoadingOffering(false);

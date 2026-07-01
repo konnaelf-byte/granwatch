@@ -1,0 +1,4 @@
+app_identifier("app.granwatch")
+# Auth is via App Store Connect API key (configured in the Fastfile through
+# ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_PATH env vars), so no apple_id / team id needed here.
+# Team: BETTER CREATION Pty Ltd (BFA6JYY9YD)
