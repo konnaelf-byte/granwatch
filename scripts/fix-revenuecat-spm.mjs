@@ -2,52 +2,248 @@
 /**
  * fix-revenuecat-spm.mjs
  *
- * Patches ios/capacitor-cordova-ios-plugins/sources/CordovaPluginPurchases/Package.swift
- * after every `cap sync` run.
+ * Run after every `cap sync`. Applies TWO patches that cap sync can't do itself:
  *
- * `cap sync` regenerates this file from a generic template that only declares the
- * capacitor-swift-pm dependency. But the CordovaPluginPurchases Swift source files
- * import RevenueCat and PurchasesHybridCommon, so those packages must also be declared
- * or every archive attempt fails with "Unable to resolve module dependency" errors.
+ * PATCH 1 — CordovaPluginPurchases/Package.swift
+ *   cap sync generates a generic Package.swift that only lists capacitor-swift-pm.
+ *   But the Cordova-layer Swift files (CDVPurchasesPlugin) import RevenueCat and
+ *   PurchasesHybridCommon, so those packages must also be declared or Xcode fails
+ *   with "Unable to resolve module dependency".
  *
- * This script is called automatically by the cap:build npm script.
+ * PATCH 2 — @revenuecat/purchases-capacitor Capacitor bridge layer
+ *   The Capacitor wrapper (@revenuecat/purchases-capacitor) ships only a .podspec
+ *   and no Package.swift, so cap sync never adds its iOS code to the SPM build.
+ *   Without it the Capacitor JS bridge can't find the "Purchases" plugin class and
+ *   throws "Purchases plugin is not implemented on ios".
+ *
+ *   This patch:
+ *   a) Writes a Package.swift to the @revenuecat/purchases-capacitor root so SPM
+ *      can compile PurchasesPlugin.swift and its helpers.
+ *   b) Writes PurchasesPlugin+Bridge.swift (CAPBridgedPlugin conformance) which is
+ *      the modern Capacitor SPM registration mechanism, replacing the ObjC
+ *      CAP_PLUGIN() macro in PurchasesPlugin.m that can't be compiled in a pure-
+ *      Swift SPM target.
+ *   c) Patches CapApp-SPM/Package.swift to declare the new package as a dependency.
  */
 
-import { readFileSync, writeFileSync } from "fs";
+import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "fs";
 import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
+import { dirname, relative, resolve } from "path";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const pkgPath = resolve(
-  __dirname,
-  "../ios/capacitor-cordova-ios-plugins/sources/CordovaPluginPurchases/Package.swift"
+const projectRoot = resolve(__dirname, "..");
+
+// ─── PATCH 1: CordovaPluginPurchases/Package.swift ───────────────────────────
+
+const cordovaPkgPath = resolve(
+  projectRoot,
+  "ios/capacitor-cordova-ios-plugins/sources/CordovaPluginPurchases/Package.swift"
 );
 
-let src;
+let cordovaSrc;
 try {
-  src = readFileSync(pkgPath, "utf8");
+  cordovaSrc = readFileSync(cordovaPkgPath, "utf8");
 } catch {
-  console.warn("[fix-revenuecat-spm] Package.swift not found — skipping (run cap sync first)");
+  console.warn("[fix-revenuecat-spm] CordovaPluginPurchases/Package.swift not found — run cap sync first.");
   process.exit(0);
 }
 
-// Already patched?
-if (src.includes("purchases-ios-spm")) {
-  console.log("[fix-revenuecat-spm] Already patched — nothing to do.");
+if (!cordovaSrc.includes("purchases-ios-spm")) {
+  cordovaSrc = cordovaSrc.replace(
+    `.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.4.0")`,
+    `.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.4.0"),\n        .package(url: "https://github.com/RevenueCat/purchases-ios-spm", from: "5.78.0"),\n        .package(url: "https://github.com/RevenueCat/purchases-hybrid-common.git", from: "18.15.1")`
+  );
+  cordovaSrc = cordovaSrc.replace(
+    `.product(name: "Cordova", package: "capacitor-swift-pm")`,
+    `.product(name: "Cordova", package: "capacitor-swift-pm"),\n                .product(name: "RevenueCat", package: "purchases-ios-spm"),\n                .product(name: "PurchasesHybridCommon", package: "purchases-hybrid-common")`
+  );
+  writeFileSync(cordovaPkgPath, cordovaSrc, "utf8");
+  console.log("[fix-revenuecat-spm] ✅ Patch 1: CordovaPluginPurchases/Package.swift patched with RevenueCat deps.");
+} else {
+  console.log("[fix-revenuecat-spm] Patch 1: CordovaPluginPurchases/Package.swift already patched.");
+}
+
+// ─── PATCH 2: @revenuecat/purchases-capacitor Capacitor bridge layer ─────────
+
+// Resolve the real (non-symlink) path so SPM can consume it reliably.
+const purchasesCapSymlink = resolve(projectRoot, "node_modules/@revenuecat/purchases-capacitor");
+let purchasesCapReal;
+try {
+  purchasesCapReal = realpathSync(purchasesCapSymlink);
+} catch {
+  console.warn("[fix-revenuecat-spm] @revenuecat/purchases-capacitor not found in node_modules — skipping Patch 2.");
   process.exit(0);
 }
 
-// Add RevenueCat packages to the dependencies array
-src = src.replace(
-  `.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.4.0")`,
-  `.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.4.0"),\n        .package(url: "https://github.com/RevenueCat/purchases-ios-spm", from: "5.78.0"),\n        .package(url: "https://github.com/RevenueCat/purchases-hybrid-common.git", from: "18.15.1")`
-);
+// 2a) Write Package.swift to @revenuecat/purchases-capacitor root.
+const capPkgPath = resolve(purchasesCapReal, "Package.swift");
+const capPkgContent = `\
+// swift-tools-version: 5.9
+// AUTO-GENERATED by scripts/fix-revenuecat-spm.mjs — do not edit manually.
+// Re-generated after every \`cap sync\` via the cap:build npm script.
+import PackageDescription
 
-// Add RevenueCat products to the target dependencies
-src = src.replace(
-  `.product(name: "Cordova", package: "capacitor-swift-pm")`,
-  `.product(name: "Cordova", package: "capacitor-swift-pm"),\n                .product(name: "RevenueCat", package: "purchases-ios-spm"),\n                .product(name: "PurchasesHybridCommon", package: "purchases-hybrid-common")`
-);
+let package = Package(
+    name: "PurchasesCapacitor",
+    platforms: [.iOS(.v15)],
+    products: [
+        .library(name: "PurchasesCapacitor", targets: ["PurchasesCapacitor"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.4.0"),
+        .package(url: "https://github.com/RevenueCat/purchases-ios-spm", from: "5.78.0"),
+        .package(url: "https://github.com/RevenueCat/purchases-hybrid-common.git", from: "18.15.1"),
+    ],
+    targets: [
+        .target(
+            name: "PurchasesCapacitor",
+            dependencies: [
+                .product(name: "Capacitor", package: "capacitor-swift-pm"),
+                .product(name: "Cordova", package: "capacitor-swift-pm"),
+                .product(name: "RevenueCat", package: "purchases-ios-spm"),
+                .product(name: "PurchasesHybridCommon", package: "purchases-hybrid-common"),
+            ],
+            path: "ios/Plugin",
+            // Exclude the ObjC registration file (PurchasesPlugin.m) and framework
+            // header — registration is handled by PurchasesPlugin+Bridge.swift instead.
+            exclude: ["PurchasesPlugin.m", "PurchasesPlugin.h", "Info.plist"]
+        )
+    ]
+)
+`;
+writeFileSync(capPkgPath, capPkgContent, "utf8");
+console.log("[fix-revenuecat-spm] ✅ Patch 2a: Wrote Package.swift to @revenuecat/purchases-capacitor.");
 
-writeFileSync(pkgPath, src, "utf8");
-console.log("[fix-revenuecat-spm] ✅ Patched CordovaPluginPurchases/Package.swift with RevenueCat dependencies.");
+// 2b) Write PurchasesPlugin+Bridge.swift — CAPBridgedPlugin conformance.
+//     This replaces the ObjC CAP_PLUGIN() macro registration (PurchasesPlugin.m)
+//     with the Capacitor 4+ Swift-native protocol, which SPM can compile without
+//     mixed-language target support.
+const bridgePath = resolve(purchasesCapReal, "ios/Plugin/PurchasesPlugin+Bridge.swift");
+const bridgeContent = `\
+// AUTO-GENERATED by scripts/fix-revenuecat-spm.mjs — do not edit manually.
+//
+// Adds CAPBridgedPlugin conformance to PurchasesPlugin so Capacitor's SPM-based
+// plugin discovery can find it. This replaces the ObjC CAP_PLUGIN() macro in
+// PurchasesPlugin.m, which cannot be compiled in a pure-Swift SPM target.
+//
+// Method list mirrors PurchasesPlugin.m exactly. Update both if @revenuecat/
+// purchases-capacitor adds new methods.
+import Capacitor
+
+extension PurchasesPlugin: CAPBridgedPlugin {
+    public var identifier: String { "PurchasesPlugin" }
+    public var jsName: String { "Purchases" }
+    public var pluginMethods: [CAPPluginMethod] {
+        [
+            CAPPluginMethod(name: "configure",                              returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "parseAsWebPurchaseRedemption",           returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "redeemWebPurchase",                      returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "setMockWebResults",                      returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setFinishTransactions",                  returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setSimulatesAskToBuyInSandbox",          returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "getOfferings",                           returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "getCurrentOfferingForPlacement",         returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "syncAttributesAndOfferingsIfNeeded",     returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "getProducts",                            returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "purchaseStoreProduct",                   returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "purchaseDiscountedProduct",              returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "purchasePackage",                        returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "purchaseSubscriptionOption",             returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "purchaseDiscountedPackage",              returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "restorePurchases",                       returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "recordPurchase",                         returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "getAppUserID",                           returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "getStorefront",                          returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "logIn",                                  returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "logOut",                                 returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "setLogLevel",                            returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "getCustomerInfo",                        returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "syncPurchases",                          returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "syncObserverModeAmazonPurchase",         returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "enableAdServicesAttributionTokenCollection", returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "isAnonymous",                            returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "checkTrialOrIntroductoryPriceEligibility", returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "getPromotionalOffer",                    returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "getEligibleWinBackOffersForProduct",     returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "getEligibleWinBackOffersForPackage",     returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "purchaseProductWithWinBackOffer",        returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "purchasePackageWithWinBackOffer",        returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "invalidateCustomerInfoCache",            returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "presentCodeRedemptionSheet",             returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setAttributes",                          returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setEmail",                               returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setPhoneNumber",                         returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setDisplayName",                         returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setPushToken",                           returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setProxyURL",                            returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "collectDeviceIdentifiers",               returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setAdjustID",                            returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setAppsflyerID",                         returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setFBAnonymousID",                       returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setMparticleID",                         returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setCleverTapID",                         returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setMixpanelDistinctID",                  returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setFirebaseAppInstanceID",               returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setOnesignalID",                         returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setOnesignalUserID",                     returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setAirshipChannelID",                    returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setMediaSource",                         returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setCampaign",                            returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setAdGroup",                             returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setAd",                                  returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setKeyword",                             returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "setCreative",                            returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "canMakePayments",                        returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "beginRefundRequestForActiveEntitlement", returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "beginRefundRequestForEntitlement",       returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "beginRefundRequestForProduct",           returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "showInAppMessages",                      returnType: CAPPluginReturnNone),
+            CAPPluginMethod(name: "isConfigured",                           returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "setLogHandler",                          returnType: CAPPluginReturnCallback),
+            CAPPluginMethod(name: "addCustomerInfoUpdateListener",          returnType: CAPPluginReturnCallback),
+            CAPPluginMethod(name: "removeCustomerInfoUpdateListener",       returnType: CAPPluginReturnPromise),
+            CAPPluginMethod(name: "addShouldPurchasePromoProductListener",  returnType: CAPPluginReturnCallback),
+            CAPPluginMethod(name: "removeShouldPurchasePromoProductListener", returnType: CAPPluginReturnPromise),
+        ]
+    }
+}
+`;
+writeFileSync(bridgePath, bridgeContent, "utf8");
+console.log("[fix-revenuecat-spm] ✅ Patch 2b: Wrote PurchasesPlugin+Bridge.swift (CAPBridgedPlugin conformance).");
+
+// 2c) Patch CapApp-SPM/Package.swift to add PurchasesCapacitor as a dependency.
+const capAppSpmPath = resolve(projectRoot, "ios/App/CapApp-SPM/Package.swift");
+let capAppSrc;
+try {
+  capAppSrc = readFileSync(capAppSpmPath, "utf8");
+} catch {
+  console.warn("[fix-revenuecat-spm] CapApp-SPM/Package.swift not found — skipping Patch 2c.");
+  process.exit(0);
+}
+
+if (capAppSrc.includes("PurchasesCapacitor")) {
+  console.log("[fix-revenuecat-spm] Patch 2c: CapApp-SPM/Package.swift already references PurchasesCapacitor.");
+} else {
+  // Compute path relative to CapApp-SPM/Package.swift's directory.
+  const capAppSpmDir = resolve(projectRoot, "ios/App/CapApp-SPM");
+  const relPath = relative(capAppSpmDir, purchasesCapReal);
+
+  // Add package dependency after the CordovaPluginPurchases package line.
+  // The CordovaPluginPurchases line may or may not have a trailing comma depending
+  // on whether it was the last entry — normalise it to always have one.
+  capAppSrc = capAppSrc.replace(
+    /(.package\(name: "CordovaPluginPurchases",[^\n]+?),?\s*\n/,
+    `$1,\n        .package(name: "PurchasesCapacitor", path: "${relPath}"),\n`
+  );
+
+  // Add product dependency after the CordovaPluginPurchases product line.
+  capAppSrc = capAppSrc.replace(
+    /(.product\(name: "CordovaPluginPurchases",[^\n]+?),?\s*\n/,
+    `$1,\n                .product(name: "PurchasesCapacitor", package: "PurchasesCapacitor"),\n`
+  );
+
+  writeFileSync(capAppSpmPath, capAppSrc, "utf8");
+  console.log("[fix-revenuecat-spm] ✅ Patch 2c: CapApp-SPM/Package.swift updated with PurchasesCapacitor dependency.");
+}
+
+console.log("[fix-revenuecat-spm] All patches applied.");
