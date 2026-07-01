@@ -53,6 +53,24 @@ function buildLastVisitLabel(daysSinceVisit: number): string {
   return `${daysSinceVisit}d ago`;
 }
 
+/**
+ * TEMP DIAGNOSTIC — report the outcome of each widget-sync attempt to the server
+ * so we can see (without device logs) whether the native write ran, how many
+ * grans were sent, and any error. Fire-and-forget; never throws.
+ */
+function reportWidgetSync(data: Record<string, unknown>): void {
+  try {
+    void fetch('/api/debug/widget-sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, platform: Capacitor.getPlatform(), at: new Date().toISOString() }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Hook
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,7 +99,13 @@ export function useWidgetSync(): void {
   });
 
   useEffect(() => {
-    if (!isNative || !elders || elders.length === 0) return;
+    if (!isNative) return;
+
+    // Report the state so we can see whether the effect ran and had data.
+    if (!elders || elders.length === 0) {
+      reportWidgetSync({ stage: 'no-elders', granCount: elders?.length ?? -1 });
+      return;
+    }
 
     // Widget supports up to 4 slots (2×2 large layout).
     // We pass the first 4 by default — the same order as the dashboard list.
@@ -94,9 +118,14 @@ export function useWidgetSync(): void {
       photoUrl:       elder.photoUrl ?? null,
     }));
 
-    GranWidget.updateWidgetData({ grans }).catch((err) => {
-      // Non-fatal — widget is a nice-to-have; never crash the main app for it
-      console.warn('[GranWidget] Failed to sync widget data:', err);
-    });
+    GranWidget.updateWidgetData({ grans })
+      .then((res) => {
+        reportWidgetSync({ stage: 'wrote', ok: !!(res && (res as { success?: boolean }).success), granCount: grans.length });
+      })
+      .catch((err) => {
+        // Non-fatal — widget is a nice-to-have; never crash the main app for it
+        console.warn('[GranWidget] Failed to sync widget data:', err);
+        reportWidgetSync({ stage: 'error', ok: false, granCount: grans.length, error: err instanceof Error ? err.message : String(err) });
+      });
   }, [elders, isNative]);
 }

@@ -141,6 +141,22 @@ async function startServer() {
     });
   });
 
+  // ── Widget-sync diagnostics (public, ephemeral, in-memory) ──────────────────
+  // The native widget stays blank if the app never writes gran data into the
+  // shared App Group. The app's JS loads live, so it POSTs the result of each
+  // widget-sync attempt here — letting us see whether the write ran, how many
+  // grans, and any error, WITHOUT needing device logs. Last report wins.
+  let lastWidgetSync: Record<string, unknown> | null = null;
+  app.post("/api/debug/widget-sync", express.json({ limit: "8kb" }), (req, res) => {
+    lastWidgetSync = { ...(req.body ?? {}), serverAt: new Date().toISOString() };
+    console.log("[WidgetSync]", JSON.stringify(lastWidgetSync));
+    res.json({ ok: true });
+  });
+  app.get("/api/health/widget", (_req, res) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ lastWidgetSync });
+  });
+
   // ── Auth + application middleware ──────────────────────────────────────────
 
   // Clerk authentication middleware — must be first so getAuth() works everywhere.
