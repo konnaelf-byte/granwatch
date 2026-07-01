@@ -16,6 +16,7 @@
 
 import WidgetKit
 import SwiftUI
+import UIKit
 import os.log // TEMP DIAGNOSTIC — remove after widget bridge confirmed
 
 // TEMP DIAGNOSTIC — same subsystem as GranWidgetPlugin so both sides show up in one filter.
@@ -135,6 +136,15 @@ struct GranRingView: View {
     private var strokeWidth: CGFloat { size * 0.115 }
     private var innerSize:   CGFloat { size * 0.54 }
 
+    /// Load a gran's cached photo from the App Group container, if the main app
+    /// has downloaded it (see GranWidgetPlugin.refreshWidgetPhotos).
+    static func widgetPhoto(for id: String) -> UIImage? {
+        guard let container = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: kAppGroup) else { return nil }
+        let path = container.appendingPathComponent("widget_photos/gran_\(id).jpg").path
+        return UIImage(contentsOfFile: path)
+    }
+
     var body: some View {
         ZStack {
             // Track (dim full circle)
@@ -150,15 +160,23 @@ struct GranRingView: View {
                 )
                 .rotationEffect(.degrees(-90))
 
-            // Initial in centre
+            // Centre: the gran's photo if cached in the App Group, else initials
             ZStack {
-                Circle()
-                    .fill(gran.ringColor.opacity(0.18))
-                    .frame(width: innerSize, height: innerSize)
-                Text(gran.initial)
-                    .font(.system(size: innerSize * 0.46, weight: .semibold, design: .rounded))
-                    .foregroundColor(gran.ringColor)
-                    .accessibilityHidden(true)
+                if let photo = Self.widgetPhoto(for: gran.id) {
+                    Image(uiImage: photo)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: innerSize, height: innerSize)
+                        .clipShape(Circle())
+                } else {
+                    Circle()
+                        .fill(gran.ringColor.opacity(0.18))
+                        .frame(width: innerSize, height: innerSize)
+                    Text(gran.initial)
+                        .font(.system(size: innerSize * 0.46, weight: .semibold, design: .rounded))
+                        .foregroundColor(gran.ringColor)
+                        .accessibilityHidden(true)
+                }
             }
         }
         .frame(width: size, height: size)

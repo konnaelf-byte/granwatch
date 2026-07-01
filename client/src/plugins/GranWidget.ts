@@ -36,6 +36,12 @@ export interface GranWidgetEntry {
    * Computed by: max(0.07, min(1.0, 1 - daysSinceVisit / alertThresholdDays))
    */
   ringFraction: number;
+  /**
+   * Absolute URL to the gran's photo (Cloudflare R2), or null.
+   * The native plugin downloads this into the App Group container so the
+   * widget can render the face offline; falls back to initials when absent.
+   */
+  photoUrl?: string | null;
 }
 
 // ─── Plugin interface ─────────────────────────────────────────────────────────

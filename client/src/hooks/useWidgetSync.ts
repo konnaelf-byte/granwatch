@@ -91,6 +91,7 @@ export function useWidgetSync(): void {
       status:         elder.status as GranStatus,
       lastVisitLabel: buildLastVisitLabel(elder.daysSinceVisit),
       ringFraction:   computeRingFraction(elder.daysSinceVisit, elder.alertThresholdDays),
+      photoUrl:       elder.photoUrl ?? null,
     }));
 
     GranWidget.updateWidgetData({ grans }).catch((err) => {

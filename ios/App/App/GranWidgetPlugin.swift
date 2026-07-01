@@ -16,6 +16,7 @@
 import Foundation
 import Capacitor
 import WidgetKit
+import UIKit
 import os.log // TEMP DIAGNOSTIC — remove after widget bridge confirmed
 
 // TEMP DIAGNOSTIC — dedicated log handle so lines are easy to filter in Console.app
@@ -82,11 +83,66 @@ public class GranWidgetPlugin: CAPPlugin, CAPBridgedPlugin {
         os_log("WRITE: wrote %{public}d bytes for key %{public}@; read-back = %{public}d bytes",
                log: granLog, type: .info, jsonData.count, dataKey, readBack)
 
-        // Tell WidgetKit the data has changed — reloads timeline immediately.
+        // Tell WidgetKit the data has changed — reloads timeline immediately
+        // (rings, names, and any already-cached photos update right away).
         WidgetCenter.shared.reloadTimelines(ofKind: widgetKind)
         // TEMP DIAGNOSTIC
         os_log("WRITE: reloadTimelines(ofKind: %{public}@) requested", log: granLog, type: .info, widgetKind)
 
+        // Resolve immediately — photo downloads run in the background below.
         call.resolve(["success": true])
+
+        // Cache each gran's photo into the shared container, then reload once more
+        // so the faces appear. Non-blocking and non-fatal: a failed download simply
+        // leaves the initials fallback in place.
+        refreshWidgetPhotos((call.getArray("grans") as? [JSObject]) ?? [])
+    }
+
+    /// Download each gran's photo into the App Group container as `widget_photos/gran_<id>.jpg`
+    /// so the WidgetKit extension can render the face offline. Skips photos that were
+    /// refreshed less than 6 hours ago to avoid re-fetching on every sync.
+    private func refreshWidgetPhotos(_ grans: [JSObject]) {
+        guard let container = FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: appGroup) else {
+            os_log("PHOTO: App Group container URL nil — cannot cache photos", log: granLog, type: .error)
+            return
+        }
+        let photosDir = container.appendingPathComponent("widget_photos", isDirectory: true)
+        try? FileManager.default.createDirectory(at: photosDir, withIntermediateDirectories: true)
+
+        let group = DispatchGroup()
+        var changed = false
+        let lock = NSLock()
+
+        for obj in grans {
+            guard let id = obj["id"] as? String,
+                  let urlString = obj["photoUrl"] as? String,
+                  !urlString.isEmpty,
+                  let url = URL(string: urlString) else { continue }
+
+            let dest = photosDir.appendingPathComponent("gran_\(id).jpg")
+
+            // Skip if refreshed recently (avoid hammering R2 on every 5-min sync).
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: dest.path),
+               let modified = attrs[.modificationDate] as? Date,
+               Date().timeIntervalSince(modified) < 6 * 3600 {
+                continue
+            }
+
+            group.enter()
+            URLSession.shared.dataTask(with: url) { data, _, _ in
+                defer { group.leave() }
+                guard let data = data, UIImage(data: data) != nil else { return }
+                if (try? data.write(to: dest, options: .atomic)) != nil {
+                    lock.lock(); changed = true; lock.unlock()
+                }
+            }.resume()
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            guard let self = self, changed else { return }
+            WidgetCenter.shared.reloadTimelines(ofKind: self.widgetKind)
+            os_log("PHOTO: photos refreshed — widget reloaded", log: granLog, type: .info)
+        }
     }
 }
