@@ -11,7 +11,7 @@
  * Works in both the web browser and Capacitor WebView (iOS / Android).
  */
 
-const CACHE_VERSION = "gw-v2";
+const CACHE_VERSION = "gw-v3";
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const API_CACHE = `${CACHE_VERSION}-api`;
 

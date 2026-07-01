@@ -1,17 +1,21 @@
 /**
  * GranWatchWidget.swift
  *
- * iOS home-screen widget — shows a 2×2 grid of circular status rings,
- * one per gran, mirroring the Apple Battery widget aesthetic.
+ * iOS home-screen widget — shows circular status rings, one per gran, mirroring
+ * the Apple Battery widget aesthetic.
+ *
+ * SELF-UPDATING: the app writes each gran's raw LAST-VISIT DATE + alert threshold
+ * into the App Group. The widget recomputes status colour + ring fill itself, per
+ * day, via a 14-day timeline (one entry per midnight). So the ring visibly slips
+ * toward red as days pass — with NO app open required. Tap → opens the app.
  *
  * Ring fill = visit recency (full green = just visited, thin red = overdue).
- * Initials shown in the centre; gran's name below the ring.
+ * Photo (downloaded by the app into the App Group) shown in the centre; initials
+ * as fallback; gran's name below.
  *
  * Supports: .systemSmall (1 gran), .systemMedium (2 grans), .systemLarge (4 grans).
  *
- * Data source: App Groups UserDefaults (group.app.granwatch)
- * Written by the main GranWatch app via GranWidgetPlugin.swift whenever
- * elder data is loaded or a visit is logged.
+ * Data source: App Groups UserDefaults (group.app.granwatch), key granwatch_widget_data.
  */
 
 import WidgetKit
@@ -23,33 +27,99 @@ import os.log // TEMP DIAGNOSTIC — remove after widget bridge confirmed
 // Filter the device console with subsystem:app.granwatch.widget
 private let granWidgetLog = OSLog(subsystem: "app.granwatch.widget", category: "widget")
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MARK: - Shared data model (must match JSON written by GranWidgetPlugin.swift)
-// ─────────────────────────────────────────────────────────────────────────────
-
 private let kAppGroup    = "group.app.granwatch"
 private let kDataKey     = "granwatch_widget_data"
 private let kWidgetKind  = "GranWatchWidget"
 
+// ─────────────────────────────────────────────────────────────────────────────
+// MARK: - Stored model (RAW — must match JSON written by GranWidgetPlugin.swift)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Raw per-gran data as stored by the app. `photoUrl` is present in the JSON but
+/// not needed here (Codable ignores it); the photo is loaded from a cached file.
 struct GranEntry: Codable, Identifiable {
     let id: String
     let name: String
-    /// "green" | "yellow" | "orange" | "red"
-    let status: String
-    let lastVisitLabel: String
-    /// 0.07 (almost empty) – 1.0 (full ring, just visited)
-    let ringFraction: Double
+    /// ISO-8601 date of last visit, or nil if no visits yet.
+    let lastVisitISO: String?
+    /// Alert threshold in days — drives status + ring computation.
+    let alertThresholdDays: Double
 }
 
 struct WidgetPayload: Codable {
     var grans: [GranEntry]
 }
 
+/// Values computed for a SPECIFIC date — this is what the views render.
+struct GranDisplay: Identifiable {
+    let id: String
+    let name: String
+    let status: String        // "green" | "yellow" | "orange" | "red"
+    let ringFraction: Double  // 0.07 … 1.0
+    let lastVisitLabel: String
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MARK: - Date + status computation (mirrors server getStatus)
+// ─────────────────────────────────────────────────────────────────────────────
+
+private let isoWithFractional: ISO8601DateFormatter = {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    return f
+}()
+private let isoPlain: ISO8601DateFormatter = {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime]
+    return f
+}()
+private func parseISO(_ s: String?) -> Date? {
+    guard let s = s else { return nil }
+    return isoWithFractional.date(from: s) ?? isoPlain.date(from: s)
+}
+
+/// Whole calendar days between the last visit and `date` (>= 0). 999 if no visit.
+private func daysSince(_ lastVisit: Date?, on date: Date) -> Int {
+    guard let lastVisit = lastVisit else { return 999 }
+    let cal = Calendar.current
+    let start = cal.startOfDay(for: lastVisit)
+    let end   = cal.startOfDay(for: date)
+    let d = cal.dateComponents([.day], from: start, to: end).day ?? 999
+    return max(0, d)
+}
+
+/// Compute a gran's display for a given date. Status thresholds mirror the
+/// server's getStatus(): pct<0.33 green, <0.66 yellow, <1 orange, else red.
+private func display(for e: GranEntry, on date: Date) -> GranDisplay {
+    let lastVisit = parseISO(e.lastVisitISO)
+    let hasVisit  = lastVisit != nil
+    let days      = daysSince(lastVisit, on: date)
+    let threshold = e.alertThresholdDays > 0 ? e.alertThresholdDays : 7
+    let pct       = Double(days) / threshold
+
+    let status: String
+    if !hasVisit          { status = "red" }
+    else if pct < 0.33    { status = "green" }
+    else if pct < 0.66    { status = "yellow" }
+    else if pct < 1.0     { status = "orange" }
+    else                  { status = "red" }
+
+    let ring = hasVisit ? max(0.07, min(1.0, 1.0 - Double(days) / threshold)) : 0.07
+
+    let label: String
+    if !hasVisit        { label = "No visits yet" }
+    else if days <= 0   { label = "Today" }
+    else if days == 1   { label = "Yesterday" }
+    else                { label = "\(days)d ago" }
+
+    return GranDisplay(id: e.id, name: e.name, status: status, ringFraction: ring, lastVisitLabel: label)
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // MARK: - Colour helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-private extension GranEntry {
+private extension GranDisplay {
     var ringColor: Color {
         switch status {
         case "green":  return Color(red: 0.30, green: 0.69, blue: 0.31) // #4CAF50
@@ -58,10 +128,7 @@ private extension GranEntry {
         default:       return Color(red: 0.96, green: 0.26, blue: 0.21) // #F44336
         }
     }
-
-    var initial: String {
-        String(name.prefix(1).uppercased())
-    }
+    var initial: String { String(name.prefix(1).uppercased()) }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,15 +136,14 @@ private extension GranEntry {
 // ─────────────────────────────────────────────────────────────────────────────
 
 private func loadPayload() -> WidgetPayload {
-    // TEMP DIAGNOSTIC — step through each failure point so the device console reveals
-    // exactly where the read breaks (nil suite = App Group not shared with the widget;
-    // nil data = app never wrote / wrote to a different suite; decode fail = shape mismatch).
+    // TEMP DIAGNOSTIC — step through each failure point (nil suite = App Group not
+    // shared with the widget; nil data = app never wrote; decode fail = shape mismatch).
     guard let suite = UserDefaults(suiteName: kAppGroup) else {
         os_log("READ: UserDefaults(suiteName: %{public}@) NIL — widget can't see App Group", log: granWidgetLog, type: .error, kAppGroup)
         return WidgetPayload(grans: [])
     }
     guard let data = suite.data(forKey: kDataKey) else {
-        os_log("READ: suite is non-nil but NO data for key %{public}@ — app never wrote here", log: granWidgetLog, type: .error, kDataKey)
+        os_log("READ: suite non-nil but NO data for key %{public}@ — app never wrote here", log: granWidgetLog, type: .error, kDataKey)
         return WidgetPayload(grans: [])
     }
     guard let parsed = try? JSONDecoder().decode(WidgetPayload.self, from: data) else {
@@ -89,16 +155,21 @@ private func loadPayload() -> WidgetPayload {
 }
 
 private func placeholderPayload() -> WidgetPayload {
-    WidgetPayload(grans: [
-        GranEntry(id: "1", name: "Gran",   status: "green",  lastVisitLabel: "Today",      ringFraction: 0.90),
-        GranEntry(id: "2", name: "Nan",    status: "yellow", lastVisitLabel: "3 days ago",  ringFraction: 0.45),
-        GranEntry(id: "3", name: "Nana",   status: "red",    lastVisitLabel: "10 days ago", ringFraction: 0.07),
-        GranEntry(id: "4", name: "Pop",    status: "green",  lastVisitLabel: "Yesterday",   ringFraction: 0.72),
+    let cal = Calendar.current
+    let now = Date()
+    func iso(_ daysAgo: Int) -> String {
+        isoPlain.string(from: cal.date(byAdding: .day, value: -daysAgo, to: now) ?? now)
+    }
+    return WidgetPayload(grans: [
+        GranEntry(id: "1", name: "Gran", lastVisitISO: iso(0), alertThresholdDays: 7),
+        GranEntry(id: "2", name: "Nan",  lastVisitISO: iso(3), alertThresholdDays: 7),
+        GranEntry(id: "3", name: "Nana", lastVisitISO: iso(9), alertThresholdDays: 7),
+        GranEntry(id: "4", name: "Pop",  lastVisitISO: iso(1), alertThresholdDays: 7),
     ])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// MARK: - Timeline
+// MARK: - Timeline (one entry per day so the ring self-updates)
 // ─────────────────────────────────────────────────────────────────────────────
 
 struct GranTimelineEntry: TimelineEntry {
@@ -118,10 +189,22 @@ struct GranTimelineProvider: TimelineProvider {
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<GranTimelineEntry>) -> Void) {
-        let entry   = GranTimelineEntry(date: .now, payload: loadPayload())
-        // Refresh every 30 minutes even if the app hasn't updated us
-        let refresh = Calendar.current.date(byAdding: .minute, value: 30, to: .now)!
-        completion(Timeline(entries: [entry], policy: .after(refresh)))
+        // Read the raw data ONCE, then emit an entry for now + each of the next 14
+        // local midnights. Each entry renders status/ring computed for THAT date,
+        // so WidgetKit advances the ring daily on its own (no app open, no network).
+        let payload = loadPayload()
+        let cal = Calendar.current
+        let now = Date()
+        var entries: [GranTimelineEntry] = [GranTimelineEntry(date: now, payload: payload)]
+        let startToday = cal.startOfDay(for: now)
+        for offset in 1...14 {
+            if let midnight = cal.date(byAdding: .day, value: offset, to: startToday) {
+                entries.append(GranTimelineEntry(date: midnight, payload: payload))
+            }
+        }
+        // .atEnd → after 14 days WidgetKit asks for a fresh timeline (by then the
+        // app has usually refreshed the dates anyway).
+        completion(Timeline(entries: entries, policy: .atEnd))
     }
 }
 
@@ -130,13 +213,13 @@ struct GranTimelineProvider: TimelineProvider {
 // ─────────────────────────────────────────────────────────────────────────────
 
 struct GranRingView: View {
-    let gran: GranEntry
+    let gran: GranDisplay
     let size: CGFloat
 
     private var strokeWidth: CGFloat { size * 0.115 }
     private var innerSize:   CGFloat { size * 0.54 }
 
-    /// Load a gran's cached photo from the App Group container, if the main app
+    /// Load a gran's cached photo from the App Group container, if the app
     /// has downloaded it (see GranWidgetPlugin.refreshWidgetPhotos).
     static func widgetPhoto(for id: String) -> UIImage? {
         guard let container = FileManager.default
@@ -206,6 +289,11 @@ struct GranWatchEntryView: View {
     var entry: GranTimelineEntry
     @Environment(\.widgetFamily) var family
 
+    /// Grans computed for THIS entry's date — this is where the daily update happens.
+    private var grans: [GranDisplay] {
+        entry.payload.grans.map { display(for: $0, on: entry.date) }
+    }
+
     var body: some View {
         ZStack {
             kBg
@@ -225,9 +313,9 @@ struct GranWatchEntryView: View {
 
     // ── Small: one gran, centred ──────────────────────────────────────────────
     private var smallView: some View {
-        let grans = entry.payload.grans
+        let items = grans
         return VStack(spacing: 5) {
-            if let g = grans.first {
+            if let g = items.first {
                 GranRingView(gran: g, size: 84)
                 Text(g.name)
                     .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -242,13 +330,13 @@ struct GranWatchEntryView: View {
 
     // ── Medium: two grans side by side ───────────────────────────────────────
     private var mediumView: some View {
-        let grans = entry.payload.grans
+        let items = grans
         return HStack(spacing: 16) {
             ForEach(0..<2, id: \.self) { i in
                 VStack(spacing: 5) {
-                    if i < grans.count {
-                        GranRingView(gran: grans[i], size: 76)
-                        Text(grans[i].name)
+                    if i < items.count {
+                        GranRingView(gran: items[i], size: 76)
+                        Text(items[i].name)
                             .font(.system(size: 10, weight: .medium, design: .rounded))
                             .foregroundColor(.white.opacity(0.65))
                             .lineLimit(1)
@@ -263,7 +351,7 @@ struct GranWatchEntryView: View {
 
     // ── Large: 2×2 grid — the battery widget layout ───────────────────────────
     private var largeView: some View {
-        let grans  = entry.payload.grans
+        let items = grans
         let ring: CGFloat = 96
 
         return LazyVGrid(
@@ -273,9 +361,9 @@ struct GranWatchEntryView: View {
         ) {
             ForEach(0..<4, id: \.self) { i in
                 VStack(spacing: 5) {
-                    if i < grans.count {
-                        GranRingView(gran: grans[i], size: ring)
-                        Text(grans[i].name)
+                    if i < items.count {
+                        GranRingView(gran: items[i], size: ring)
+                        Text(items[i].name)
                             .font(.system(size: 10, weight: .medium, design: .rounded))
                             .foregroundColor(.white.opacity(0.65))
                             .lineLimit(1)

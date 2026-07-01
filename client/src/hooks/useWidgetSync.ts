@@ -23,35 +23,14 @@
 import { useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { trpc } from '@/lib/trpc';
-import { GranWidget, type GranWidgetEntry, type GranStatus } from '@/plugins/GranWidget';
+import { GranWidget, type GranWidgetEntry } from '@/plugins/GranWidget';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Compute how full the ring should be.
- *
- * - 1.0 = visited today (or in the future — shouldn't happen but safe)
- * - 0.07 = at or past the alert threshold (matches the near-empty battery look)
- * - Values in between are a linear interpolation
- */
-function computeRingFraction(daysSinceVisit: number, alertThresholdDays: number): number {
-  if (daysSinceVisit <= 0) return 1.0;
-  const raw = 1.0 - daysSinceVisit / alertThresholdDays;
-  return Math.max(0.07, Math.min(1.0, raw));
-}
-
-/**
- * Short human-readable label for the widget slot.
- * Kept terse — it's tiny widget real estate.
- */
-function buildLastVisitLabel(daysSinceVisit: number): string {
-  if (daysSinceVisit <= 0)  return 'Today';
-  if (daysSinceVisit === 1) return 'Yesterday';
-  if (daysSinceVisit >= 999) return 'No visits yet';
-  return `${daysSinceVisit}d ago`;
-}
+// NOTE: status colour + ring fill are NO LONGER computed here. We send raw
+// last-visit dates and the native widget recomputes per day, so the ring
+// degrades on its own without the app being opened.
 
 /**
  * TEMP DIAGNOSTIC — report the outcome of each widget-sync attempt to the server
@@ -101,31 +80,33 @@ export function useWidgetSync(): void {
   useEffect(() => {
     if (!isNative) return;
 
+    // Definitive signal: is the native GranWidget plugin actually registered?
+    const pluginAvailable = Capacitor.isPluginAvailable('GranWidget');
+
     // Report the state so we can see whether the effect ran and had data.
     if (!elders || elders.length === 0) {
-      reportWidgetSync({ stage: 'no-elders', granCount: elders?.length ?? -1 });
+      reportWidgetSync({ stage: 'no-elders', granCount: elders?.length ?? -1, pluginAvailable });
       return;
     }
 
-    // Widget supports up to 4 slots (2×2 large layout).
-    // We pass the first 4 by default — the same order as the dashboard list.
+    // Widget supports up to 4 slots (2×2 large layout). Send RAW inputs — the
+    // native widget computes status + ring per day, so it self-updates daily.
     const grans: GranWidgetEntry[] = elders.slice(0, 4).map((elder) => ({
-      id:             String(elder.id),
-      name:           elder.name,
-      status:         elder.status as GranStatus,
-      lastVisitLabel: buildLastVisitLabel(elder.daysSinceVisit),
-      ringFraction:   computeRingFraction(elder.daysSinceVisit, elder.alertThresholdDays),
-      photoUrl:       elder.photoUrl ?? null,
+      id:                 String(elder.id),
+      name:               elder.name,
+      lastVisitISO:       elder.lastVisitDate ? new Date(elder.lastVisitDate).toISOString() : null,
+      alertThresholdDays: elder.alertThresholdDays,
+      photoUrl:           elder.photoUrl ?? null,
     }));
 
     GranWidget.updateWidgetData({ grans })
       .then((res) => {
-        reportWidgetSync({ stage: 'wrote', ok: !!(res && (res as { success?: boolean }).success), granCount: grans.length });
+        reportWidgetSync({ stage: 'wrote', ok: !!(res && (res as { success?: boolean }).success), granCount: grans.length, pluginAvailable });
       })
       .catch((err) => {
         // Non-fatal — widget is a nice-to-have; never crash the main app for it
         console.warn('[GranWidget] Failed to sync widget data:', err);
-        reportWidgetSync({ stage: 'error', ok: false, granCount: grans.length, error: err instanceof Error ? err.message : String(err) });
+        reportWidgetSync({ stage: 'error', ok: false, granCount: grans.length, error: err instanceof Error ? err.message : String(err), pluginAvailable });
       });
   }, [elders, isNative]);
 }

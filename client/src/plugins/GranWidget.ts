@@ -21,21 +21,21 @@ import { registerPlugin } from '@capacitor/core';
 
 export type GranStatus = 'green' | 'yellow' | 'orange' | 'red';
 
-/** One gran's widget slot — passed to the iOS extension via App Groups. */
+/**
+ * One gran's widget slot — RAW inputs only. The native widget recomputes the
+ * status colour + ring fill itself, per day, so the ring degrades over time
+ * with NO app open required. (Previously we sent a pre-computed status/ring,
+ * which froze the widget between app opens — defeating the whole purpose.)
+ */
 export interface GranWidgetEntry {
-  /** Elder ID as a string — used as the stable React key */
+  /** Elder ID as a string — stable key + photo filename */
   id: string;
   /** Display name (gran's first name, used for initials + label) */
   name: string;
-  /** Visit status — maps to ring colour */
-  status: GranStatus;
-  /** Human-readable label, e.g. "Today", "Yesterday", "5 days ago" */
-  lastVisitLabel: string;
-  /**
-   * Ring fill fraction — 0.07 (almost empty = overdue) to 1.0 (full = just visited).
-   * Computed by: max(0.07, min(1.0, 1 - daysSinceVisit / alertThresholdDays))
-   */
-  ringFraction: number;
+  /** ISO-8601 date of the last visit, or null if no visits yet. */
+  lastVisitISO: string | null;
+  /** Alert threshold in days — the widget uses this to compute status + ring. */
+  alertThresholdDays: number;
   /**
    * Absolute URL to the gran's photo (Cloudflare R2), or null.
    * The native plugin downloads this into the App Group container so the
