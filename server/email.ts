@@ -42,8 +42,8 @@ function buildEmailHtml({
   const urgencyLabel = daysSince >= 21 ? "Overdue" : "Overdue";
 
   const message = isWholeFamily
-    ? `It's been <strong>${daysSince} days</strong> since anyone in the family visited <strong>${granName}</strong>. She'd love to see a familiar face — can you find a moment to pop in or give her a call?`
-    : `It's been a while since your last visit to <strong>${granName}</strong> — the family hasn't had a visitor in <strong>${daysSince} days</strong>. You're one of the family members who visited furthest back. Could you be the one to brighten her day?`;
+    ? `It's been <strong>${daysSince} days</strong> since anyone in the family visited <strong>${granName}</strong>. They'd love to see a familiar face — can you find a moment to pop in or give them a call?`
+    : `It's been a while since your last visit to <strong>${granName}</strong> — the family hasn't had a visitor in <strong>${daysSince} days</strong>. You're one of the family members who visited furthest back. Could you be the one to brighten their day?`;
 
   const photoSection = granPhotoUrl
     ? `<img src="${granPhotoUrl}" alt="${granName}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid ${urgencyColor};display:block;margin:0 auto 16px;" />`
@@ -124,8 +124,8 @@ function buildEmailText({
   isWholeFamily: boolean;
 }): string {
   const message = isWholeFamily
-    ? `It's been ${daysSince} days since anyone in the family visited ${granName}. She'd love to see a familiar face — can you find a moment to pop in or give her a call?`
-    : `It's been a while since your last visit to ${granName} — the family hasn't had a visitor in ${daysSince} days. You're one of the family members who visited furthest back. Could you be the one to brighten her day?`;
+    ? `It's been ${daysSince} days since anyone in the family visited ${granName}. They'd love to see a familiar face — can you find a moment to pop in or give them a call?`
+    : `It's been a while since your last visit to ${granName} — the family hasn't had a visitor in ${daysSince} days. You're one of the family members who visited furthest back. Could you be the one to brighten their day?`;
 
   return `GranWatch — ${granName} misses you 💛
 
@@ -233,7 +233,7 @@ function buildBirthdayEmailHtml({
 
   const headline = isToday ? `🎂 It's ${granName}'s Birthday!` : `🎂 ${granName}'s Birthday is Coming Up!`;
   const message = isToday
-    ? `Today is <strong>${granName}'s birthday</strong>! What a perfect day for a visit, a call, or a heartfelt message. Let's make her feel celebrated.`
+    ? `Today is <strong>${granName}'s birthday</strong>! What a perfect day for a visit, a call, or a heartfelt message. Let's make them feel celebrated.`
     : `Just a heads up — <strong>${granName}'s birthday is in 3 days</strong>. Why not plan a visit or organise something special with the family?`;
 
   return `<!DOCTYPE html>

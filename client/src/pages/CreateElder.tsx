@@ -103,7 +103,7 @@ export default function CreateElder() {
               onChange={e => setBirthdayInput(e.target.value)}
               className="h-12"
             />
-            <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before her birthday.</p>
+            <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before their birthday.</p>
           </div>
 
           {/* Alert threshold */}

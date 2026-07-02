@@ -91,7 +91,7 @@ export default function Landing() {
                 step: "1",
                 icon: <Camera className="w-5 h-5" />,
                 title: "Add your gran",
-                desc: "Create a profile with her name and photo. Set how often she should be visited — the ring starts counting.",
+                desc: "Create a profile with their name and photo. Set how often they should be visited — the ring starts counting.",
               },
               {
                 step: "2",

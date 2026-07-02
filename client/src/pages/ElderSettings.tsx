@@ -257,7 +257,7 @@ export default function ElderSettings() {
               max={new Date().toISOString().split("T")[0]}
               className="h-12"
             />
-            <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before her birthday. Leave blank to disable.</p>
+            <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before their birthday. Leave blank to disable.</p>
           </div>
         )}
 
@@ -315,7 +315,7 @@ export default function ElderSettings() {
               {!isPaid && <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
             </div>
             <Textarea
-              placeholder="Reminders for visitors — medication, dietary needs, things she loves..."
+              placeholder="Reminders for visitors — medication, dietary needs, things they love..."
               value={careNotes}
               onChange={e => setCareNotes(e.target.value)}
               rows={4}
