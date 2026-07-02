@@ -91,5 +91,5 @@ export function resolveGiftOptions(country: string | null | undefined): GiftPart
   for (const p of eligible.sort((a, b) => b.priority - a.priority)) {
     if (!byCategory.has(p.category)) byCategory.set(p.category, p);
   }
-  return [...byCategory.values()];
+  return Array.from(byCategory.values());
 }
