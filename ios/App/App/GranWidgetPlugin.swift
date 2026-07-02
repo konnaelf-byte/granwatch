@@ -23,6 +23,29 @@ import os.log // TEMP DIAGNOSTIC — remove after widget bridge confirmed
 // Filter the device console with subsystem:app.granwatch.widget  (or category:bridge)
 private let granLog = OSLog(subsystem: "app.granwatch.widget", category: "bridge")
 
+/**
+ * GranViewController — the app's Capacitor bridge view controller.
+ *
+ * WHY THIS EXISTS (root cause of the forever-blank widget):
+ * Capacitor's `cap sync` builds `packageClassList` in capacitor.config.json by
+ * scanning installed npm PACKAGES only. GranWidgetPlugin is an app-local Swift
+ * file, so it never appears in that list and the bridge never registered it —
+ * every JS call to `GranWidget.updateWidgetData` rejected with "not implemented
+ * on ios", and the widget never received any data.
+ *
+ * Fix per Capacitor's custom-code docs: subclass CAPBridgeViewController,
+ * register app-local plugin instances in capacitorDidLoad(), and point
+ * Main.storyboard's view controller at this class.
+ */
+@objc(GranViewController)
+public class GranViewController: CAPBridgeViewController {
+    override open func capacitorDidLoad() {
+        bridge?.registerPluginInstance(GranWidgetPlugin())
+        // TEMP DIAGNOSTIC
+        os_log("BRIDGE: GranWidgetPlugin registered via GranViewController", log: granLog, type: .info)
+    }
+}
+
 @objc(GranWidgetPlugin)
 public class GranWidgetPlugin: CAPPlugin, CAPBridgedPlugin {
 
