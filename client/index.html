@@ -79,6 +79,23 @@
     }
     </script>
 
+    <!-- Deploy-race self-healing: if a hashed asset (CSS/JS) 404s because the
+         page was fetched during a deploy rollover, hard-reload ONCE to pick up
+         the fresh HTML. sessionStorage guard prevents reload loops. -->
+    <script>
+      window.addEventListener("error", function (e) {
+        var t = e.target;
+        if (!t || !(t.tagName === "LINK" || t.tagName === "SCRIPT")) return;
+        var src = t.href || t.src || "";
+        if (src.indexOf("/assets/") === -1) return;
+        try {
+          if (sessionStorage.getItem("gw_asset_reload")) return;
+          sessionStorage.setItem("gw_asset_reload", "1");
+        } catch (_) {}
+        location.reload();
+      }, true);
+    </script>
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.webmanifest" />
 
