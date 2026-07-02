@@ -33,8 +33,9 @@ export default function CreateElder() {
       toast.error("Please enter a name");
       return;
     }
-    // Convert "YYYY-MM-DD" → "MM-DD"
-    const birthday = birthdayInput ? birthdayInput.slice(5) : undefined;
+    // <input type="date"> already yields "YYYY-MM-DD" — exactly what the server
+    // requires. (A legacy .slice(5) here sent "MM-DD" and failed validation.)
+    const birthday = birthdayInput || undefined;
     createElder.mutate({
       name: name.trim(),
       photoUrl: photoUrl.trim() || undefined,
