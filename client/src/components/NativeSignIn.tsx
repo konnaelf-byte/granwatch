@@ -22,6 +22,7 @@ import { useLocation } from "wouter";
 import { Loader2, Mail, Apple } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { currentPlatform } from "@/utils/platform";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -412,7 +413,10 @@ export default function NativeSignIn() {
       {/* ── Buttons screen ── */}
       {screen === "buttons" && (
         <div className="flex flex-col gap-3">
-          {/* Apple */}
+          {/* Apple — iOS only: on Android it's an unfamiliar web-OAuth detour,
+              so Android leads with Google + email (users who signed up with
+              Apple on iPhone can still use email-code with the same address). */}
+          {currentPlatform !== "android" && (
           <Button
             variant="outline"
             size="lg"
@@ -428,6 +432,7 @@ export default function NativeSignIn() {
             )}
             Continue with Apple
           </Button>
+          )}
 
           {/* Google */}
           <Button
