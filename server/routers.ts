@@ -1173,6 +1173,7 @@ export const appRouter = router({
           emailsSent = await sendVisitReminderEmails({
             recipients: emailRecipients,
             granName: elder.name,
+            elderId: elder.id,
             granPhotoUrl: elder.photoUrl ?? null,
             daysSince: daysSinceVisit,
             isWholeFamily: true,
@@ -1183,6 +1184,103 @@ export const appRouter = router({
           sent,
           emailsSent,
           message: `${sent} in-app notification${sent !== 1 ? "s" : ""} sent${emailsSent > 0 ? `, ${emailsSent} email${emailsSent !== 1 ? "s" : ""} sent` : ""}.`,
+        };
+      }),
+
+    /**
+     * Owner-admin only: SIMULATE the nightly notification logic at an
+     * arbitrary "days since last visit" — so the 14-day (longest-absent
+     * members only) and 21-day (whole family) paths can be verified without
+     * waiting weeks. Uses REAL per-member visit history for targeting.
+     *
+     * Dry-run by default: reports exactly who WOULD get what.
+     * With sendEmails=true it actually sends the emails (no dedup sentinels
+     * written — safe to repeat).
+     */
+    simulate: protectedProcedure
+      .input(z.object({
+        elderId: z.number(),
+        simulatedDaysSince: z.number().min(0).max(999),
+        sendEmails: z.boolean().default(false),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+        if (ctx.user.role !== "admin") throw new Error("Owner admin access required");
+
+        const [elder] = await db.select().from(elders).where(eq(elders.id, input.elderId)).limit(1);
+        if (!elder) throw new Error("Elder not found");
+
+        const { users, pushTokens } = await import("../drizzle/schema");
+        const d = input.simulatedDaysSince;
+
+        // Real member visit history (this is what the 14-day targeting uses)
+        const members = await db.select().from(elderMembers).where(eq(elderMembers.elderId, input.elderId));
+        const membersWithVisits = await Promise.all(
+          members.map(async (m) => {
+            const [user] = await db.select().from(users).where(eq(users.id, m.userId)).limit(1);
+            const [lastVisit] = await db
+              .select().from(visits)
+              .where(and(eq(visits.elderId, input.elderId), eq(visits.userId, m.userId)))
+              .orderBy(desc(visits.visitedAt))
+              .limit(1);
+            const myDaysSince = lastVisit ? daysSince(lastVisit.visitedAt) : 999;
+            return { ...m, userName: user?.name ?? "Family Member", userEmail: user?.email ?? null, myDaysSince };
+          })
+        );
+        const notifyable = membersWithVisits.filter(m => m.notificationsEnabled !== false);
+        const sorted = [...notifyable].sort((a, b) => b.myDaysSince - a.myDaysSince);
+
+        // Mirror cron.ts decisions at simulated day d
+        const isRed = d >= elder.alertThresholdDays;
+        const nudgeTargets = sorted.slice(0, 2);
+        const redAlertTargets = isRed ? notifyable : [];
+
+        // 14-day email: ONLY the member(s) tied for longest-absent
+        const maxDays = sorted[0]?.myDaysSince ?? 0;
+        const email14Targets = (d >= 14 && d < 21)
+          ? sorted.filter(m => m.myDaysSince === maxDays && m.userEmail)
+          : [];
+        // 21-day email: the whole (notifyable) family
+        const email21Targets = d >= 21 ? notifyable.filter(m => m.userEmail) : [];
+
+        // Push deliverability: who has a registered device token?
+        const pushTargetIds = (isRed ? notifyable : nudgeTargets).map(m => m.userId);
+        const tokens = pushTargetIds.length
+          ? await db.select({ userId: pushTokens.userId }).from(pushTokens).where(inArray(pushTokens.userId, pushTargetIds))
+          : [];
+
+        // Optionally REALLY send the emails (no dedup sentinels — repeatable)
+        let emailsSent = 0;
+        if (input.sendEmails && (email14Targets.length || email21Targets.length)) {
+          const { sendVisitReminderEmails } = await import("./email");
+          const targets = email21Targets.length ? email21Targets : email14Targets;
+          emailsSent = await sendVisitReminderEmails({
+            recipients: targets.map(m => ({ name: m.userName, email: m.userEmail! })),
+            granName: elder.name,
+            elderId: elder.id,
+            granPhotoUrl: elder.photoUrl ?? null,
+            daysSince: d,
+            isWholeFamily: email21Targets.length > 0,
+          });
+        }
+
+        const fmt = (m: { userName: string; myDaysSince: number }) =>
+          `${m.userName} (last visited ${m.myDaysSince >= 999 ? "never" : m.myDaysSince + "d ago"})`;
+
+        return {
+          simulatedDaysSince: d,
+          threshold: elder.alertThresholdDays,
+          status: isRed ? "red" : d >= 14 ? "overdue-14" : "ok",
+          report: {
+            inAppNudges: nudgeTargets.map(fmt),
+            redAlertToAll: redAlertTargets.map(fmt),
+            email14LongestAbsentOnly: email14Targets.map(fmt),
+            email21WholeFamily: email21Targets.map(fmt),
+            pushWouldTarget: pushTargetIds.length,
+            pushDeliverableDevices: tokens.length, // 0 until the push plugin ships in a native build
+          },
+          emailsActuallySent: emailsSent,
         };
       }),
   }),

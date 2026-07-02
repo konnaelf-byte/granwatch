@@ -245,6 +245,7 @@ async function runNightlyNotifications() {
               const sent = await sendVisitReminderEmails({
                 recipients,
                 granName: elder.name,
+                elderId: elder.id,
                 granPhotoUrl: elder.photoUrl,
                 daysSince: daysSinceVisit,
                 isWholeFamily: true,
@@ -277,6 +278,7 @@ async function runNightlyNotifications() {
               const sent = await sendVisitReminderEmails({
                 recipients,
                 granName: elder.name,
+                elderId: elder.id,
                 granPhotoUrl: elder.photoUrl,
                 daysSince: daysSinceVisit,
                 isWholeFamily: false,
@@ -335,6 +337,7 @@ async function runNightlyNotifications() {
             const sent = await sendBirthdayReminderEmails({
               recipients: bdRecipients,
               granName: elder.name,
+              elderId: elder.id,
               granPhotoUrl: elder.photoUrl,
               isToday: true,
             });
@@ -352,6 +355,7 @@ async function runNightlyNotifications() {
             const sent = await sendBirthdayReminderEmails({
               recipients: bdRecipients,
               granName: elder.name,
+              elderId: elder.id,
               granPhotoUrl: elder.photoUrl,
               isToday: false,
             });

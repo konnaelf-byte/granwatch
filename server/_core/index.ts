@@ -157,6 +157,46 @@ async function startServer() {
     res.json({ lastWidgetSync });
   });
 
+  // ── Gift redirect (public — used from notification EMAILS) ──────────────────
+  // Resolves the gift partner for the gran's country, logs the click with the
+  // -1 "email click" sentinel, and forwards. Highest-intent placement: the
+  // birthday and overdue-visit emails.
+  app.get("/api/gift/:elderId/:category", async (req, res) => {
+    try {
+      const elderId = parseInt(req.params.elderId, 10);
+      const category = req.params.category as "flowers" | "gift";
+      if (!Number.isFinite(elderId) || !["flowers", "gift"].includes(category)) {
+        return res.redirect("https://granwatch.app/dashboard");
+      }
+      const { getDb } = await import("../db");
+      const { elders, giftLogs } = await import("../../drizzle/schema");
+      const { eq } = await import("drizzle-orm");
+      const { resolveGiftOptions } = await import("../giftPartners");
+
+      const db = await getDb();
+      const [elder] = db
+        ? await db.select({ country: elders.country }).from(elders).where(eq(elders.id, elderId)).limit(1)
+        : [undefined];
+      const option = resolveGiftOptions(elder?.country).find((p) => p.category === category);
+      if (!option) return res.redirect("https://granwatch.app/dashboard");
+
+      // Best-effort click log (sentByUserId -1 = clicked from an email, not in-app)
+      if (db) {
+        try {
+          await db.insert(giftLogs).values({
+            elderId,
+            sentByUserId: -1,
+            giftType: category,
+            partnerName: `${option.id} (email)`,
+          });
+        } catch { /* non-fatal */ }
+      }
+      return res.redirect(option.url);
+    } catch {
+      return res.redirect("https://granwatch.app/dashboard");
+    }
+  });
+
   // ── Auth + application middleware ──────────────────────────────────────────
 
   // Clerk authentication middleware — must be first so getAuth() works everywhere.

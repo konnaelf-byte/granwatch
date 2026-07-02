@@ -27,12 +27,14 @@ function buildEmailHtml({
   daysSince,
   isWholeFamily,
   granPhotoUrl,
+  elderId,
 }: {
   recipientName: string;
   granName: string;
   daysSince: number;
   isWholeFamily: boolean;
   granPhotoUrl?: string | null;
+  elderId?: number;
 }): string {
   const greeting = isWholeFamily
     ? `Hi ${recipientName},`
@@ -89,6 +91,7 @@ function buildEmailHtml({
               <div style="text-align:center;margin-bottom:24px;">
                 <a href="https://granwatch.app/dashboard" style="display:inline-block;background:#f97316;color:#ffffff;font-size:15px;font-weight:600;padding:12px 28px;border-radius:99px;text-decoration:none;">Open GranWatch</a>
               </div>
+              ${elderId ? `<p style="margin:-8px 0 24px;font-size:13px;color:#78716c;text-align:center;">Can't visit right now? <a href="https://granwatch.app/api/gift/${elderId}/flowers" style="color:#f97316;font-weight:600;text-decoration:none;">🌸 Send ${granName} flowers instead</a></p>` : ""}
 
               <p style="margin:0;font-size:13px;color:#78716c;line-height:1.5;">You can log a visit, schedule a future visit, or send a video call note directly from the app. Every check-in counts. 💚</p>
             </td>
@@ -156,6 +159,8 @@ export interface SendVisitReminderParams {
   daysSince: number;
   /** true = 21-day whole-family email; false = 14-day longest-absent email */
   isWholeFamily: boolean;
+  /** Enables the "send flowers instead" gift link (resolved by gran's country). */
+  elderId?: number;
 }
 
 /**
@@ -163,7 +168,7 @@ export interface SendVisitReminderParams {
  * Returns the number of emails successfully sent.
  */
 export async function sendVisitReminderEmails(params: SendVisitReminderParams): Promise<number> {
-  const { recipients, granName, granPhotoUrl, daysSince, isWholeFamily } = params;
+  const { recipients, granName, granPhotoUrl, daysSince, isWholeFamily, elderId } = params;
 
   if (!ENV.resendApiKey) {
     console.warn("[Email] RESEND_API_KEY not set — skipping email send");
@@ -191,6 +196,7 @@ export async function sendVisitReminderEmails(params: SendVisitReminderParams): 
           daysSince,
           isWholeFamily,
           granPhotoUrl,
+          elderId,
         }),
         text: buildEmailText({
           recipientName: recipient.name || "there",
@@ -221,11 +227,13 @@ function buildBirthdayEmailHtml({
   granName,
   granPhotoUrl,
   isToday,
+  elderId,
 }: {
   recipientName: string;
   granName: string;
   granPhotoUrl?: string | null;
   isToday: boolean;
+  elderId?: number;
 }): string {
   const photoSection = granPhotoUrl
     ? `<img src="${granPhotoUrl}" alt="${granName}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #ec4899;display:block;margin:0 auto 16px;" />`
@@ -266,6 +274,7 @@ function buildBirthdayEmailHtml({
               <div style="text-align:center;margin-bottom:24px;">
                 <a href="https://granwatch.app/dashboard" style="display:inline-block;background:#ec4899;color:#ffffff;font-size:15px;font-weight:600;padding:12px 28px;border-radius:99px;text-decoration:none;">Open GranWatch</a>
               </div>
+              ${elderId ? `<p style="margin:-8px 0 24px;font-size:13px;color:#78716c;text-align:center;">Far away? <a href="https://granwatch.app/api/gift/${elderId}/flowers" style="color:#ec4899;font-weight:600;text-decoration:none;">🌸 Send ${granName} birthday flowers</a></p>` : ""}
               <p style="margin:0;font-size:13px;color:#78716c;line-height:1.5;">You can log a visit or book a time directly in the app. Every visit counts. 💚</p>
             </td>
           </tr>
@@ -290,6 +299,8 @@ export interface SendBirthdayReminderParams {
   granName: string;
   granPhotoUrl?: string | null;
   isToday: boolean; // true = birthday is today, false = 3 days away
+  /** Enables the "send birthday flowers" gift link (resolved by gran's country). */
+  elderId?: number;
 }
 
 /**
@@ -297,7 +308,7 @@ export interface SendBirthdayReminderParams {
  * Returns the number of emails successfully sent.
  */
 export async function sendBirthdayReminderEmails(params: SendBirthdayReminderParams): Promise<number> {
-  const { recipients, granName, granPhotoUrl, isToday } = params;
+  const { recipients, granName, granPhotoUrl, isToday, elderId } = params;
 
   if (!ENV.resendApiKey) {
     console.warn("[Email] RESEND_API_KEY not set — skipping birthday email send");
@@ -323,6 +334,7 @@ export async function sendBirthdayReminderEmails(params: SendBirthdayReminderPar
           granName,
           granPhotoUrl,
           isToday,
+          elderId,
         }),
         text: isToday
           ? `Hi ${recipient.name || "there"},\n\nToday is ${granName}'s birthday! Open GranWatch to log a visit or book one: https://granwatch.app/dashboard\n\n💚 GranWatch`

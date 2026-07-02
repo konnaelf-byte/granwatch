@@ -134,6 +134,20 @@ export default function ElderSettings() {
     onError: (e) => toast.error(e.message),
   });
 
+  // Simulate the nightly logic at an arbitrary day count (owner-admin only).
+  const [simReport, setSimReport] = useState<Record<string, unknown> | null>(null);
+  const simulate = trpc.smartNotify.simulate.useMutation({
+    onSuccess: (data) => {
+      setSimReport(data as unknown as Record<string, unknown>);
+      toast.success(
+        data.emailsActuallySent > 0
+          ? `Simulated day ${data.simulatedDaysSince} — ${data.emailsActuallySent} real email(s) sent!`
+          : `Simulated day ${data.simulatedDaysSince} (dry run) — see report below.`
+      );
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const updateElder = trpc.elders.update.useMutation({
     onSuccess: () => {
       // Invalidate queries so all consumers get fresh data.
@@ -393,6 +407,31 @@ export default function ElderSettings() {
               <Bell className="w-4 h-4 mr-2" />
               {testNotify.isPending ? "Sending..." : "Send Test Notifications"}
             </Button>
+
+            {/* Threshold simulator — verify 14-day (longest-absent only) and
+                21-day (whole family) targeting without waiting weeks. */}
+            <p className="text-xs text-muted-foreground pt-1">
+              Simulate "days since last visit" to verify who would be notified (dry run — nothing sent):
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" disabled={simulate.isPending}
+                onClick={() => simulate.mutate({ elderId, simulatedDaysSince: 14 })}>
+                Simulate day 14
+              </Button>
+              <Button variant="outline" size="sm" disabled={simulate.isPending}
+                onClick={() => simulate.mutate({ elderId, simulatedDaysSince: 21 })}>
+                Simulate day 21
+              </Button>
+            </div>
+            {simReport && (
+              <div className="text-xs bg-muted rounded-lg p-3 space-y-1 font-mono whitespace-pre-wrap break-words">
+                {JSON.stringify(simReport.report, null, 1)}
+                <Button variant="outline" size="sm" className="w-full mt-2 font-sans" disabled={simulate.isPending}
+                  onClick={() => simulate.mutate({ elderId, simulatedDaysSince: Number(simReport.simulatedDaysSince), sendEmails: true })}>
+                  📧 Send these emails for real
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
