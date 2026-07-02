@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Heart, Bell, Calendar, Users, Camera, CheckCircle } from "lucide-react";
 import { MONTHLY_COST_CENTS } from "@shared/const";
+import { isNativeApp } from "@/utils/platform";
 import StatusRing from "@/components/StatusRing";
 import { useEffect } from "react";
 
@@ -141,22 +142,32 @@ export default function Landing() {
           ))}
         </div>
 
-        {/* Pricing teaser */}
+        {/* Pricing teaser — price is platform-aware: native = App Store IAP
+            ($2.99, localised by Apple at purchase), web = Lemon Squeezy (R39). */}
         <div className="mt-12 max-w-sm w-full bg-card border rounded-2xl p-6 text-left">
           <div className="flex items-center justify-between mb-3">
             <span className="font-bold text-foreground">Gran+</span>
-            <span className="text-primary font-bold">R{(MONTHLY_COST_CENTS / 100).toFixed(0)}/month</span>
+            <span className="text-primary font-bold">
+              {isNativeApp ? "$2.99/month" : `R${(MONTHLY_COST_CENTS / 100).toFixed(0)}/month`}
+            </span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">
-            Split between the whole family — could be as little as R{Math.ceil(MONTHLY_COST_CENTS / 300).toFixed(0)} each.
+            {isNativeApp
+              ? "One subscription covers the whole family."
+              : `Split between the whole family — could be as little as R${Math.ceil(MONTHLY_COST_CENTS / 300).toFixed(0)} each.`}
           </p>
           <ul className="text-sm text-muted-foreground space-y-1">
-            {["Wellbeing check-ins", "Visit photos & notes", "Multiple gran profiles", "Custom alert threshold", "Full visit history"].map(f => (
+            {["Wellbeing mood check-ins", "Visit photos & notes", "Multiple gran profiles", "Custom alert threshold", "Full visit history & insights", "Care notes for all visitors"].map(f => (
               <li key={f} className="flex items-center gap-2">
                 <span className="text-primary">✓</span> {f}
               </li>
             ))}
           </ul>
+          {isNativeApp && (
+            <p className="text-xs text-muted-foreground mt-3">
+              Billed through the App Store in your local currency.
+            </p>
+          )}
         </div>
 
         {/* Final CTA */}
