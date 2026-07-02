@@ -122,14 +122,11 @@ export function HeroLogoRing({ size = 220 }: { size?: number }) {
         {/* Ring overlay ON the bezel — starts at top */}
         <svg width={size} height={size} className="absolute inset-0"
           style={{ transform: "rotate(-90deg)" }}>
-          {/* Drained track: a faint groove on the dark artwork — shows what's
-              been lost without shouting */}
+          {/* Track: a constant faint groove, full circle — the coloured arc
+              lives on top of it */}
           <circle cx={center} cy={center} r={radius} fill="none"
             stroke="rgba(255, 255, 255, 0.14)"
             strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference * fillRatio}
-            strokeLinecap="round"
           />
           {/* Living arc — the status colour, glowing */}
           <circle cx={center} cy={center} r={radius} fill="none"
@@ -142,7 +139,7 @@ export function HeroLogoRing({ size = 220 }: { size?: number }) {
               opacity: 0.92,
               filter: colors.glow,
               transition: justVisited
-                ? "stroke-dashoffset 0.6s cubic-bezier(0.2, 0.8, 0.3, 1.2), stroke 0.4s ease"
+                ? "stroke-dashoffset 0.5s ease-out, stroke 0.5s ease-out"
                 : "stroke-dashoffset 0.28s linear, stroke 0.6s ease",
             }}
           />
