@@ -17,14 +17,16 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const LOGO = "/icon-1024.png";
+// Bezel-free hero artwork (dark green, no baked ring) — the animated ring is
+// the ONLY ring. The official logo (icon-1024.png) is untouched elsewhere.
+const LOGO = "/hero-gran.jpg";
 const THRESHOLD = 21; // days → matches the app default
 const OVERDUE_DAY = 14; // where the fast-forward stops
 
-// Tuned to the icon-1024 artwork: the baked bezel band sits at ~90% of the
-// image radius and is ~16% of it wide. Adjust these two to re-align.
-const BEZEL_RADIUS_FRACTION = 0.9;
-const BEZEL_WIDTH_FRACTION = 0.17;
+// Ring geometry on the circular crop: radius as a fraction of the image
+// radius, stroke width likewise. Slim + elegant now that nothing competes.
+const BEZEL_RADIUS_FRACTION = 0.88;
+const BEZEL_WIDTH_FRACTION = 0.11;
 
 type Status = "green" | "yellow" | "orange";
 
@@ -120,10 +122,10 @@ export function HeroLogoRing({ size = 220 }: { size?: number }) {
         {/* Ring overlay ON the bezel — starts at top */}
         <svg width={size} height={size} className="absolute inset-0"
           style={{ transform: "rotate(-90deg)" }}>
-          {/* Drained track: dark translucent — dims the baked green bezel,
-              ticks ghost through → "the logo's ring went dark" */}
+          {/* Drained track: a faint groove on the dark artwork — shows what's
+              been lost without shouting */}
           <circle cx={center} cy={center} r={radius} fill="none"
-            stroke="rgba(15, 25, 18, 0.72)"
+            stroke="rgba(255, 255, 255, 0.14)"
             strokeWidth={strokeWidth}
             strokeDasharray={circumference}
             strokeDashoffset={circumference * fillRatio}
