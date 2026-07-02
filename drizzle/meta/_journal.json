@@ -99,6 +99,13 @@
       "when": 1782200004000,
       "tag": "0013_birthday_year",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "5",
+      "when": 1782999025963,
+      "tag": "0014_curious_scalphunter",
+      "breakpoints": true
     }
   ]
 }

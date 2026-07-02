@@ -15,6 +15,7 @@ import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { isNativeApp } from "@/utils/platform";
 import { initRevenueCat } from "@/utils/iap";
+import { COUNTRIES } from "@/lib/countries";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -96,6 +97,8 @@ export default function ElderSettings() {
   const [careNotes, setCareNotes] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [birthdayInput, setBirthdayInput] = useState(""); // "YYYY-MM-DD" for the input element
+  const [country, setCountry] = useState(""); // ISO alpha-2 — for gift-delivery partners
+  const [city, setCity] = useState("");
   const [initialized, setInitialized] = useState(false);
 
   const utils = trpc.useUtils();
@@ -114,6 +117,8 @@ export default function ElderSettings() {
       setNotificationsEnabled(elder.notificationsEnabled ?? true);
       // birthday stored as "YYYY-MM-DD"; legacy records may be "MM-DD" — clear those so the user re-enters with year
       setBirthdayInput(elder.birthday && elder.birthday.length === 10 ? elder.birthday : "");
+      setCountry(elder.country ?? "");
+      setCity(elder.city ?? "");
       setInitialized(true);
     }
   }, [elder, initialized]);
@@ -180,6 +185,8 @@ export default function ElderSettings() {
         name: name.trim(),
         alertThresholdDays: threshold,
         birthday,
+        country: country || null,
+        city: city.trim() || null,
         wellbeingEnabled: isPaid ? wellbeingEnabled : undefined,
         careNotes: isPaid ? careNotes : undefined,
       }, {
@@ -258,6 +265,30 @@ export default function ElderSettings() {
               className="h-12"
             />
             <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before their birthday. Leave blank to disable.</p>
+          </div>
+        )}
+
+        {/* Location — for gift/flower delivery partners (admin only) */}
+        {isAdmin && (
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Where does Gran live? <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <select
+              value={country}
+              onChange={e => setCountry(e.target.value)}
+              className="h-12 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Select country…</option>
+              {COUNTRIES.map(c => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+            <Input
+              placeholder="City or town (optional)"
+              value={city}
+              onChange={e => setCity(e.target.value)}
+              className="h-12"
+            />
+            <p className="text-xs text-muted-foreground">Used only to find gift &amp; flower delivery services near Gran.</p>
           </div>
         )}
 

@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Heart, Cake } from "lucide-react";
+import { ArrowLeft, Heart, Cake, MapPin } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import StatusRing from "@/components/StatusRing";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { COUNTRIES } from "@/lib/countries";
 
 export default function CreateElder() {
   const { isAuthenticated } = useAuth();
@@ -19,6 +20,8 @@ export default function CreateElder() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [threshold, setThreshold] = useState(21);
   const [birthdayInput, setBirthdayInput] = useState(""); // full date string from <input type="date">
+  const [country, setCountry] = useState(""); // ISO alpha-2 — for gift-delivery partners
+  const [city, setCity] = useState("");
 
   const createElder = trpc.elders.create.useMutation({
     onSuccess: (elder) => {
@@ -41,6 +44,8 @@ export default function CreateElder() {
       photoUrl: photoUrl.trim() || undefined,
       alertThresholdDays: threshold,
       birthday,
+      country: country || undefined,
+      city: city.trim() || undefined,
     });
   };
 
@@ -104,6 +109,31 @@ export default function CreateElder() {
               className="h-12"
             />
             <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before their birthday.</p>
+          </div>
+
+          {/* Location — for gift/flower delivery partners */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-primary" />
+              Where does Gran live? <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <select
+              value={country}
+              onChange={e => setCountry(e.target.value)}
+              className="h-12 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Select country…</option>
+              {COUNTRIES.map(c => (
+                <option key={c.code} value={c.code}>{c.name}</option>
+              ))}
+            </select>
+            <Input
+              placeholder="City or town (optional)"
+              value={city}
+              onChange={e => setCity(e.target.value)}
+              className="h-12"
+            />
+            <p className="text-xs text-muted-foreground">Used only to find gift &amp; flower delivery services near Gran.</p>
           </div>
 
           {/* Alert threshold */}

@@ -48,12 +48,14 @@ export default function ElderProfile() {
   const [transferTarget, setTransferTarget] = useState<{ userId: number; name: string } | null>(null);
   const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
 
-  // Partner affiliate URLs — swap these env vars once deals are signed.
-  // On native, window.open opens the system browser (Safari / Chrome) automatically.
-  const FLOWERS_URL = import.meta.env.VITE_PARTNER_FLOWERS_URL || "https://petalandpost.co.za/product/todays-cape-town-posy/";
-  const GIFT_URL = import.meta.env.VITE_PARTNER_GIFT_URL || "https://petalandpost.co.za/gifts-flowers/gift-set-hamper-delivery/";
-
   const utils = trpc.useUtils();
+
+  // Gift buttons resolve server-side from the partner registry, based on the
+  // GRAN'S country (delivery destination) — local deals beat global fallbacks.
+  // See server/giftPartners.ts. On native, window.open opens the system browser.
+  const { data: giftOptions } = trpc.gifts.optionsForElder.useQuery({ elderId }, { enabled: elderId > 0 });
+  const flowersOption = giftOptions?.find((o) => o.category === "flowers");
+  const giftOption = giftOptions?.find((o) => o.category === "gift");
 
   // Reuse the existing Gran+ upsell modal (web = Lemon Squeezy, native = RevenueCat).
   const openGranPlus = () => (isNativeApp ? setNativeGranPlusOpen(true) : setGranPlusOpen(true));
@@ -166,14 +168,16 @@ export default function ElderProfile() {
   });
 
   const handleSendFlowers = async () => {
-    // Log first (best-effort), then open URL regardless of outcome
-    try { await logGift.mutateAsync({ elderId, giftType: "flowers" }); } catch { /* already toasted */ }
-    window.open(FLOWERS_URL, "_blank", "noopener,noreferrer");
+    if (!flowersOption) return;
+    // Log first (best-effort, with partner attribution), then open URL regardless
+    try { await logGift.mutateAsync({ elderId, giftType: "flowers", partnerName: flowersOption.id }); } catch { /* already toasted */ }
+    window.open(flowersOption.url, "_blank", "noopener,noreferrer");
   };
 
   const handleSendGift = async () => {
-    try { await logGift.mutateAsync({ elderId, giftType: "gift" }); } catch { /* already toasted */ }
-    window.open(GIFT_URL, "_blank", "noopener,noreferrer");
+    if (!giftOption) return;
+    try { await logGift.mutateAsync({ elderId, giftType: "gift", partnerName: giftOption.id }); } catch { /* already toasted */ }
+    window.open(giftOption.url, "_blank", "noopener,noreferrer");
   };
 
   const cancelPlanned = trpc.planned.cancel.useMutation({
@@ -341,33 +345,41 @@ export default function ElderProfile() {
           </Button>
         </div>
 
-        {/* Gift / affiliate buttons — free tier, shown to all family members */}
-        <div className="mb-5">
-          <p className="text-xs text-muted-foreground text-center mb-2.5 font-medium uppercase tracking-wide">
-            Show Gran some love 💌
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-12 text-sm font-semibold border-pink-200 text-pink-700 hover:bg-pink-50 hover:border-pink-300 dark:border-pink-900 dark:text-pink-300 dark:hover:bg-pink-950"
-              onClick={handleSendFlowers}
-              disabled={logGift.isPending}
-            >
-              🌸 Send Flowers
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="h-12 text-sm font-semibold border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-900 dark:text-amber-300 dark:hover:bg-amber-950"
-              onClick={handleSendGift}
-              disabled={logGift.isPending}
-            >
-              <Gift className="w-4 h-4 mr-1.5" />
-              Send a Gift
-            </Button>
+        {/* Gift / affiliate buttons — free tier, shown to all family members.
+            Rendered only when the partner registry has coverage for the gran's
+            country (server/giftPartners.ts). */}
+        {(flowersOption || giftOption) && (
+          <div className="mb-5">
+            <p className="text-xs text-muted-foreground text-center mb-2.5 font-medium uppercase tracking-wide">
+              Show Gran some love 💌
+            </p>
+            <div className={`grid gap-3 ${flowersOption && giftOption ? "grid-cols-2" : "grid-cols-1"}`}>
+              {flowersOption && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 text-sm font-semibold border-pink-200 text-pink-700 hover:bg-pink-50 hover:border-pink-300 dark:border-pink-900 dark:text-pink-300 dark:hover:bg-pink-950"
+                  onClick={handleSendFlowers}
+                  disabled={logGift.isPending}
+                >
+                  🌸 Send Flowers
+                </Button>
+              )}
+              {giftOption && (
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 text-sm font-semibold border-amber-200 text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-900 dark:text-amber-300 dark:hover:bg-amber-950"
+                  onClick={handleSendGift}
+                  disabled={logGift.isPending}
+                >
+                  <Gift className="w-4 h-4 mr-1.5" />
+                  Send a Gift
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Invite code */}
         <div className="mb-6 bg-card border rounded-xl p-4 flex items-center justify-between">

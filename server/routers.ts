@@ -355,6 +355,8 @@ export const appRouter = router({
         photoUrl: z.string().optional(),
         alertThresholdDays: z.number().min(1).max(365).default(21),
         birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // "YYYY-MM-DD"
+        country: z.string().regex(/^[A-Za-z]{2}$/).optional(), // ISO 3166-1 alpha-2 — for gift-delivery partner resolution
+        city: z.string().trim().max(128).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -367,6 +369,8 @@ export const appRouter = router({
           photoUrl: input.photoUrl ?? null,
           alertThresholdDays: input.alertThresholdDays,
           birthday: input.birthday ?? null,
+          country: input.country ? input.country.toUpperCase() : null,
+          city: input.city || null,
           inviteCode,
           createdByUserId: ctx.user.id,
         });
@@ -394,6 +398,8 @@ export const appRouter = router({
         wellbeingEnabled: z.boolean().optional(),
         careNotes: z.string().optional(),
         birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(), // "YYYY-MM-DD" or null to clear
+        country: z.string().regex(/^[A-Za-z]{2}$/).nullable().optional(), // ISO alpha-2 or null to clear
+        city: z.string().trim().max(128).nullable().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -415,6 +421,8 @@ export const appRouter = router({
         if (input.photoUrl !== undefined) updateData.photoUrl = input.photoUrl;
         if (input.alertThresholdDays !== undefined) updateData.alertThresholdDays = input.alertThresholdDays;
         if (input.birthday !== undefined) updateData.birthday = input.birthday; // can be null to clear
+        if (input.country !== undefined) updateData.country = input.country ? input.country.toUpperCase() : null;
+        if (input.city !== undefined) updateData.city = input.city || null;
 
 
         // Gran+ only features

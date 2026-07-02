@@ -11,10 +11,46 @@
 import { router, protectedProcedure } from "./_core/trpc";
 import { z } from "zod";
 import { getDb } from "./db";
-import { giftLogs, elderMembers, users } from "../drizzle/schema";
+import { giftLogs, elderMembers, elders, users } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
+import { resolveGiftOptions } from "./giftPartners";
 
 export const giftRouter = router({
+
+  /**
+   * Resolve the gift buttons for an elder based on the GRAN'S country
+   * (delivery destination). Returns at most one partner per category —
+   * highest priority wins, so local deals beat global fallbacks.
+   * Empty array → client renders no gift buttons.
+   */
+  optionsForElder: protectedProcedure
+    .input(z.object({ elderId: z.number() }))
+    .query(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      // Must be a family member
+      const [member] = await db
+        .select()
+        .from(elderMembers)
+        .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
+        .limit(1);
+      if (!member) throw new Error("Not a member of this family");
+
+      const [elder] = await db
+        .select({ country: elders.country })
+        .from(elders)
+        .where(eq(elders.id, input.elderId))
+        .limit(1);
+
+      // Strip internal notes before sending to the client.
+      return resolveGiftOptions(elder?.country).map(({ id, name, category, url }) => ({
+        id,
+        name,
+        category,
+        url,
+      }));
+    }),
 
   /**
    * Log a gift-send intent (any family member, no Gran+ required).

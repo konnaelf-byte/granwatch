@@ -36,6 +36,11 @@ export const elders = mysqlTable("elders", {
   lemonsqueezyCustomerId: varchar("lemonsqueezyCustomerId", { length: 255 }),
   cancellationRequestedAt: timestamp("cancellationRequestedAt"),
   birthday: varchar("birthday", { length: 10 }), // "YYYY-MM-DD" (year stored; cron extracts MM-DD for annual reminders)
+  // Location — used ONLY to resolve gift/flower delivery partners near Gran.
+  // Deliberately no street address (data minimalism / POPIA-GDPR): the buyer
+  // enters the delivery address at the partner's checkout.
+  country: varchar("country", { length: 2 }), // ISO 3166-1 alpha-2, e.g. "ZA"
+  city: varchar("city", { length: 128 }),
   createdByUserId: int("createdByUserId").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
