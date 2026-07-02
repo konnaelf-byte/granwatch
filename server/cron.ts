@@ -154,10 +154,23 @@ async function runNightlyNotifications() {
         } else {
           // ── IN-APP NOTIFICATIONS ────────────────────────────────────────────
 
-          // Nudge the top 2 longest-absent members
+          // Nudge the top 2 longest-absent members.
+          // DEDUP: if the member still has an UNREAD nudge for this elder,
+          // don't stack another identical one every night (was spammy).
           const nudgeTargets = sorted.slice(0, 2);
           let inAppSent = 0;
           for (const target of nudgeTargets) {
+            const [existingNudge] = await db
+              .select({ id: notifications.id })
+              .from(notifications)
+              .where(and(
+                eq(notifications.userId, target.userId),
+                eq(notifications.elderId, elder.id),
+                eq(notifications.type, "nudge"),
+                eq(notifications.read, false),
+              ))
+              .limit(1);
+            if (existingNudge) continue;
             await db.insert(notifications).values({
               userId: target.userId,
               elderId: elder.id,
@@ -167,10 +180,21 @@ async function runNightlyNotifications() {
             inAppSent++;
           }
 
-          // If red status, also alert all opted-in members
+          // If red status, also alert all opted-in members (same unread-dedup).
           const isRed = daysSinceVisit >= elder.alertThresholdDays;
           if (isRed) {
             for (const member of notifyableMembers) {
+              const [existingAlert] = await db
+                .select({ id: notifications.id })
+                .from(notifications)
+                .where(and(
+                  eq(notifications.userId, member.userId),
+                  eq(notifications.elderId, elder.id),
+                  eq(notifications.type, "red_alert"),
+                  eq(notifications.read, false),
+                ))
+                .limit(1);
+              if (existingAlert) continue;
               await db.insert(notifications).values({
                 userId: member.userId,
                 elderId: elder.id,
