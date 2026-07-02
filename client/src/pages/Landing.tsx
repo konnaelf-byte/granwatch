@@ -5,10 +5,8 @@ import { useLocation } from "wouter";
 import { Heart, Bell, Calendar, Users, Camera, CheckCircle } from "lucide-react";
 import { MONTHLY_COST_CENTS } from "@shared/const";
 import { isNativeApp } from "@/utils/platform";
-import StatusRing from "@/components/StatusRing";
+import HeroLogoRing from "@/components/HeroLogoRing";
 import { useEffect } from "react";
-
-const GRAN_PHOTO = "/icon-1024.png";
 
 export default function Landing() {
   const { isAuthenticated, loading } = useAuth();
@@ -53,15 +51,10 @@ export default function Landing() {
       {/* Hero */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
         <div className="max-w-lg mx-auto">
-          {/* Demo status ring */}
+          {/* Living logo — the status ring drains as days pass, then a visit
+              snaps it back to green. Teaches the product mechanic wordlessly. */}
           <div className="flex justify-center mb-8">
-            <StatusRing
-              photoUrl={GRAN_PHOTO}
-              name="Dorothy"
-              daysSinceVisit={14}
-              status="orange"
-              size={180}
-            />
+            <HeroLogoRing size={220} />
           </div>
 
           <h1 className="text-4xl font-bold text-foreground mb-4 leading-tight">
