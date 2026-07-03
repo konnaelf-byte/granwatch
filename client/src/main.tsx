@@ -65,15 +65,25 @@ const trpcClient = trpc.createClient({
 // iOS Google: iOSClientId = iOS OAuth client; iOSServerClientId = web client so
 // the returned idToken aud matches the web client ID that Clerk trusts.
 // Apple: uses bundle id `app.granwatch` automatically on iOS (no clientId needed).
+// Android: Apple sign-in is hidden (no redirectUrl configured) — passing `apple`
+// on Android makes initialize() throw ("apple.android.redirectUrl is null or
+// empty"), which also breaks Google init. So apple is iOS-only here.
 if (Capacitor.isNativePlatform()) {
+  const isIOS = Capacitor.getPlatform() === "ios";
   SocialLogin.initialize({
     google: {
       iOSClientId: "156428600768-kk8a2atra3haubsa91aoncmg6d7073rv.apps.googleusercontent.com",
       iOSServerClientId: "156428600768-4bdsso544vgd5o6ri81r97kqp27a351u.apps.googleusercontent.com",
+      // Android (Credential Manager) validates the idToken against the web client:
+      webClientId: "156428600768-4bdsso544vgd5o6ri81r97kqp27a351u.apps.googleusercontent.com",
     },
-    apple: {
-      // clientId is only needed for web/Android; iOS uses the bundle id automatically
-    },
+    ...(isIOS
+      ? {
+          apple: {
+            // clientId is only needed for web/Android; iOS uses the bundle id automatically
+          },
+        }
+      : {}),
   }).catch((err) => console.warn("[SocialLogin] initialize error:", err));
 }
 
