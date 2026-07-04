@@ -6,5 +6,5 @@ export const NOT_ADMIN_ERR_MSG = 'You do not have required permission (10002)';
 
 /** Gran+ monthly subscription price — single source of truth.
  *  Must match the Lemon Squeezy variant price (variant ID 1681701).
- *  Value is in cents (ZAR): 3900 = R39.00 */
-export const MONTHLY_COST_CENTS = 3900; // R39.00 — reduced from R79 for growth phase
+ *  Value is in cents (ZAR): 7900 = R79.00 */
+export const MONTHLY_COST_CENTS = 7900; // R79.00
