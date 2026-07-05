@@ -12,3 +12,6 @@ clean_profile_*.png
 GranWatch\ Migration*.md
 GranWatch\ —*.md
 hero-gran.png.PNG
+android/keystore.properties
+ios/App/App/GoogleService-Info.plist
+android/app/google-services.json

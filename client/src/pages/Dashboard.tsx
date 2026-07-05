@@ -9,6 +9,7 @@ import type { VisitStatus } from "@/components/StatusRing";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect } from "react";
 import { useWidgetSync } from "@/hooks/useWidgetSync";
+import { getPushToken } from "@/utils/push";
 
 export default function Dashboard() {
   // Sync elder data to iOS home-screen widget whenever the list changes
@@ -24,6 +25,16 @@ export default function Dashboard() {
     if (!ref) return;
     sessionStorage.removeItem("granwatch_ref"); // consume immediately to prevent re-firing
     recordSignup.mutate({ code: ref });
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Register this device for push notifications (native builds 11+ only;
+  // no-ops on web and older builds). Idempotent server-side.
+  const registerPush = trpc.pushToken.register.useMutation();
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void getPushToken().then((t) => {
+      if (t) registerPush.mutate({ token: t.token, platform: t.platform });
+    });
   }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: elders, isLoading } = trpc.elders.list.useQuery(undefined, {

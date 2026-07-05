@@ -50,8 +50,8 @@ try {
 
 if (!cordovaSrc.includes("purchases-ios-spm")) {
   cordovaSrc = cordovaSrc.replace(
-    `.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.4.0")`,
-    `.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.4.0"),\n        .package(url: "https://github.com/RevenueCat/purchases-ios-spm", from: "5.78.0"),\n        .package(url: "https://github.com/RevenueCat/purchases-hybrid-common.git", from: "18.15.1")`
+    /\.package\(url: "https:\/\/github\.com\/ionic-team\/capacitor-swift-pm\.git", from: "[^"]+"\)/,
+    `$&,\n        .package(url: "https://github.com/RevenueCat/purchases-ios-spm", from: "5.78.0"),\n        .package(url: "https://github.com/RevenueCat/purchases-hybrid-common.git", from: "18.15.1")`
   );
   cordovaSrc = cordovaSrc.replace(
     `.product(name: "Cordova", package: "capacitor-swift-pm")`,
@@ -64,6 +64,12 @@ if (!cordovaSrc.includes("purchases-ios-spm")) {
 }
 
 // ─── PATCH 2: @revenuecat/purchases-capacitor Capacitor bridge layer ─────────
+
+// Match the capacitor-swift-pm version pinned by CapApp-SPM so SPM resolution
+// never conflicts (cap sync pins `exact:` to the installed @capacitor/ios).
+const capAppPkg = readFileSync(resolve(projectRoot, "ios/App/CapApp-SPM/Package.swift"), "utf8");
+const capPinMatch = capAppPkg.match(/capacitor-swift-pm\.git", exact: "([^"]+)"/);
+const CAP_SPM_VERSION = capPinMatch ? capPinMatch[1] : "8.3.4";
 
 // Resolve the real (non-symlink) path so SPM can consume it reliably.
 const purchasesCapSymlink = resolve(projectRoot, "node_modules/@revenuecat/purchases-capacitor");
@@ -90,7 +96,7 @@ let package = Package(
         .library(name: "RevenuecatPurchasesCapacitor", targets: ["RevenuecatPurchasesCapacitor"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.4.0"),
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "${CAP_SPM_VERSION}"),
         .package(url: "https://github.com/RevenueCat/purchases-ios-spm", from: "5.78.0"),
         .package(url: "https://github.com/RevenueCat/purchases-hybrid-common.git", from: "18.15.1"),
     ],
