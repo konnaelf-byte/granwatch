@@ -30,6 +30,7 @@ const FEATURES = [
   "Gran Care: medication tracking",
   "Gran Care: doctor appointments",
   "Care notes visible to all visitors",
+  "Photos on visit logs",
   "Mood notes & mood trend insights",
   "Unlimited family members",
 ];

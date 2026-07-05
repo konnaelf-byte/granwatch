@@ -664,6 +664,8 @@ export const appRouter = router({
         // fixed allowed set. moodNote is Gran+ only (enforced below on elder.isPaid).
         moodEmoji: z.enum(ALLOWED_MOOD_EMOJIS).optional(),
         moodNote: z.string().max(500).optional(),
+        // Visit photo — Gran+ only (enforced below on elder.isPaid).
+        photoUrl: z.string().url().max(1000).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -684,17 +686,21 @@ export const appRouter = router({
           throw new Error("Visit date cannot be in the future");
         }
 
-        // Gran+ gate for the mood note: only paid elders may attach a custom note.
-        // Match the rest of the codebase — silently drop it for free elders rather
-        // than rejecting the whole visit, so the free emoji still saves.
+        // Gran+ gate for the mood note and visit photo: only paid elders may
+        // attach them. Match the rest of the codebase — silently drop for free
+        // elders rather than rejecting the whole visit, so the free parts still save.
         let moodNote: string | null = null;
-        if (input.moodNote) {
+        let photoUrl: string | null = null;
+        if (input.moodNote || input.photoUrl) {
           const [elder] = await db
             .select({ isPaid: elders.isPaid })
             .from(elders)
             .where(eq(elders.id, input.elderId))
             .limit(1);
-          if (elder?.isPaid) moodNote = input.moodNote;
+          if (elder?.isPaid) {
+            moodNote = input.moodNote ?? null;
+            photoUrl = input.photoUrl ?? null;
+          }
         }
 
         const [result] = await db.insert(visits).values({
@@ -705,6 +711,7 @@ export const appRouter = router({
           wellbeingScore: input.wellbeingScore ?? null,
           moodEmoji: input.moodEmoji ?? null,
           moodNote,
+          photoUrl,
         });
 
         return { success: true, visitId: (result as any).insertId };

@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2 } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
@@ -43,6 +43,8 @@ export default function ElderProfile() {
   const [wellbeingScore, setWellbeingScore] = useState<number | null>(null);
   const [moodEmoji, setMoodEmoji] = useState<string | null>(null);
   const [moodNote, setMoodNote] = useState("");
+  const [visitPhotoUrl, setVisitPhotoUrl] = useState<string | null>(null);
+  const [visitPhotoUploading, setVisitPhotoUploading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookedDate, setBookedDate] = useState<Date | null>(null);
   const [transferTarget, setTransferTarget] = useState<{ userId: number; name: string } | null>(null);
@@ -114,9 +116,45 @@ export default function ElderProfile() {
       setWellbeingScore(null);
       setMoodEmoji(null);
       setMoodNote("");
+      setVisitPhotoUrl(null);
     },
     onError: (e) => toast.error(e.message),
   });
+
+  // Visit photo (Gran+): downscale client-side (camera photos easily exceed the
+  // server's 5MB cap), then upload via the existing /api/upload/photo route.
+  const handleVisitPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast.error("Please select an image file"); return; }
+    setVisitPhotoUploading(true);
+    try {
+      const bitmap = await createImageBitmap(file);
+      const maxDim = 1600;
+      const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(bitmap.width * scale);
+      canvas.height = Math.round(bitmap.height * scale);
+      canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      const blob: Blob = await new Promise((resolve, reject) =>
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error("Could not process photo")), "image/jpeg", 0.82)
+      );
+      const formData = new FormData();
+      formData.append("photo", new File([blob], "visit.jpg", { type: "image/jpeg" }));
+      const res = await fetch("/api/upload/photo", { method: "POST", body: formData, credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Upload failed" }));
+        throw new Error(err.error ?? "Upload failed");
+      }
+      const { url } = await res.json();
+      setVisitPhotoUrl(url);
+    } catch (err: any) {
+      toast.error(err.message ?? "Upload failed");
+    } finally {
+      setVisitPhotoUploading(false);
+    }
+  };
 
   const bookVisit = trpc.planned.book.useMutation({
     onSuccess: () => {
@@ -485,6 +523,7 @@ export default function ElderProfile() {
                 wellbeingScore: v.wellbeingScore as number | null,
                 moodEmoji: v.moodEmoji as string | null,
                 moodNote: v.moodNote as string | null,
+                photoUrl: v.photoUrl as string | null,
               }));
               const giftEvents = (giftHistory ?? []).map((g: any) => ({
                 _type: "gift" as const,
@@ -536,6 +575,16 @@ export default function ElderProfile() {
                           )}
                           {item.notes && (
                             <p className="text-xs text-muted-foreground italic ml-5">"{item.notes}"</p>
+                          )}
+                          {item.photoUrl && (
+                            <a href={item.photoUrl} target="_blank" rel="noopener noreferrer" className="block ml-5 mt-2">
+                              <img
+                                src={item.photoUrl}
+                                alt={`Photo from ${item.visitorName}'s visit`}
+                                loading="lazy"
+                                className="rounded-lg border max-h-48 w-auto object-cover"
+                              />
+                            </a>
                           )}
                         </div>
                       );
@@ -751,6 +800,44 @@ export default function ElderProfile() {
                 className="resize-none"
               />
             </div>
+
+            {/* Visit photo — Gran+ feature. Free elders see a locked upsell. */}
+            {elder.isPaid ? (
+              <div>
+                <p className="text-sm font-medium text-foreground mb-2">Photo (optional)</p>
+                {visitPhotoUrl ? (
+                  <div className="relative inline-block">
+                    <img src={visitPhotoUrl} alt="Visit photo" className="h-24 w-24 object-cover rounded-xl border" />
+                    <button
+                      type="button"
+                      onClick={() => setVisitPhotoUrl(null)}
+                      className="absolute -top-2 -right-2 bg-foreground text-background rounded-full p-1 shadow"
+                      aria-label="Remove photo"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 border border-dashed rounded-xl px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
+                    {visitPhotoUploading
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
+                      : <><ImagePlus className="w-4 h-4 text-primary" /> Add a photo from the visit</>}
+                    <input type="file" accept="image/*" className="hidden" onChange={handleVisitPhotoSelect} disabled={visitPhotoUploading} />
+                  </label>
+                )}
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => { setLogVisitOpen(false); openGranPlus(); }}
+                className="w-full text-left border border-dashed border-primary/40 rounded-xl px-4 py-3 flex items-center gap-2 hover:bg-primary/5 transition-colors"
+              >
+                <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <span className="text-sm text-muted-foreground">
+                  Add a photo from the visit with <span className="font-semibold text-primary">Gran+</span>
+                </span>
+              </button>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -761,8 +848,9 @@ export default function ElderProfile() {
                 wellbeingScore: wellbeingScore ?? undefined,
                 moodEmoji: (moodEmoji as any) ?? undefined,
                 moodNote: elder.isPaid && moodNote ? moodNote : undefined,
+                photoUrl: elder.isPaid && visitPhotoUrl ? visitPhotoUrl : undefined,
               })}
-              disabled={logVisit.isPending}
+              disabled={logVisit.isPending || visitPhotoUploading}
             >
               {logVisit.isPending ? "Logging..." : "✓ Log Visit"}
             </Button>

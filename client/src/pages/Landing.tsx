@@ -150,7 +150,7 @@ export default function Landing() {
               : `Split between the whole family — could be as little as R${Math.ceil(MONTHLY_COST_CENTS / 300).toFixed(0)} each.`}
           </p>
           <ul className="text-sm text-muted-foreground space-y-1">
-            {["Gran Care: medication tracking", "Gran Care: doctor appointments", "Care notes for all visitors", "Mood notes & mood trend insights", "Unlimited family members"].map(f => (
+            {["Gran Care: medication tracking", "Gran Care: doctor appointments", "Care notes for all visitors", "Photos on visit logs", "Mood notes & mood trend insights", "Unlimited family members"].map(f => (
               <li key={f} className="flex items-center gap-2">
                 <span className="text-primary">✓</span> {f}
               </li>
