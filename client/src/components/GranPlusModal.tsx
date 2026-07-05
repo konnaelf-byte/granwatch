@@ -27,12 +27,11 @@ interface GranPlusModalProps {
 }
 
 const FEATURES = [
-  "Wellbeing mood check-ins after each visit",
-  "Visit photos & notes",
-  "Multiple gran profiles",
-  "Custom alert threshold",
-  "Full visit history & insights",
+  "Gran Care: medication tracking",
+  "Gran Care: doctor appointments",
   "Care notes visible to all visitors",
+  "Mood notes & mood trend insights",
+  "Unlimited family members",
 ];
 
 export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin = false }: GranPlusModalProps) {
