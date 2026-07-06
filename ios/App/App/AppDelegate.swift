@@ -1,6 +1,5 @@
 import UIKit
 import Capacitor
-import FirebaseCore
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,11 +7,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Firebase (push notifications) — guarded so a missing config file can
-        // never crash the app at launch.
-        if Bundle.main.path(forResource: "GoogleService-Info", ofType: "plist") != nil {
-            FirebaseApp.configure()
-        }
+        // Firebase is configured lazily by the @capacitor-firebase/messaging
+        // plugin itself (FirebaseMessaging.swift: FirebaseApp.configure() when
+        // no app exists) — the App target intentionally doesn't link FirebaseCore.
         return true
     }
 
