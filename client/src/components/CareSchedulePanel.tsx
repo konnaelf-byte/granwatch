@@ -41,6 +41,12 @@ const FREQUENCY_LABELS: Record<string, string> = {
   as_needed: "As needed",
 };
 
+const TIME_OF_DAY_LABELS: Record<string, string> = {
+  am: "Morning",
+  midday: "Midday",
+  pm: "Evening",
+};
+
 export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }: Props) {
   const utils = trpc.useUtils();
 
@@ -53,6 +59,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
   const [addMedOpen, setAddMedOpen] = useState(false);
   const [medName, setMedName] = useState("");
   const [medFrequency, setMedFrequency] = useState<"daily" | "twice_daily" | "weekly" | "as_needed">("daily");
+  const [medTimeOfDay, setMedTimeOfDay] = useState<"any" | "am" | "midday" | "pm">("any");
   const [medNotes, setMedNotes] = useState("");
 
   // ── Appointment state ──────────────────────────────────────────────────────
@@ -77,7 +84,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
       toast.success("Routine added");
       utils.care.medications.list.invalidate({ elderId });
       setAddMedOpen(false);
-      setMedName(""); setMedNotes(""); setMedFrequency("daily");
+      setMedName(""); setMedNotes(""); setMedFrequency("daily"); setMedTimeOfDay("any");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -202,6 +209,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                       )}
                       <Badge variant="secondary" className="text-xs">
                         {FREQUENCY_LABELS[med.frequency]}
+                        {med.timeOfDay ? ` · ${TIME_OF_DAY_LABELS[med.timeOfDay]}` : ""}
                       </Badge>
                     </div>
                     {med.notes && (
@@ -402,6 +410,22 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                 </SelectContent>
               </Select>
             </div>
+            {medFrequency === "daily" && (
+              <div>
+                <p className="text-xs font-medium text-foreground mb-1">Time of day</p>
+                <Select value={medTimeOfDay} onValueChange={(v: any) => setMedTimeOfDay(v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any time</SelectItem>
+                    <SelectItem value="am">Morning (AM)</SelectItem>
+                    <SelectItem value="midday">Midday</SelectItem>
+                    <SelectItem value="pm">Evening (PM)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <p className="text-xs font-medium text-foreground mb-1">Notes (optional)</p>
               <Textarea
@@ -416,7 +440,13 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
           <DialogFooter>
             <Button
               className="w-full"
-              onClick={() => addMed.mutate({ elderId, name: medName, frequency: medFrequency, notes: medNotes || undefined })}
+              onClick={() => addMed.mutate({
+                elderId,
+                name: medName,
+                frequency: medFrequency,
+                timeOfDay: medFrequency === "daily" && medTimeOfDay !== "any" ? medTimeOfDay : undefined,
+                notes: medNotes || undefined,
+              })}
               disabled={!medName.trim() || addMed.isPending}
             >
               {addMed.isPending ? "Adding…" : "Add routine"}

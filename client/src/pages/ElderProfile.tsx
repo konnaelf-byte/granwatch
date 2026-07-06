@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 
@@ -46,6 +47,7 @@ export default function ElderProfile() {
   const [visitPhotoUrl, setVisitPhotoUrl] = useState<string | null>(null);
   const [visitPhotoUploading, setVisitPhotoUploading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string>(""); // "" = no specific time; else "HH:00"
   const [bookedDate, setBookedDate] = useState<Date | null>(null);
   const [transferTarget, setTransferTarget] = useState<{ userId: number; name: string } | null>(null);
   const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
@@ -157,14 +159,18 @@ export default function ElderProfile() {
   };
 
   const bookVisit = trpc.planned.book.useMutation({
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       utils.planned.list.invalidate({ elderId });
-      setBookedDate(selectedDate ?? null);
+      setBookedDate(new Date(variables.plannedDate));
       setBookVisitOpen(false);
       setSelectedDate(undefined);
+      setSelectedTime("");
     },
     onError: (e) => toast.error(e.message),
   });
+
+  // Midnight = "no specific time" (how visits without a chosen time are stored).
+  const hasTime = (d: Date) => d.getHours() !== 0 || d.getMinutes() !== 0;
 
   const addToCalendar = (date: Date, elderName: string) => {
     // Generate an .ics file for universal calendar support
@@ -172,9 +178,8 @@ export default function ElderProfile() {
     const fmt = (d: Date) =>
       `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
     const start = new Date(date);
-    start.setHours(10, 0, 0, 0);
-    const end = new Date(start);
-    end.setHours(11, 0, 0, 0);
+    if (!hasTime(start)) start.setHours(10, 0, 0, 0); // default 10:00 when no time chosen
+    const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour
     const ics = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
@@ -480,6 +485,11 @@ export default function ElderProfile() {
                       <div>
                         <p className="font-semibold text-sm text-foreground">
                             {new Date(p.plannedDate).toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
+                            {hasTime(new Date(p.plannedDate)) && (
+                              <span className="text-muted-foreground font-normal">
+                                {" "}· {new Date(p.plannedDate).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            )}
                           </p>
                         <p className="text-xs text-muted-foreground mt-0.5">{p.visitorName}</p>
                         {p.notes && <p className="text-xs text-muted-foreground italic mt-0.5">"{p.notes}"</p>}
@@ -865,6 +875,7 @@ export default function ElderProfile() {
             <p className="font-semibold text-sm text-foreground">Visit booked! 📅</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               {bookedDate.toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
+              {hasTime(bookedDate) && ` · ${bookedDate.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}`}
             </p>
           </div>
           <button
@@ -889,7 +900,7 @@ export default function ElderProfile() {
           <DialogHeader>
             <DialogTitle>Book a visit to {elder.name}</DialogTitle>
           </DialogHeader>
-          <div className="py-2 flex justify-center">
+          <div className="py-2 flex flex-col items-center gap-3">
             <CalendarUI
               mode="single"
               selected={selectedDate}
@@ -897,6 +908,21 @@ export default function ElderProfile() {
               disabled={(date) => date < new Date()}
               className="rounded-xl border"
             />
+            <div className="w-full">
+              <p className="text-xs font-medium text-foreground mb-1">Time (optional)</p>
+              <Select value={selectedTime || "none"} onValueChange={(v) => setSelectedTime(v === "none" ? "" : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="No specific time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No specific time</SelectItem>
+                  {Array.from({ length: 14 }, (_, i) => i + 7).map((h) => {
+                    const t = `${String(h).padStart(2, "0")}:00`;
+                    return <SelectItem key={t} value={t}>{t}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter>
             <Button
@@ -904,14 +930,21 @@ export default function ElderProfile() {
               disabled={!selectedDate || bookVisit.isPending}
               onClick={() => {
                 if (!selectedDate) return;
+                const combined = new Date(selectedDate);
+                if (selectedTime) {
+                  const [h, m] = selectedTime.split(":").map(Number);
+                  combined.setHours(h, m, 0, 0);
+                } else {
+                  combined.setHours(0, 0, 0, 0);
+                }
                 bookVisit.mutate({
                   elderId,
-                  plannedDate: selectedDate.toISOString(),
+                  plannedDate: combined.toISOString(),
                 });
               }}
             >
               {bookVisit.isPending ? "Booking..." : selectedDate
-                ? `Book ${selectedDate.toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}`
+                ? `Book ${selectedDate.toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}${selectedTime ? ` · ${selectedTime}` : ""}`
                 : "Select a date"}
             </Button>
           </DialogFooter>

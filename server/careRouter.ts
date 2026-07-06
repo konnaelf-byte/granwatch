@@ -98,6 +98,7 @@ export const careRouter = router({
         name: z.string().min(1).max(255),
         dosage: z.string().max(100).optional(),
         frequency: z.enum(["daily", "twice_daily", "weekly", "as_needed"]).default("daily"),
+        timeOfDay: z.enum(["am", "midday", "pm"]).optional(),
         notes: z.string().max(500).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
@@ -110,6 +111,7 @@ export const careRouter = router({
           name: input.name,
           dosage: input.dosage ?? null,
           frequency: input.frequency,
+          timeOfDay: input.timeOfDay ?? null,
           notes: input.notes ?? null,
           isActive: true,
           createdByUserId: ctx.user.id,

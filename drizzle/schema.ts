@@ -213,6 +213,7 @@ export const elderMedications = mysqlTable("elderMedications", {
   name: varchar("name", { length: 255 }).notNull(),         // e.g. "Blood pressure meds"
   dosage: varchar("dosage", { length: 100 }),                // e.g. "1 tablet"
   frequency: mysqlEnum("frequency", ["daily", "twice_daily", "weekly", "as_needed"]).notNull().default("daily"),
+  timeOfDay: mysqlEnum("timeOfDay", ["am", "midday", "pm"]), // optional; shown when frequency is "daily"
   notes: text("notes"),
   isActive: boolean("isActive").default(true).notNull(),
   createdByUserId: int("createdByUserId").notNull(),
