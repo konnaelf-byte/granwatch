@@ -510,6 +510,58 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    // Remove a non-admin member from the family (admin only). Security valve
+    // for leaked invite links or accidental joins to the wrong gran.
+    removeMember: protectedProcedure
+      .input(z.object({ elderId: z.number(), targetUserId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+
+        const [myMembership] = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
+          .limit(1);
+        if (!myMembership || myMembership.role !== "admin") throw new Error("Admin access required");
+        if (input.targetUserId === ctx.user.id) throw new Error("You can't remove yourself — use Leave instead");
+
+        const [targetMembership] = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, input.targetUserId)))
+          .limit(1);
+        if (!targetMembership) throw new Error("That user is not a member");
+        if (targetMembership.role === "admin") throw new Error("Admins can't be removed. They must leave themselves after transferring rights.");
+
+        await db
+          .delete(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, input.targetUserId)));
+
+        return { success: true };
+      }),
+
+    // Regenerate the invite code (admin only) — instantly invalidates the old
+    // link/code if it fell into the wrong hands.
+    regenerateInviteCode: protectedProcedure
+      .input(z.object({ elderId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+
+        const [membership] = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
+          .limit(1);
+        if (!membership || membership.role !== "admin") throw new Error("Admin access required");
+
+        const newCode = generateInviteCode();
+        await db.update(elders).set({ inviteCode: newCode }).where(eq(elders.id, input.elderId));
+
+        return { inviteCode: newCode };
+      }),
+
     // Leave a family (non-admin members only)
     leave: protectedProcedure
       .input(z.object({ elderId: z.number() }))

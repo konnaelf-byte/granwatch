@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2, UserMinus, RefreshCw } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
@@ -50,6 +50,8 @@ export default function ElderProfile() {
   const [selectedTime, setSelectedTime] = useState<string>(""); // "" = no specific time; else "HH:00"
   const [bookedDate, setBookedDate] = useState<Date | null>(null);
   const [transferTarget, setTransferTarget] = useState<{ userId: number; name: string } | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<{ userId: number; name: string } | null>(null);
+  const [regenConfirmOpen, setRegenConfirmOpen] = useState(false);
   const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
@@ -173,33 +175,16 @@ export default function ElderProfile() {
   const hasTime = (d: Date) => d.getHours() !== 0 || d.getMinutes() !== 0;
 
   const addToCalendar = (date: Date, elderName: string) => {
-    // Generate an .ics file for universal calendar support
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const fmt = (d: Date) =>
-      `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    // Served by the backend (/api/calendar/visit.ics) because blob downloads
+    // don't work inside the native webview. window.open goes to the system
+    // browser on native, which hands the .ics to the Calendar app.
     const start = new Date(date);
     if (!hasTime(start)) start.setHours(10, 0, 0, 0); // default 10:00 when no time chosen
-    const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour
-    const ics = [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "PRODID:-//GranWatch//EN",
-      "BEGIN:VEVENT",
-      `DTSTART:${fmt(start)}`,
-      `DTEND:${fmt(end)}`,
-      `SUMMARY:Visit ${elderName}`,
-      `DESCRIPTION:Scheduled visit to ${elderName} via GranWatch`,
-      "END:VEVENT",
-      "END:VCALENDAR",
-    ].join("\r\n");
-    const blob = new Blob([ics], { type: "text/calendar" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `visit-${elderName.toLowerCase().replace(/\s+/g, "-")}.ics`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Calendar event downloaded! Open it to add to your calendar.");
+    const url = `${window.location.origin}/api/calendar/visit.ics?gran=${encodeURIComponent(elderName)}&start=${encodeURIComponent(start.toISOString())}`;
+    window.open(url, "_blank");
+    toast.success(isNativeApp
+      ? "Opening the event — tap Add to put it in your calendar."
+      : "Calendar event downloaded! Open it to add to your calendar.");
   };
 
   const logGift = trpc.gifts.log.useMutation({
@@ -238,6 +223,24 @@ export default function ElderProfile() {
       utils.elders.get.invalidate({ elderId });
       utils.elders.members.invalidate({ elderId });
       setTransferTarget(null);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const removeMember = trpc.elders.removeMember.useMutation({
+    onSuccess: () => {
+      toast.success("Member removed from the family.");
+      utils.elders.members.invalidate({ elderId });
+      setRemoveTarget(null);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const regenerateCode = trpc.elders.regenerateInviteCode.useMutation({
+    onSuccess: () => {
+      toast.success("New invite code created — the old link no longer works.");
+      utils.elders.get.invalidate({ elderId });
+      setRegenConfirmOpen(false);
     },
     onError: (e) => toast.error(e.message),
   });
@@ -430,10 +433,23 @@ export default function ElderProfile() {
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Invite Code</p>
             <p className="font-mono font-bold text-lg text-foreground tracking-widest">{elder.inviteCode}</p>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleShare}>
-            <Copy className="w-4 h-4 mr-1.5" />
-            Copy link
-          </Button>
+          <div className="flex items-center gap-1">
+            {elder.memberRole === "admin" && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground"
+                onClick={() => setRegenConfirmOpen(true)}
+                aria-label="Generate a new invite code"
+              >
+                <RefreshCw className="w-4 h-4" aria-hidden="true" />
+              </Button>
+            )}
+            <Button variant="ghost" size="sm" onClick={handleShare}>
+              <Copy className="w-4 h-4 mr-1.5" />
+              Copy link
+            </Button>
+          </div>
         </div>
 
         {/* Tabs: Visits / History / Family / Care (Care last; gated as Gran+ teaser on free) */}
@@ -671,17 +687,28 @@ export default function ElderProfile() {
                             : "Not visited yet"}
                         </p>
                       </div>
-                      {/* Make Admin button — only shown to current admin, for non-admin members */}
+                      {/* Admin controls for non-admin members: promote or remove */}
                       {elder.memberRole === "admin" && !isCurrentUser && m.role !== "admin" && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-xs text-muted-foreground hover:text-primary flex-shrink-0 px-2"
-                          onClick={() => setTransferTarget({ userId: m.userId, name: m.userName })}
-                        >
-                          <ShieldCheck className="w-3.5 h-3.5 mr-1" />
-                          Make Admin
-                        </Button>
+                        <div className="flex items-center gap-0.5 flex-shrink-0">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-xs text-muted-foreground hover:text-primary px-2"
+                            onClick={() => setTransferTarget({ userId: m.userId, name: m.userName })}
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 mr-1" />
+                            Make Admin
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => setRemoveTarget({ userId: m.userId, name: m.userName })}
+                            aria-label={`Remove ${m.userName} from the family`}
+                          >
+                            <UserMinus className="w-3.5 h-3.5" aria-hidden="true" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   );
@@ -969,6 +996,55 @@ export default function ElderProfile() {
               disabled={transferAdmin.isPending}
             >
               {transferAdmin.isPending ? "Promoting..." : "Yes, make them admin"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Remove member confirmation dialog */}
+      <AlertDialog open={!!removeTarget} onOpenChange={(o) => { if (!o) setRemoveTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <UserMinus className="w-5 h-5 text-destructive" />
+              Remove {removeTarget?.name} from the family?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              They will lose access to {elder?.name}'s profile immediately. Their past visits stay in the history. They could rejoin only with a valid invite code.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => removeTarget && removeMember.mutate({ elderId, targetUserId: removeTarget.userId })}
+              disabled={removeMember.isPending}
+            >
+              {removeMember.isPending ? "Removing..." : "Yes, remove them"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Regenerate invite code confirmation dialog */}
+      <AlertDialog open={regenConfirmOpen} onOpenChange={setRegenConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-primary" />
+              Create a new invite code?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              The current code and any shared invite links will stop working immediately. Family members who already joined are not affected.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => regenerateCode.mutate({ elderId })}
+              disabled={regenerateCode.isPending}
+            >
+              {regenerateCode.isPending ? "Creating..." : "Yes, new code"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

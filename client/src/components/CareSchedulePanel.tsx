@@ -229,17 +229,35 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                   )}
                 </div>
 
+                {/* 7-day history strip (oldest → today) */}
+                {Array.isArray(med.week) && med.week.some((d: any) => d.status) && (
+                  <div className="flex items-center gap-1.5 mt-3" aria-label="Last 7 days">
+                    {med.week.map((d: any) => (
+                      <span
+                        key={d.date}
+                        title={`${d.date}${d.status ? ` — ${d.status === "taken" ? "done" : "missed"}` : ""}`}
+                        className={`w-3 h-3 rounded-full ${
+                          d.status === "taken" ? "bg-green-500" :
+                          d.status === "missed" ? "bg-red-400" :
+                          "bg-muted-foreground/20"
+                        }`}
+                      />
+                    ))}
+                    <span className="text-[10px] text-muted-foreground ml-1">7 days</span>
+                  </div>
+                )}
+
                 {/* Today's status */}
                 <div className="flex gap-2 mt-3">
                   <Button
                     size="sm"
                     variant={med.todayStatus === "taken" ? "default" : "outline"}
-                    className="flex-1 h-9"
+                    className={`flex-1 h-9 ${med.todayStatus === "taken" ? "bg-green-600 hover:bg-green-600" : ""}`}
                     onClick={() => (locked ? handleLockedTap() : logMed.mutate({ medicationId: med.id, elderId, status: "taken" }))}
                     disabled={locked ? false : logMed.isPending}
                   >
                     {locked ? <Lock className="w-3.5 h-3.5 mr-1.5" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />}
-                    {med.todayStatus === "taken" ? "Taken ✓" : "Mark taken"}
+                    {med.todayStatus === "taken" ? "Done ✓" : "Done"}
                   </Button>
                   <Button
                     size="sm"

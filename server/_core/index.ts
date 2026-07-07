@@ -13,6 +13,7 @@ import { registerLemonSqueezyRoutes } from "../lemonSqueezyRoute";
 import { registerRevenueCatRoutes } from "../revenueCatRouter";
 import { registerOgRoutes } from "../ogRoute";
 import { registerUploadRoutes } from "../uploadRoute";
+import { registerCalendarRoutes } from "../calendarRoute";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { startCronJobs } from "../cron";
@@ -220,6 +221,9 @@ async function startServer() {
 
   // Photo upload route.
   registerUploadRoutes(app);
+
+  // Calendar event route (.ics for planned visits — native-safe).
+  registerCalendarRoutes(app);
 
   // tRPC API — rate-limited.
   app.use(

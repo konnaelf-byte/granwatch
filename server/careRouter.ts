@@ -68,27 +68,47 @@ export const careRouter = router({
           ))
           .orderBy(elderMedications.createdAt);
 
-        // For each med, fetch today's log status
+        // Fetch the last 7 days of logs (today included) so the client can
+        // render a per-routine history strip. Today's status keeps its own
+        // fields for the action buttons.
         const today = new Date();
         const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         const todayEnd = new Date(todayStart.getTime() + 86400000);
+        const weekStart = new Date(todayStart.getTime() - 6 * 86400000);
 
-        const todayLogs = meds.length > 0
+        const weekLogs = meds.length > 0
           ? await db
             .select()
             .from(medicationLogs)
             .where(and(
               eq(medicationLogs.elderId, input.elderId),
-              gte(medicationLogs.takenAt, todayStart),
+              gte(medicationLogs.takenAt, weekStart),
               lte(medicationLogs.takenAt, todayEnd),
             ))
           : [];
 
-        return meds.map(med => ({
-          ...med,
-          todayStatus: todayLogs.find(l => l.medicationId === med.id)?.status ?? null,
-          todayLogId: todayLogs.find(l => l.medicationId === med.id)?.id ?? null,
-        }));
+        const dayKey = (d: Date) =>
+          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+        return meds.map(med => {
+          const todayLog = weekLogs.find(l =>
+            l.medicationId === med.id && l.takenAt >= todayStart && l.takenAt <= todayEnd
+          );
+          // Oldest → newest, 7 entries ending today. Last-write-wins per day
+          // (logToday upserts, so there's at most one log per med per day).
+          const week = Array.from({ length: 7 }, (_, i) => {
+            const day = new Date(weekStart.getTime() + i * 86400000);
+            const key = dayKey(day);
+            const log = weekLogs.find(l => l.medicationId === med.id && dayKey(l.takenAt) === key);
+            return { date: key, status: log?.status ?? null };
+          });
+          return {
+            ...med,
+            todayStatus: todayLog?.status ?? null,
+            todayLogId: todayLog?.id ?? null,
+            week,
+          };
+        });
       }),
 
     /** Add a medication (admin only). */
