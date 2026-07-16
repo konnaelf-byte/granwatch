@@ -26,7 +26,7 @@ import { currentPlatform } from "@/utils/platform";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type Screen = "buttons" | "email-entry" | "email-code";
+type Screen = "buttons" | "email-entry" | "email-code" | "email-password";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -66,6 +66,7 @@ export default function NativeSignIn() {
 
   const [screen, setScreen] = useState<Screen>("buttons");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState<string | null>(null); // which button is spinning
   const [error, setError] = useState<string | null>(null);
@@ -335,6 +336,34 @@ export default function NativeSignIn() {
     }
   }
 
+  /**
+   * Password sign-in — for accounts that have a password set (e.g. the App
+   * Review demo account). Reached via "Sign in with a password instead" on
+   * the email screen. Regular users keep the email-code default.
+   */
+  async function handlePasswordSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!isReady || !email.trim() || !password) return;
+    clearError();
+    setLoading("password");
+    try {
+      const signIn = getSignIn();
+      const res = await signIn.create({ identifier: email.trim(), password });
+      if (res.status === "complete") {
+        await completeSignIn(res.createdSessionId!);
+        return;
+      }
+      throw new Error(`Unexpected sign-in status: ${res.status}`);
+    } catch (err: unknown) {
+      const e2 = err as { errors?: Array<{ message?: string }>; message?: string };
+      const msg = e2?.errors?.[0]?.message ?? e2?.message ?? "Sign-in failed. Check your email and password.";
+      setError(msg);
+      console.error("[NativeSignIn] Password sign-in error:", err);
+    } finally {
+      setLoading(null);
+    }
+  }
+
   async function handleCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isReady || !code.trim()) return;
@@ -509,10 +538,82 @@ export default function NativeSignIn() {
             variant="ghost"
             size="sm"
             className="w-full text-muted-foreground"
+            onClick={() => { clearError(); setScreen("email-password"); }}
+            disabled={loading !== null}
+          >
+            Sign in with a password instead
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground"
             onClick={() => { clearError(); setScreen("buttons"); setEmail(""); }}
             disabled={loading !== null}
           >
             Back
+          </Button>
+        </form>
+      )}
+
+      {/* ── Email + password screen (accounts with a password set) ── */}
+      {screen === "email-password" && (
+        <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="native-email-pw" className="text-sm font-medium text-foreground">
+              Email address
+            </label>
+            <Input
+              id="native-email-pw"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading !== null}
+              className="h-12 text-base"
+              required
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="native-password" className="text-sm font-medium text-foreground">
+              Password
+            </label>
+            <Input
+              id="native-password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="Your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading !== null}
+              className="h-12 text-base"
+              required
+            />
+          </div>
+
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full h-12 text-base"
+            disabled={!isReady || loading !== null || !email.trim() || !password}
+            aria-busy={loading === "password"}
+          >
+            {loading === "password" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign in"}
+          </Button>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="w-full text-muted-foreground"
+            onClick={() => { clearError(); setScreen("email-entry"); setPassword(""); }}
+            disabled={loading !== null}
+          >
+            Use a code instead
           </Button>
         </form>
       )}

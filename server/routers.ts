@@ -1239,10 +1239,33 @@ export const appRouter = router({
           });
         }
 
+        // Also send a real PUSH to every member's registered device — this is
+        // the only way to test background push delivery before a threshold
+        // crosses naturally. (Owner-admin-only mutation, so safe to be loud.)
+        let pushesSent = 0;
+        try {
+          const { pushTokens } = await import("../drizzle/schema");
+          const memberIds = notifyableMembers.map((m) => m.userId);
+          const tokens = memberIds.length
+            ? await db.select({ token: pushTokens.token }).from(pushTokens).where(inArray(pushTokens.userId, memberIds))
+            : [];
+          if (tokens.length > 0) {
+            const { sendPush } = await import("./push");
+            pushesSent = await sendPush(tokens.map((t) => t.token), {
+              title: `Test: ${elder.name} misses you 💛`,
+              body: `This is a GranWatch test notification — push is working!`,
+              data: { elderId: String(elder.id), type: "test" },
+            });
+          }
+        } catch (pushErr) {
+          console.error("[smartNotify.test] push send failed:", pushErr);
+        }
+
         return {
           sent,
           emailsSent,
-          message: `${sent} in-app notification${sent !== 1 ? "s" : ""} sent${emailsSent > 0 ? `, ${emailsSent} email${emailsSent !== 1 ? "s" : ""} sent` : ""}.`,
+          pushesSent,
+          message: `${sent} in-app notification${sent !== 1 ? "s" : ""} sent${emailsSent > 0 ? `, ${emailsSent} email${emailsSent !== 1 ? "s" : ""}` : ""}${pushesSent > 0 ? `, ${pushesSent} push${pushesSent !== 1 ? "es" : ""}` : ""}.`,
         };
       }),
 
