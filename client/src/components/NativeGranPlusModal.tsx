@@ -225,8 +225,29 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
             {restoring ? "Restoring..." : "Restore purchases"}
           </button>
 
+          {/* Required subscription info (App Review 3.1.2c): title, length, price, legal links */}
           <p className="text-center text-xs text-muted-foreground">
-            Billed through your {/* store */}app store. Cancel anytime in your device settings.
+            Gran+ Monthly is a 1-month auto-renewable subscription
+            {priceString ? ` at ${priceString}/month` : ""}. It renews automatically unless
+            cancelled at least 24 hours before the end of the period. Billed through your
+            app store account. Cancel anytime in your device settings.
+          </p>
+          <p className="text-center text-xs">
+            <button
+              type="button"
+              className="text-muted-foreground underline underline-offset-2"
+              onClick={() => window.open("https://granwatch.app/terms", "_blank")}
+            >
+              Terms of Use
+            </button>
+            <span className="text-muted-foreground mx-2">·</span>
+            <button
+              type="button"
+              className="text-muted-foreground underline underline-offset-2"
+              onClick={() => window.open("https://granwatch.app/privacy", "_blank")}
+            >
+              Privacy Policy
+            </button>
           </p>
         </div>
       </DialogContent>
