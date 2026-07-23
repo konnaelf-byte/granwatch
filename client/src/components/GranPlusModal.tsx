@@ -27,8 +27,8 @@ interface GranPlusModalProps {
 }
 
 const FEATURES = [
-  "Gran Care: medication tracking",
-  "Gran Care: doctor appointments",
+  "Routines — e.g. prescriptions, physio, plants",
+  "Appointments — e.g. doctor, hairdresser",
   "Care notes visible to all visitors",
   "Photos on visit logs",
   "Mood notes & mood trend insights",
