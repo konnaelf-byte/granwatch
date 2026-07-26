@@ -1,4 +1,18 @@
-# Submission day — 2026-07-08
+# Submission day — 2026-07-08 (UPDATED 2026-07-09 04:00)
+
+## ⚡ THE ONE BLOCKER LEFT: Xcode's Apple ID session is EXPIRED
+Both Build 12 upload attempts (incl. 07 Jul 22:24) died on App Store Connect auth —
+clicking the failed upload's status log pops the "Apple Accounts" pane, Xcode's way
+of saying "sign in again". Only Konna can do this (password + 2FA):
+**Xcode → Settings (⌘,) → Accounts → select the Apple ID → Sign In / re-enter password.**
+Then re-upload = Organizer → GranWatch-b12 archive → Distribute App → Distribute.
+Everything else is READY:
+- ✅ Client Trust disabled in Clerk (re-enable after approval!) — password sign-in
+  works from unknown devices now.
+- ✅ Demo account for App Review: d274bg@gmail.com / AppleTest123@ (Gran+ grant via
+  parallel session; VERIFY the email is gmail.com not "gmai.com" typo).
+- ✅ Build 12 archive verified to contain push (167 Firebase symbols).
+- ✅ Email notifications proven live; web features all shipped.
 
 ## Overnight state
 - **Build 12** archived with push VERIFIED IN BINARY (167 Firebase symbols — Build 11's

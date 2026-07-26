@@ -96,6 +96,7 @@ export default function ElderSettings() {
   const [wellbeingEnabled, setWellbeingEnabled] = useState(false);
   const [careNotes, setCareNotes] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [socialNotificationsEnabled, setSocialNotificationsEnabled] = useState(false);
   const [birthdayInput, setBirthdayInput] = useState(""); // "YYYY-MM-DD" for the input element
   const [country, setCountry] = useState(""); // ISO alpha-2 — for gift-delivery partners
   const [city, setCity] = useState("");
@@ -115,6 +116,7 @@ export default function ElderSettings() {
       setWellbeingEnabled(elder.wellbeingEnabled);
       setCareNotes(elder.careNotes ?? "");
       setNotificationsEnabled(elder.notificationsEnabled ?? true);
+      setSocialNotificationsEnabled(elder.socialNotificationsEnabled ?? false);
       // birthday stored as "YYYY-MM-DD"; legacy records may be "MM-DD" — clear those so the user re-enters with year
       setBirthdayInput(elder.birthday && elder.birthday.length === 10 ? elder.birthday : "");
       setCountry(elder.country ?? "");
@@ -210,9 +212,12 @@ export default function ElderSettings() {
         },
       });
     }
-    // Save notification preference (all members)
-    if (notificationsEnabled !== (elder.notificationsEnabled ?? true)) {
-      updateNotifPrefs.mutate({ elderId, notificationsEnabled });
+    // Save notification preferences (all members)
+    if (
+      notificationsEnabled !== (elder.notificationsEnabled ?? true) ||
+      socialNotificationsEnabled !== (elder.socialNotificationsEnabled ?? false)
+    ) {
+      updateNotifPrefs.mutate({ elderId, notificationsEnabled, socialNotificationsEnabled });
     }
     if (!isAdmin) {
       toast.success("Preferences saved!");
@@ -328,7 +333,7 @@ export default function ElderSettings() {
         )}
 
         {/* ─── MY NOTIFICATION PREFERENCES (all members) ─── */}
-        <div className="rounded-xl border p-4">
+        <div className="rounded-xl border p-4 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -349,6 +354,20 @@ export default function ElderSettings() {
               onCheckedChange={setNotificationsEnabled}
             />
           </div>
+          {notificationsEnabled && (
+            <div className="flex items-center justify-between border-t pt-4">
+              <div className="flex-1">
+                <Label className="text-sm font-semibold">Family visit updates</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Get a ping when someone else visits — e.g. "Barry just visited {elder.name}".
+                </p>
+              </div>
+              <Switch
+                checked={socialNotificationsEnabled}
+                onCheckedChange={setSocialNotificationsEnabled}
+              />
+            </div>
+          )}
         </div>
 
 

@@ -1,27 +1,62 @@
 /**
- * Nightly notification cron job.
+ * GranWatch notification engine (v2 — 2026-07-26).
  *
- * Runs at 20:00 SAST (UTC+2) = 18:00 UTC every day.
- * For every elder profile, runs the smart notification logic:
+ * DESIGN PRINCIPLE: never spam. Every notification fires exactly once per
+ * event, and a green ring generates total silence.
  *
- * IN-APP NOTIFICATIONS:
- *   - Nudge the top 2 longest-absent members who have notifications enabled.
- *   - If the profile is in red status (overdue), alert all opted-in members.
- *   - Skip if a covering visit is already booked within the alert threshold.
+ * The scheduler ticks HOURLY (on the hour). Each tick:
+ *   - 20:00 SAST → nightly visit-status run (nudge / red alert / birthdays)
+ *   - every hour → scheduled-visit reminder sweep (day-before / day-of / log-prompt)
  *
- * EMAIL NOTIFICATIONS:
- *   - 14 days without a visit → email the member(s) who visited furthest back (once per threshold crossing)
- *   - 21 days without a visit → email the entire family (once per threshold crossing)
- *   - A "threshold crossing" resets when a new visit is logged (daysSince drops below threshold)
- *   - Deduplication: we track the last visit date at the time of sending; if the lastVisitDate
- *     hasn't changed, we don't re-send.
+ * VISIT-STATUS NOTIFICATIONS (push + email + in-app fire TOGETHER, once per crossing):
+ *   GREEN  (before the nudge day)              → nothing.
+ *   NUDGE  (⅔ of the red threshold, rounded)   → the member(s) who visited
+ *          furthest back. Default red=21 → nudge=14. Custom red scales:
+ *          30→20, 17→11, 14→9, 7→5.
+ *   RED    (elder.alertThresholdDays, per-gran custom) → the whole family.
+ *   "Once per crossing" = a sentinel row inserted after sending; logging a
+ *   visit moves lastVisitDate forward, which invalidates the sentinel and
+ *   re-arms the cycle. A booked covering visit suppresses everything.
+ *
+ * BIRTHDAYS: email + push 3 days before and on the day (once per year each).
+ *
+ * SCHEDULED-VISIT REMINDERS (to the member who booked, once per occurrence):
+ *   day_before → 18:00 SAST the evening before
+ *   day_of     → 08:00 SAST that morning
+ *   log_prompt → 2h after the visit time (or 19:00 SAST if day-only) —
+ *                suppressed automatically if the visit was already logged.
+ *
+ * All times use SAST (UTC+2) — the app's home timezone convention.
  */
 
-import { and, desc, eq, gte, inArray } from "drizzle-orm";
-import { elders, elderMembers, visits, plannedVisits, notifications, pushTokens } from "../drizzle/schema";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { elders, elderMembers, visits, plannedVisits, plannedVisitReminders, notifications, pushTokens } from "../drizzle/schema";
 import { getDb } from "./db";
 import { sendVisitReminderEmails, sendBirthdayReminderEmails, type EmailRecipient } from "./email";
 import { sendPush } from "./push";
+
+const SAST_OFFSET_MS = 2 * 60 * 60 * 1000; // UTC+2
+
+/** Date shifted into SAST wall-clock (read components via getUTC*). */
+function toSast(d: Date): Date {
+  return new Date(d.getTime() + SAST_OFFSET_MS);
+}
+
+/** "YYYY-MM-DD" of a date in SAST. */
+function sastDayString(d: Date): string {
+  return toSast(d).toISOString().slice(0, 10);
+}
+
+/** Whether a stored plannedDate carries a chosen time (midnight SAST = day-only). */
+function hasSastTime(d: Date): boolean {
+  const s = toSast(d);
+  return s.getUTCHours() !== 0 || s.getUTCMinutes() !== 0;
+}
+
+function formatSastTime(d: Date): string {
+  const s = toSast(d);
+  return `${String(s.getUTCHours()).padStart(2, "0")}:${String(s.getUTCMinutes()).padStart(2, "0")}`;
+}
 
 // Calendar-day boundary comparison (same logic as routers.ts)
 function daysSince(date: Date): number {
@@ -32,385 +67,436 @@ function daysSince(date: Date): number {
   return Math.max(0, Math.round(diffMs / (1000 * 60 * 60 * 24)));
 }
 
-export function startCronJobs() {
-  console.log("[Cron] Scheduling nightly notification job at 20:00 SAST (18:00 UTC)");
+/** The nudge lands at ⅔ of the red threshold: 21→14, 30→20, 17→11, 7→5. */
+export function nudgeDaysFor(alertThresholdDays: number): number {
+  return Math.max(1, Math.round((alertThresholdDays * 2) / 3));
+}
 
-  // Calculate milliseconds until the next 18:00 UTC
-  function msUntilNextRun(): number {
+/** Push to every registered device of the given users. Returns delivered count. */
+async function pushToUsers(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  userIds: number[],
+  payload: { title: string; body: string; data?: Record<string, string> },
+): Promise<number> {
+  if (userIds.length === 0) return 0;
+  const rows = await db
+    .select({ token: pushTokens.token })
+    .from(pushTokens)
+    .where(inArray(pushTokens.userId, userIds));
+  const tokens = rows.map((r) => r.token);
+  if (tokens.length === 0) return 0;
+  return sendPush(tokens, payload);
+}
+
+export function startCronJobs() {
+  console.log("[Cron] Hourly notification scheduler starting (nightly status run at 20:00 SAST)");
+
+  function msUntilNextHour(): number {
     const now = new Date();
     const next = new Date(now);
-    next.setUTCHours(18, 0, 0, 0);
-    if (next <= now) {
-      // Already past today's run — schedule for tomorrow
-      next.setUTCDate(next.getUTCDate() + 1);
-    }
+    next.setUTCMinutes(0, 0, 0);
+    next.setUTCHours(next.getUTCHours() + 1);
     return next.getTime() - now.getTime();
   }
 
   function scheduleNext() {
-    const delay = msUntilNextRun();
-    const nextRun = new Date(Date.now() + delay);
-    console.log(`[Cron] Next notification run scheduled for ${nextRun.toISOString()} (${Math.round(delay / 60000)} min from now)`);
-
+    const delay = msUntilNextHour();
     setTimeout(async () => {
-      await runNightlyNotifications();
-      // Schedule the next day's run
+      await runHourlyTick();
       scheduleNext();
     }, delay);
+    const nextRun = new Date(Date.now() + delay);
+    console.log(`[Cron] Next tick at ${nextRun.toISOString()} (${Math.round(delay / 60000)} min)`);
   }
 
   scheduleNext();
 }
 
+async function runHourlyTick() {
+  const sastHour = toSast(new Date()).getUTCHours();
+  try {
+    await runPlannedVisitReminders(sastHour);
+  } catch (err) {
+    console.error("[Cron] Planned-visit reminder sweep failed:", err);
+  }
+  if (sastHour === 20) {
+    try {
+      await runNightlyNotifications();
+    } catch (err) {
+      console.error("[Cron] Nightly notification job failed:", err);
+    }
+  }
+}
+
 /**
- * Sentinel userId values used to track email sends in the notifications table.
- * These are negative IDs that can never collide with real user IDs.
- * The sentAt timestamp records when the email was sent for a given threshold.
- * We also store the lastVisitId in the elderId field to detect threshold resets.
- *
- * Encoding: userId = -(threshold), elderId = elder.id (normal)
- * We check: has a weekly_digest row with userId=-14 (or -21) been inserted
- * AFTER the last visit was logged? If yes → already sent for this crossing.
+ * Sentinel userId values in the notifications table (type weekly_digest).
+ * Negative IDs can never collide with real users. A sentinel with
+ * sentAt >= lastVisitDate means "already sent for this crossing".
  */
-const EMAIL_SENTINEL_14 = -14;
-const EMAIL_SENTINEL_21 = -21;
-const EMAIL_SENTINEL_BDAY_3 = -30;  // birthday email sent 3 days before
-const EMAIL_SENTINEL_BDAY_TODAY = -31; // birthday email sent on the day
+const SENTINEL_NUDGE = -14;
+const SENTINEL_RED = -21;
+const SENTINEL_BDAY_3 = -30;
+const SENTINEL_BDAY_TODAY = -31;
 
 async function runNightlyNotifications() {
-  console.log("[Cron] Running nightly smart notifications...");
+  console.log("[Cron] Running nightly visit-status notifications...");
   const db = await getDb();
   if (!db) {
     console.warn("[Cron] DB unavailable — skipping nightly notifications");
     return;
   }
 
-  try {
-    const { users } = await import("../drizzle/schema");
+  const { users } = await import("../drizzle/schema");
 
-    // Get all elder profiles
-    const allElders = await db.select().from(elders);
-    let totalInAppSent = 0;
-    let totalEmailsSent = 0;
+  const allElders = await db.select().from(elders);
+  let totalInAppSent = 0;
+  let totalEmailsSent = 0;
+  let totalPushSent = 0;
 
-    for (const elder of allElders) {
-      try {
-        // Get all members for this elder
-        const members = await db
-          .select()
-          .from(elderMembers)
-          .where(eq(elderMembers.elderId, elder.id));
+  for (const elder of allElders) {
+    try {
+      const members = await db
+        .select()
+        .from(elderMembers)
+        .where(eq(elderMembers.elderId, elder.id));
+      if (members.length === 0) continue;
 
-        if (members.length === 0) continue;
+      const [lastVisit] = await db
+        .select()
+        .from(visits)
+        .where(eq(visits.elderId, elder.id))
+        .orderBy(desc(visits.visitedAt))
+        .limit(1);
 
-        // Get last visit for the elder profile
-        const [lastVisit] = await db
-          .select()
-          .from(visits)
-          .where(eq(visits.elderId, elder.id))
-          .orderBy(desc(visits.visitedAt))
-          .limit(1);
+      const daysSinceVisit = lastVisit ? daysSince(lastVisit.visitedAt) : 999;
+      const lastVisitDate = lastVisit?.visitedAt ?? null;
 
-        const daysSinceVisit = lastVisit ? daysSince(lastVisit.visitedAt) : 999;
-        const lastVisitDate = lastVisit?.visitedAt ?? null;
+      // A booked covering visit suppresses all visit-status noise.
+      const upcomingVisits = await db
+        .select()
+        .from(plannedVisits)
+        .where(and(eq(plannedVisits.elderId, elder.id), gte(plannedVisits.plannedDate, new Date())));
+      const hasCoveringVisit = upcomingVisits.some((v) => {
+        const daysUntil = Math.ceil((v.plannedDate.getTime() - Date.now()) / 86400000);
+        return daysSinceVisit + daysUntil <= elder.alertThresholdDays;
+      });
 
-        // Check if a covering visit is already booked within the threshold window
-        const upcomingVisits = await db
-          .select()
-          .from(plannedVisits)
-          .where(and(eq(plannedVisits.elderId, elder.id), gte(plannedVisits.plannedDate, new Date())));
-
-        const hasCoveringVisit = upcomingVisits.some((v) => {
-          const daysUntil = Math.ceil((v.plannedDate.getTime() - Date.now()) / 86400000);
-          return daysSinceVisit + daysUntil <= elder.alertThresholdDays;
-        });
-
-        // Build member list with visit recency — needed for both visit notifications AND birthday reminders
-        const membersWithVisits = await Promise.all(
-          members.map(async (m) => {
-            const [user] = await db.select().from(users).where(eq(users.id, m.userId)).limit(1);
-            const [myLastVisit] = await db
-              .select()
-              .from(visits)
-              .where(and(eq(visits.elderId, elder.id), eq(visits.userId, m.userId)))
-              .orderBy(desc(visits.visitedAt))
-              .limit(1);
-            const myDaysSince = myLastVisit ? daysSince(myLastVisit.visitedAt) : 999;
-            return {
-              ...m,
-              userName: user?.name ?? "Family Member",
-              userEmail: user?.email ?? null,
-              myDaysSince,
-            };
-          })
-        );
-
-        // Only notify members who have notifications enabled
-        const notifyableMembers = membersWithVisits.filter((m) => m.notificationsEnabled !== false);
-        const sorted = [...notifyableMembers].sort((a, b) => b.myDaysSince - a.myDaysSince);
-
-        if (hasCoveringVisit) {
-          console.log(`[Cron] Elder ${elder.id} (${elder.name}) — covered by upcoming visit, skipping visit notifications`);
-        } else {
-          // ── IN-APP NOTIFICATIONS + NATIVE PUSH ─────────────────────────────
-          // Policy (2026-07-26 — was spamming every gran nightly):
-          //   GREEN  (comfortably before threshold)  → total silence.
-          //   YELLOW (within 2 days of threshold)    → nudge the top-2 longest-absent
-          //                                            members, ONCE per crossing.
-          //   RED    (past threshold)                → alert all opted-in members,
-          //                                            ONCE per crossing.
-          // "Once per crossing" = dedup on an unread in-app notification row;
-          // logging a visit turns the ring green and the cycle starts over.
-          // Push fires ONLY when a NEW in-app row is inserted this run — it
-          // never repeats on subsequent nights while the same alert is pending.
-          const isRed = daysSinceVisit >= elder.alertThresholdDays;
-          const isYellow = !isRed && daysSinceVisit >= Math.max(3, elder.alertThresholdDays - 2);
-
-          let inAppSent = 0;
-          const newPushUserIds: number[] = [];
-
-          if (isRed) {
-            // Red: alert everyone who has notifications on (unread-dedup).
-            for (const member of notifyableMembers) {
-              const [existingAlert] = await db
-                .select({ id: notifications.id })
-                .from(notifications)
-                .where(and(
-                  eq(notifications.userId, member.userId),
-                  eq(notifications.elderId, elder.id),
-                  eq(notifications.type, "red_alert"),
-                  eq(notifications.read, false),
-                ))
-                .limit(1);
-              if (existingAlert) continue;
-              await db.insert(notifications).values({
-                userId: member.userId,
-                elderId: elder.id,
-                type: "red_alert" as const,
-                read: false,
-              });
-              inAppSent++;
-              newPushUserIds.push(member.userId);
-            }
-          } else if (isYellow) {
-            // Yellow: gentle nudge to the top-2 longest-absent members (unread-dedup).
-            const nudgeTargets = sorted.slice(0, 2);
-            for (const target of nudgeTargets) {
-              const [existingNudge] = await db
-                .select({ id: notifications.id })
-                .from(notifications)
-                .where(and(
-                  eq(notifications.userId, target.userId),
-                  eq(notifications.elderId, elder.id),
-                  eq(notifications.type, "nudge"),
-                  eq(notifications.read, false),
-                ))
-                .limit(1);
-              if (existingNudge) continue;
-              await db.insert(notifications).values({
-                userId: target.userId,
-                elderId: elder.id,
-                type: "nudge" as const,
-                read: false,
-              });
-              inAppSent++;
-              newPushUserIds.push(target.userId);
-            }
-          }
-          // Green: nothing. A visited gran generates zero noise.
-
-          if (inAppSent > 0) {
-            console.log(`[Cron] Elder ${elder.id} (${elder.name}) — sent ${inAppSent} in-app notification(s) [${isRed ? "RED ALERT" : "nudge"}]`);
-          }
-          totalInAppSent += inAppSent;
-
-          // Native push (FCM) — only to users who got a NEW in-app row this run.
-          if (newPushUserIds.length > 0) {
-            const userTokens = await db
-              .select({ token: pushTokens.token })
-              .from(pushTokens)
-              .where(inArray(pushTokens.userId, newPushUserIds));
-
-            const tokens = userTokens.map((r) => r.token);
-            if (tokens.length > 0) {
-              const pushTitle = isRed
-                ? `⚠️ ${elder.name} needs a visit!`
-                : `💛 Time to visit ${elder.name}`;
-              const pushBody = isRed
-                ? `It's been ${daysSinceVisit} days — the whole family has been alerted.`
-                : `It's been ${daysSinceVisit} days since the last visit. Can you make it?`;
-              const pushed = await sendPush(tokens, {
-                title: pushTitle,
-                body: pushBody,
-                data: { path: `/elder/${elder.id}` },
-              });
-              if (pushed > 0) {
-                console.log(`[Cron] Elder ${elder.id} (${elder.name}) — sent ${pushed} native push notification(s)`);
-              }
-            }
-          }
-
-          // ── EMAIL NOTIFICATIONS (visit reminders) ───────────────────────────
-          // Deduplication: sentinel rows inserted after the last visit prevent re-sending.
-          const lastVisitCutoff = lastVisitDate ?? new Date(0);
-
-          const sentSentinels = await db
+      // Member list with per-member visit recency (used by nudge targeting + birthdays)
+      const membersWithVisits = await Promise.all(
+        members.map(async (m) => {
+          const [user] = await db.select().from(users).where(eq(users.id, m.userId)).limit(1);
+          const [myLastVisit] = await db
             .select()
-            .from(notifications)
-            .where(
-              and(
-                eq(notifications.elderId, elder.id),
-                eq(notifications.type, "weekly_digest"),
-                gte(notifications.sentAt, lastVisitCutoff)
-              )
-            );
+            .from(visits)
+            .where(and(eq(visits.elderId, elder.id), eq(visits.userId, m.userId)))
+            .orderBy(desc(visits.visitedAt))
+            .limit(1);
+          return {
+            ...m,
+            userName: user?.name ?? "Family Member",
+            userEmail: user?.email ?? null,
+            myDaysSince: myLastVisit ? daysSince(myLastVisit.visitedAt) : 999,
+          };
+        })
+      );
+      const notifyableMembers = membersWithVisits.filter((m) => m.notificationsEnabled !== false);
+      const sorted = [...notifyableMembers].sort((a, b) => b.myDaysSince - a.myDaysSince);
 
-          const email14AlreadySent = sentSentinels.some((n) => n.userId === EMAIL_SENTINEL_14);
-          const email21AlreadySent = sentSentinels.some((n) => n.userId === EMAIL_SENTINEL_21);
+      if (!hasCoveringVisit) {
+        const redDay = elder.alertThresholdDays;
+        const nudgeDay = nudgeDaysFor(redDay);
+        const isRed = daysSinceVisit >= redDay;
+        const isNudge = !isRed && daysSinceVisit >= nudgeDay;
 
-          // 21-day trigger: email the whole family (once per threshold crossing)
-          if (daysSinceVisit >= 21 && !email21AlreadySent) {
-            const recipients: EmailRecipient[] = notifyableMembers
-              .filter((m) => m.userEmail)
-              .map((m) => ({ name: m.userName, email: m.userEmail! }));
+        // Sentinels newer than the last visit = this crossing already handled.
+        const lastVisitCutoff = lastVisitDate ?? new Date(0);
+        const sentSentinels = await db
+          .select()
+          .from(notifications)
+          .where(
+            and(
+              eq(notifications.elderId, elder.id),
+              eq(notifications.type, "weekly_digest"),
+              gte(notifications.sentAt, lastVisitCutoff)
+            )
+          );
+        const nudgeAlreadySent = sentSentinels.some((n) => n.userId === SENTINEL_NUDGE);
+        const redAlreadySent = sentSentinels.some((n) => n.userId === SENTINEL_RED);
 
-            if (recipients.length > 0) {
-              const sent = await sendVisitReminderEmails({
+        // ── RED: whole family, once per crossing ──────────────────────────
+        if (isRed && !redAlreadySent) {
+          const recipients: EmailRecipient[] = notifyableMembers
+            .filter((m) => m.userEmail)
+            .map((m) => ({ name: m.userName, email: m.userEmail! }));
+          const emailsSent = recipients.length > 0
+            ? await sendVisitReminderEmails({
                 recipients,
                 granName: elder.name,
                 elderId: elder.id,
                 granPhotoUrl: elder.photoUrl,
                 daysSince: daysSinceVisit,
                 isWholeFamily: true,
-              });
+              })
+            : 0;
 
-              if (sent > 0) {
-                await db.insert(notifications).values({
-                  userId: EMAIL_SENTINEL_21,
-                  elderId: elder.id,
-                  type: "weekly_digest" as const,
-                  read: true,
-                });
-                totalEmailsSent += sent;
-                console.log(`[Cron] Elder ${elder.id} (${elder.name}) — sent 21-day family email to ${sent} member(s)`);
-              }
-            }
+          for (const member of notifyableMembers) {
+            await db.insert(notifications).values({
+              userId: member.userId,
+              elderId: elder.id,
+              type: "red_alert" as const,
+              read: false,
+            });
+            totalInAppSent++;
           }
-          // 14-day trigger: email the member(s) who visited furthest back
-          // Only fires in the 14–20 day window (21+ is handled above)
-          else if (daysSinceVisit >= 14 && daysSinceVisit < 21 && !email14AlreadySent) {
-            const maxDaysSince = sorted[0]?.myDaysSince ?? 0;
-            const longestAbsent = sorted.filter((m) => m.myDaysSince === maxDaysSince && m.userEmail);
 
-            const recipients: EmailRecipient[] = longestAbsent.map((m) => ({
-              name: m.userName,
-              email: m.userEmail!,
-            }));
+          const pushed = await pushToUsers(db, notifyableMembers.map((m) => m.userId), {
+            title: `⚠️ ${elder.name} needs a visit!`,
+            body: `It's been ${daysSinceVisit} days — the whole family has been alerted.`,
+            data: { path: `/elder/${elder.id}` },
+          });
 
-            if (recipients.length > 0) {
-              const sent = await sendVisitReminderEmails({
+          // Mark the crossing handled even if some channels had no recipients —
+          // this is the once-per-crossing guarantee.
+          await db.insert(notifications).values({
+            userId: SENTINEL_RED,
+            elderId: elder.id,
+            type: "weekly_digest" as const,
+            read: true,
+          });
+          totalEmailsSent += emailsSent;
+          totalPushSent += pushed;
+          console.log(`[Cron] Elder ${elder.id} (${elder.name}) — RED crossing (day ${daysSinceVisit}/${redDay}): ${emailsSent} email, ${pushed} push, ${notifyableMembers.length} in-app`);
+        }
+        // ── NUDGE: longest-back visitor(s), once per crossing ─────────────
+        else if (isNudge && !nudgeAlreadySent) {
+          const maxDaysSince = sorted[0]?.myDaysSince ?? 0;
+          const longestAbsent = sorted.filter((m) => m.myDaysSince === maxDaysSince);
+
+          const recipients: EmailRecipient[] = longestAbsent
+            .filter((m) => m.userEmail)
+            .map((m) => ({ name: m.userName, email: m.userEmail! }));
+          const emailsSent = recipients.length > 0
+            ? await sendVisitReminderEmails({
                 recipients,
                 granName: elder.name,
                 elderId: elder.id,
                 granPhotoUrl: elder.photoUrl,
                 daysSince: daysSinceVisit,
                 isWholeFamily: false,
-              });
+              })
+            : 0;
 
-              if (sent > 0) {
-                await db.insert(notifications).values({
-                  userId: EMAIL_SENTINEL_14,
-                  elderId: elder.id,
-                  type: "weekly_digest" as const,
-                  read: true,
-                });
-                totalEmailsSent += sent;
-                console.log(`[Cron] Elder ${elder.id} (${elder.name}) — sent 14-day email to ${sent} longest-absent member(s)`);
-              }
-            }
-          }
-        } // end !hasCoveringVisit
-        // ── BIRTHDAY REMINDERS ────────────────────────────────────────────────
-        // Send an email 3 days before and again on the birthday itself.
-        // Deduplication: sentinel rows with userId = EMAIL_SENTINEL_BDAY_* and
-        // a sentAt in the current calendar year prevent re-sending.
-        if (elder.birthday) {
-          const now = new Date();
-          // birthday is "YYYY-MM-DD" (new) or legacy "MM-DD" — extract month and day from the last two segments
-          const bdParts = elder.birthday.split("-");
-          const bdMm = Number(bdParts[bdParts.length - 2]);
-          const bdDd = Number(bdParts[bdParts.length - 1]);
-          const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          const bdThisYear = new Date(now.getFullYear(), bdMm - 1, bdDd);
-          const bdNextYear = new Date(now.getFullYear() + 1, bdMm - 1, bdDd);
-          const nextBd = bdThisYear >= todayMidnight ? bdThisYear : bdNextYear;
-          const daysUntilBd = Math.round((nextBd.getTime() - todayMidnight.getTime()) / 86400000);
-
-          // Check sentinels for this calendar year
-          const yearStart = new Date(now.getFullYear(), 0, 1);
-          const bdSentinels = await db
-            .select()
-            .from(notifications)
-            .where(
-              and(
-                eq(notifications.elderId, elder.id),
-                eq(notifications.type, "weekly_digest"),
-                gte(notifications.sentAt, yearStart)
-              )
-            );
-
-          const bdTodayAlreadySent = bdSentinels.some((n) => n.userId === EMAIL_SENTINEL_BDAY_TODAY);
-          const bd3dayAlreadySent = bdSentinels.some((n) => n.userId === EMAIL_SENTINEL_BDAY_3);
-
-          const bdRecipients: EmailRecipient[] = membersWithVisits
-            .filter((m) => m.notificationsEnabled !== false && m.userEmail)
-            .map((m) => ({ name: m.userName, email: m.userEmail! }));
-
-          if (daysUntilBd === 0 && !bdTodayAlreadySent && bdRecipients.length > 0) {
-            const sent = await sendBirthdayReminderEmails({
-              recipients: bdRecipients,
-              granName: elder.name,
+          for (const target of longestAbsent) {
+            await db.insert(notifications).values({
+              userId: target.userId,
               elderId: elder.id,
-              granPhotoUrl: elder.photoUrl,
-              isToday: true,
+              type: "nudge" as const,
+              read: false,
             });
-            if (sent > 0) {
-              await db.insert(notifications).values({
-                userId: EMAIL_SENTINEL_BDAY_TODAY,
-                elderId: elder.id,
-                type: "weekly_digest" as const,
-                read: true,
-              });
-              totalEmailsSent += sent;
-              console.log(`[Cron] Elder ${elder.id} (${elder.name}) — sent birthday TODAY email to ${sent} member(s)`);
-            }
-          } else if (daysUntilBd === 3 && !bd3dayAlreadySent && bdRecipients.length > 0) {
-            const sent = await sendBirthdayReminderEmails({
-              recipients: bdRecipients,
-              granName: elder.name,
-              elderId: elder.id,
-              granPhotoUrl: elder.photoUrl,
-              isToday: false,
-            });
-            if (sent > 0) {
-              await db.insert(notifications).values({
-                userId: EMAIL_SENTINEL_BDAY_3,
-                elderId: elder.id,
-                type: "weekly_digest" as const,
-                read: true,
-              });
-              totalEmailsSent += sent;
-              console.log(`[Cron] Elder ${elder.id} (${elder.name}) — sent birthday 3-day reminder email to ${sent} member(s)`);
-            }
+            totalInAppSent++;
           }
+
+          const pushed = await pushToUsers(db, longestAbsent.map((m) => m.userId), {
+            title: `💛 Time to visit ${elder.name}`,
+            body: `It's been ${daysSinceVisit} days since the last visit. Can you make it?`,
+            data: { path: `/elder/${elder.id}` },
+          });
+
+          await db.insert(notifications).values({
+            userId: SENTINEL_NUDGE,
+            elderId: elder.id,
+            type: "weekly_digest" as const,
+            read: true,
+          });
+          totalEmailsSent += emailsSent;
+          totalPushSent += pushed;
+          console.log(`[Cron] Elder ${elder.id} (${elder.name}) — NUDGE crossing (day ${daysSinceVisit}, nudge ${nudgeDay}, red ${redDay}): ${emailsSent} email, ${pushed} push to ${longestAbsent.length} member(s)`);
         }
-      } catch (elderErr) {
-        console.error(`[Cron] Error processing elder ${elder.id}:`, elderErr);
+        // GREEN or already handled: total silence.
+      } else {
+        console.log(`[Cron] Elder ${elder.id} (${elder.name}) — covered by upcoming visit, silent`);
       }
-    }
 
-    console.log(`[Cron] Nightly run complete — ${totalInAppSent} in-app + ${totalEmailsSent} email notification(s) sent across ${allElders.length} profile(s)`);
-  } catch (err) {
-    console.error("[Cron] Nightly notification job failed:", err);
+      // ── BIRTHDAYS: email + push, 3 days before and on the day ───────────
+      if (elder.birthday) {
+        const now = new Date();
+        const bdParts = elder.birthday.split("-");
+        const bdMm = Number(bdParts[bdParts.length - 2]);
+        const bdDd = Number(bdParts[bdParts.length - 1]);
+        const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const bdThisYear = new Date(now.getFullYear(), bdMm - 1, bdDd);
+        const bdNextYear = new Date(now.getFullYear() + 1, bdMm - 1, bdDd);
+        const nextBd = bdThisYear >= todayMidnight ? bdThisYear : bdNextYear;
+        const daysUntilBd = Math.round((nextBd.getTime() - todayMidnight.getTime()) / 86400000);
+
+        const yearStart = new Date(now.getFullYear(), 0, 1);
+        const bdSentinels = await db
+          .select()
+          .from(notifications)
+          .where(
+            and(
+              eq(notifications.elderId, elder.id),
+              eq(notifications.type, "weekly_digest"),
+              gte(notifications.sentAt, yearStart)
+            )
+          );
+        const bdTodayAlreadySent = bdSentinels.some((n) => n.userId === SENTINEL_BDAY_TODAY);
+        const bd3dayAlreadySent = bdSentinels.some((n) => n.userId === SENTINEL_BDAY_3);
+
+        const bdMembers = membersWithVisits.filter((m) => m.notificationsEnabled !== false);
+        const bdRecipients: EmailRecipient[] = bdMembers
+          .filter((m) => m.userEmail)
+          .map((m) => ({ name: m.userName, email: m.userEmail! }));
+
+        const fireBirthday = async (isToday: boolean, sentinel: number) => {
+          const sent = bdRecipients.length > 0
+            ? await sendBirthdayReminderEmails({
+                recipients: bdRecipients,
+                granName: elder.name,
+                elderId: elder.id,
+                granPhotoUrl: elder.photoUrl,
+                isToday,
+              })
+            : 0;
+          const pushed = await pushToUsers(db, bdMembers.map((m) => m.userId), {
+            title: isToday ? `🎂 It's ${elder.name}'s birthday today!` : `🎂 ${elder.name}'s birthday is in 3 days`,
+            body: isToday
+              ? `Make it a special one — a visit or a call means the world.`
+              : `A perfect excuse to plan a visit.`,
+            data: { path: `/elder/${elder.id}` },
+          });
+          if (sent > 0 || pushed > 0) {
+            await db.insert(notifications).values({
+              userId: sentinel,
+              elderId: elder.id,
+              type: "weekly_digest" as const,
+              read: true,
+            });
+            totalEmailsSent += sent;
+            totalPushSent += pushed;
+            console.log(`[Cron] Elder ${elder.id} (${elder.name}) — birthday ${isToday ? "TODAY" : "3-day"}: ${sent} email, ${pushed} push`);
+          }
+        };
+
+        if (daysUntilBd === 0 && !bdTodayAlreadySent) await fireBirthday(true, SENTINEL_BDAY_TODAY);
+        else if (daysUntilBd === 3 && !bd3dayAlreadySent) await fireBirthday(false, SENTINEL_BDAY_3);
+      }
+    } catch (elderErr) {
+      console.error(`[Cron] Error processing elder ${elder.id}:`, elderErr);
+    }
+  }
+
+  console.log(`[Cron] Nightly run complete — ${totalInAppSent} in-app + ${totalEmailsSent} email + ${totalPushSent} push across ${allElders.length} profile(s)`);
+}
+
+/**
+ * Scheduled-visit reminders — runs every hour.
+ * Each phase fires at most once per (plannedVisit, occurrence day), enforced by
+ * the plannedVisitReminders unique index. Late ticks catch up (>= comparisons)
+ * so a missed hour still delivers, but never twice.
+ */
+async function runPlannedVisitReminders(sastHour: number) {
+  const db = await getDb();
+  if (!db) return;
+
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - 36 * 60 * 60 * 1000);
+  const windowEnd = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+
+  const upcoming = await db
+    .select()
+    .from(plannedVisits)
+    .where(and(gte(plannedVisits.plannedDate, windowStart), lte(plannedVisits.plannedDate, windowEnd)));
+  if (upcoming.length === 0) return;
+
+  const todaySast = sastDayString(now);
+  const tomorrowSast = sastDayString(new Date(now.getTime() + 24 * 60 * 60 * 1000));
+
+  const { users } = await import("../drizzle/schema");
+  let sentCount = 0;
+
+  for (const pv of upcoming) {
+    try {
+      const visitDay = sastDayString(pv.plannedDate);
+      const timed = hasSastTime(pv.plannedDate);
+
+      // Respect the booker's notification preference for this gran.
+      const [membership] = await db
+        .select()
+        .from(elderMembers)
+        .where(and(eq(elderMembers.elderId, pv.elderId), eq(elderMembers.userId, pv.userId)))
+        .limit(1);
+      if (membership && membership.notificationsEnabled === false) continue;
+
+      const [elder] = await db.select().from(elders).where(eq(elders.id, pv.elderId)).limit(1);
+      if (!elder) continue;
+
+      const alreadySent = await db
+        .select({ phase: plannedVisitReminders.phase })
+        .from(plannedVisitReminders)
+        .where(and(eq(plannedVisitReminders.plannedVisitId, pv.id), eq(plannedVisitReminders.visitDay, visitDay)));
+      const sentPhases = new Set(alreadySent.map((r) => r.phase));
+
+      const markSent = (phase: "day_before" | "day_of" | "log_prompt") =>
+        db.insert(plannedVisitReminders).values({ plannedVisitId: pv.id, phase, visitDay });
+
+      // ── day_before: 18:00 SAST the evening before ─────────────────────
+      if (!sentPhases.has("day_before") && visitDay === tomorrowSast && sastHour >= 18) {
+        const pushed = await pushToUsers(db, [pv.userId], {
+          title: `💛 Your visit to ${elder.name} is tomorrow`,
+          body: timed ? `Scheduled for ${formatSastTime(pv.plannedDate)}. ${elder.name} will be so happy!` : `${elder.name} will be so happy!`,
+          data: { path: `/elder/${pv.elderId}` },
+        });
+        await markSent("day_before");
+        sentCount += pushed;
+      }
+
+      // ── day_of: 08:00 SAST that morning ───────────────────────────────
+      if (!sentPhases.has("day_of") && visitDay === todaySast && sastHour >= 8) {
+        const pushed = await pushToUsers(db, [pv.userId], {
+          title: `💛 Your ${elder.name} visit is today`,
+          body: timed ? `Scheduled for ${formatSastTime(pv.plannedDate)}. Have a lovely visit!` : `Have a lovely visit!`,
+          data: { path: `/elder/${pv.elderId}` },
+        });
+        await markSent("day_of");
+        sentCount += pushed;
+      }
+
+      // ── log_prompt: 2h after the set time, or 19:00 SAST if day-only ──
+      if (!sentPhases.has("log_prompt") && visitDay === todaySast) {
+        const due = timed
+          ? now.getTime() >= pv.plannedDate.getTime() + 2 * 60 * 60 * 1000
+          : sastHour >= 19;
+        if (due) {
+          // Already logged a visit today? Then stay silent (and mark done).
+          const sastDayStartUtc = new Date(new Date(`${visitDay}T00:00:00Z`).getTime() - SAST_OFFSET_MS);
+          const [loggedToday] = await db
+            .select({ id: visits.id })
+            .from(visits)
+            .where(and(
+              eq(visits.elderId, pv.elderId),
+              eq(visits.userId, pv.userId),
+              gte(visits.visitedAt, sastDayStartUtc),
+            ))
+            .limit(1);
+
+          if (!loggedToday) {
+            const pushed = await pushToUsers(db, [pv.userId], {
+              title: `💚 How was the visit to ${elder.name}?`,
+              body: `Log it so the family sees the ring turn green.`,
+              data: { path: `/elder/${pv.elderId}` },
+            });
+            sentCount += pushed;
+          }
+          await markSent("log_prompt");
+        }
+      }
+    } catch (pvErr) {
+      console.error(`[Cron] Error processing planned visit ${pv.id}:`, pvErr);
+    }
+  }
+
+  if (sentCount > 0) {
+    console.log(`[Cron] Scheduled-visit sweep (hour ${sastHour} SAST) — ${sentCount} push reminder(s) sent`);
   }
 }

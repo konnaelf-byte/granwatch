@@ -11,10 +11,11 @@ let package = Package(
             targets: ["CapApp-SPM"])
     ],
     dependencies: [
-        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.4.0"),
-        .package(name: "CapgoCapacitorSocialLogin", path: "../../../node_modules/.pnpm/@capgo+capacitor-social-login@8.3.30_@capacitor+core@8.4.0/node_modules/@capgo/capacitor-social-login"),
-        .package(name: "RevenuecatPurchasesCapacitor", path: "../../../node_modules/.pnpm/@revenuecat+purchases-capacitor@10.4.0_@capacitor+core@8.4.0/node_modules/@revenuecat/purchases-capacitor"),
-        .package(name: "CordovaPluginPurchases", path: "../../capacitor-cordova-ios-plugins/sources/CordovaPluginPurchases")
+        .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.3.4"),
+        .package(name: "CapacitorFirebaseMessaging", path: "../../../node_modules/@capacitor-firebase/messaging"),
+        .package(name: "CapgoCapacitorSocialLogin", path: "../../../node_modules/@capgo/capacitor-social-login"),
+        .package(name: "CordovaPluginPurchases", path: "../../capacitor-cordova-ios-plugins/sources/CordovaPluginPurchases"),
+        .package(name: "RevenuecatPurchasesCapacitor", path: "../../../node_modules/@revenuecat/purchases-capacitor"),
     ],
     targets: [
         .target(
@@ -22,9 +23,10 @@ let package = Package(
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
+                .product(name: "CapacitorFirebaseMessaging", package: "CapacitorFirebaseMessaging"),
                 .product(name: "CapgoCapacitorSocialLogin", package: "CapgoCapacitorSocialLogin"),
+                .product(name: "CordovaPluginPurchases", package: "CordovaPluginPurchases"),
                 .product(name: "RevenuecatPurchasesCapacitor", package: "RevenuecatPurchasesCapacitor"),
-                .product(name: "CordovaPluginPurchases", package: "CordovaPluginPurchases")
             ]
         )
     ]

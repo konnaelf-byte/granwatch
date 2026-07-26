@@ -1,4 +1,4 @@
-import { boolean, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar, decimal } from "drizzle-orm/mysql-core";
+import { boolean, index, int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar, decimal } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -60,6 +60,8 @@ export const elderMembers = mysqlTable("elderMembers", {
   joinedAt: timestamp("joinedAt").defaultNow().notNull(),
   // Notification preferences — user can opt out per elder profile
   notificationsEnabled: boolean("notificationsEnabled").default(true).notNull(),
+  // Opt-IN social pushes ("Barry just visited Gran Nanna") — off by default
+  socialNotificationsEnabled: boolean("socialNotificationsEnabled").default(false).notNull(),
 }, (table) => ({
   elderIdIdx: index("elderMembers_elderId_idx").on(table.elderId),
   userIdIdx: index("elderMembers_userId_idx").on(table.userId),
@@ -108,6 +110,25 @@ export const plannedVisits = mysqlTable("plannedVisits", {
 
 export type PlannedVisit = typeof plannedVisits.$inferSelect;
 export type InsertPlannedVisit = typeof plannedVisits.$inferInsert;
+
+/**
+ * Scheduled-visit reminder log — ensures each reminder phase fires exactly once
+ * per planned visit occurrence (visitDay handles recurring visits whose
+ * plannedDate advances). Phases: day_before (18:00 SAST), day_of (08:00 SAST),
+ * log_prompt (2h after the visit time, or 19:00 SAST if day-only).
+ */
+export const plannedVisitReminders = mysqlTable("plannedVisitReminders", {
+  id: int("id").autoincrement().primaryKey(),
+  plannedVisitId: int("plannedVisitId").notNull(),
+  phase: mysqlEnum("phase", ["day_before", "day_of", "log_prompt"]).notNull(),
+  // SAST calendar day of the visit occurrence, "YYYY-MM-DD"
+  visitDay: varchar("visitDay", { length: 10 }).notNull(),
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+}, (table) => ({
+  uniquePhase: uniqueIndex("pvr_visit_phase_day_idx").on(table.plannedVisitId, table.phase, table.visitDay),
+}));
+
+export type PlannedVisitReminder = typeof plannedVisitReminders.$inferSelect;
 
 /**
  * Subscription split contributions — family members who chip in for Gran+.

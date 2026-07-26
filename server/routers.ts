@@ -345,6 +345,7 @@ export const appRouter = router({
           myDaysSince,
           memberRole: membership.role,
           notificationsEnabled: membership.notificationsEnabled,
+          socialNotificationsEnabled: membership.socialNotificationsEnabled ?? false,
         };
       }),
 
@@ -638,7 +639,11 @@ export const appRouter = router({
 
     // Update notification preferences for the current user on an elder profile
     updateNotificationPrefs: protectedProcedure
-      .input(z.object({ elderId: z.number(), notificationsEnabled: z.boolean() }))
+      .input(z.object({
+        elderId: z.number(),
+        notificationsEnabled: z.boolean().optional(),
+        socialNotificationsEnabled: z.boolean().optional(),
+      }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
         if (!db) throw new Error("DB unavailable");
@@ -650,9 +655,14 @@ export const appRouter = router({
           .limit(1);
         if (!membership) throw new Error("Not a member");
 
+        const updates: Partial<{ notificationsEnabled: boolean; socialNotificationsEnabled: boolean }> = {};
+        if (input.notificationsEnabled !== undefined) updates.notificationsEnabled = input.notificationsEnabled;
+        if (input.socialNotificationsEnabled !== undefined) updates.socialNotificationsEnabled = input.socialNotificationsEnabled;
+        if (Object.keys(updates).length === 0) return { success: true };
+
         await db
           .update(elderMembers)
-          .set({ notificationsEnabled: input.notificationsEnabled })
+          .set(updates)
           .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)));
 
         return { success: true };
@@ -765,6 +775,43 @@ export const appRouter = router({
           moodNote,
           photoUrl,
         });
+
+        // Opt-IN social push ("Barry just visited Gran Nanna") — fire-and-forget,
+        // only to members who explicitly enabled it. Never blocks the response.
+        (async () => {
+          try {
+            const { users } = await import("../drizzle/schema");
+            const { pushTokens } = await import("../drizzle/schema");
+            const { sendPush } = await import("./push");
+            const { inArray } = await import("drizzle-orm");
+            const optedIn = await db
+              .select({ userId: elderMembers.userId })
+              .from(elderMembers)
+              .where(and(
+                eq(elderMembers.elderId, input.elderId),
+                eq(elderMembers.socialNotificationsEnabled, true),
+                eq(elderMembers.notificationsEnabled, true),
+              ));
+            const targetIds = optedIn.map((m) => m.userId).filter((id) => id !== ctx.user.id);
+            if (targetIds.length === 0) return;
+            const [elder] = await db.select().from(elders).where(eq(elders.id, input.elderId)).limit(1);
+            const [visitor] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+            if (!elder) return;
+            const rows = await db
+              .select({ token: pushTokens.token })
+              .from(pushTokens)
+              .where(inArray(pushTokens.userId, targetIds));
+            const tokens = rows.map((r) => r.token);
+            if (tokens.length === 0) return;
+            await sendPush(tokens, {
+              title: `💚 ${visitor?.name ?? "Someone"} just visited ${elder.name}`,
+              body: `The ring is green again.`,
+              data: { path: `/elder/${input.elderId}` },
+            });
+          } catch (e) {
+            console.error("[SocialPush] failed:", e);
+          }
+        })();
 
         return { success: true, visitId: (result as any).insertId };
       }),
