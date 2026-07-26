@@ -152,37 +152,25 @@ async function runNightlyNotifications() {
         if (hasCoveringVisit) {
           console.log(`[Cron] Elder ${elder.id} (${elder.name}) — covered by upcoming visit, skipping visit notifications`);
         } else {
-          // ── IN-APP NOTIFICATIONS ────────────────────────────────────────────
-
-          // Nudge the top 2 longest-absent members.
-          // DEDUP: if the member still has an UNREAD nudge for this elder,
-          // don't stack another identical one every night (was spammy).
-          const nudgeTargets = sorted.slice(0, 2);
-          let inAppSent = 0;
-          for (const target of nudgeTargets) {
-            const [existingNudge] = await db
-              .select({ id: notifications.id })
-              .from(notifications)
-              .where(and(
-                eq(notifications.userId, target.userId),
-                eq(notifications.elderId, elder.id),
-                eq(notifications.type, "nudge"),
-                eq(notifications.read, false),
-              ))
-              .limit(1);
-            if (existingNudge) continue;
-            await db.insert(notifications).values({
-              userId: target.userId,
-              elderId: elder.id,
-              type: "nudge" as const,
-              read: false,
-            });
-            inAppSent++;
-          }
-
-          // If red status, also alert all opted-in members (same unread-dedup).
+          // ── IN-APP NOTIFICATIONS + NATIVE PUSH ─────────────────────────────
+          // Policy (2026-07-26 — was spamming every gran nightly):
+          //   GREEN  (comfortably before threshold)  → total silence.
+          //   YELLOW (within 2 days of threshold)    → nudge the top-2 longest-absent
+          //                                            members, ONCE per crossing.
+          //   RED    (past threshold)                → alert all opted-in members,
+          //                                            ONCE per crossing.
+          // "Once per crossing" = dedup on an unread in-app notification row;
+          // logging a visit turns the ring green and the cycle starts over.
+          // Push fires ONLY when a NEW in-app row is inserted this run — it
+          // never repeats on subsequent nights while the same alert is pending.
           const isRed = daysSinceVisit >= elder.alertThresholdDays;
+          const isYellow = !isRed && daysSinceVisit >= Math.max(3, elder.alertThresholdDays - 2);
+
+          let inAppSent = 0;
+          const newPushUserIds: number[] = [];
+
           if (isRed) {
+            // Red: alert everyone who has notifications on (unread-dedup).
             for (const member of notifyableMembers) {
               const [existingAlert] = await db
                 .select({ id: notifications.id })
@@ -202,25 +190,46 @@ async function runNightlyNotifications() {
                 read: false,
               });
               inAppSent++;
+              newPushUserIds.push(member.userId);
+            }
+          } else if (isYellow) {
+            // Yellow: gentle nudge to the top-2 longest-absent members (unread-dedup).
+            const nudgeTargets = sorted.slice(0, 2);
+            for (const target of nudgeTargets) {
+              const [existingNudge] = await db
+                .select({ id: notifications.id })
+                .from(notifications)
+                .where(and(
+                  eq(notifications.userId, target.userId),
+                  eq(notifications.elderId, elder.id),
+                  eq(notifications.type, "nudge"),
+                  eq(notifications.read, false),
+                ))
+                .limit(1);
+              if (existingNudge) continue;
+              await db.insert(notifications).values({
+                userId: target.userId,
+                elderId: elder.id,
+                type: "nudge" as const,
+                read: false,
+              });
+              inAppSent++;
+              newPushUserIds.push(target.userId);
             }
           }
+          // Green: nothing. A visited gran generates zero noise.
 
           if (inAppSent > 0) {
             console.log(`[Cron] Elder ${elder.id} (${elder.name}) — sent ${inAppSent} in-app notification(s) [${isRed ? "RED ALERT" : "nudge"}]`);
           }
           totalInAppSent += inAppSent;
 
-          // ── NATIVE PUSH (FCM) ───────────────────────────────────────────────
-          // Mirror the same audience as in-app: nudge targets + red-alert all members
-          const pushTargetIds = isRed
-            ? notifyableMembers.map((m) => m.userId)
-            : nudgeTargets.map((m) => m.userId);
-
-          if (pushTargetIds.length > 0) {
+          // Native push (FCM) — only to users who got a NEW in-app row this run.
+          if (newPushUserIds.length > 0) {
             const userTokens = await db
               .select({ token: pushTokens.token })
               .from(pushTokens)
-              .where(inArray(pushTokens.userId, pushTargetIds));
+              .where(inArray(pushTokens.userId, newPushUserIds));
 
             const tokens = userTokens.map((r) => r.token);
             if (tokens.length > 0) {
