@@ -4,8 +4,13 @@ import { getDb } from "./db";
 import { elders } from "../drizzle/schema";
 
 const APP_URL = process.env.APP_URL ?? "https://granwatch.app";
-// Self-hosted (client/public/og-gran.png) — no third-party CDN dependency.
-const DEFAULT_OG_IMAGE = `${APP_URL}/og-gran.png`;
+// Self-hosted branded share card — 1200x630 (client/public/og-default.png).
+// No third-party CDN dependency. Dimensions are declared to crawlers below;
+// they MUST stay in sync with the actual asset or WhatsApp/iMessage/Twitter
+// will mis-render or drop the card entirely.
+const DEFAULT_OG_IMAGE = `${APP_URL}/og-default.png`;
+const DEFAULT_OG_IMAGE_WIDTH = 1200;
+const DEFAULT_OG_IMAGE_HEIGHT = 630;
 
 function buildOgHtml({
   title,
@@ -13,13 +18,29 @@ function buildOgHtml({
   image,
   url,
   redirectUrl,
+  imageWidth,
+  imageHeight,
 }: {
   title: string;
   description: string;
   image: string;
   url: string;
   redirectUrl: string;
+  /**
+   * Only pass these when the real pixel dimensions of `image` are known.
+   * Declaring dimensions that don't match the asset is worse than declaring
+   * none at all — crawlers letterbox, crop or reject the card.
+   */
+  imageWidth?: number;
+  imageHeight?: number;
 }) {
+  const dimensionMeta =
+    imageWidth && imageHeight
+      ? `
+  <meta property="og:image:width" content="${imageWidth}" />
+  <meta property="og:image:height" content="${imageHeight}" />`
+      : "";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,13 +53,17 @@ function buildOgHtml({
   <meta property="og:url" content="${escapeHtml(url)}" />
   <meta property="og:title" content="${escapeHtml(title)}" />
   <meta property="og:description" content="${escapeHtml(description)}" />
-  <meta property="og:image" content="${escapeHtml(image)}" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
+  <meta property="og:image" content="${escapeHtml(image)}" />${dimensionMeta}
   <meta property="og:site_name" content="GranWatch" />
 
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image" />
+  <!-- Twitter Card. summary_large_image is only safe when we know the asset is
+       wide (the 1200x630 default card). An arbitrary elder photo may be square
+       or portrait, in which case the smaller summary card renders correctly. -->
+  <meta name="twitter:card" content="${
+    imageWidth && imageHeight && imageWidth >= imageHeight * 1.5
+      ? "summary_large_image"
+      : "summary"
+  }" />
   <meta name="twitter:title" content="${escapeHtml(title)}" />
   <meta name="twitter:description" content="${escapeHtml(description)}" />
   <meta name="twitter:image" content="${escapeHtml(image)}" />
@@ -99,10 +124,23 @@ export function registerOgRoutes(app: Express) {
         const title = `Join ${elderName}'s family on GranWatch`;
         const description = `You've been invited to help keep an eye on ${elderName}. Join the family, log visits, and make sure she's never forgotten. 💛`;
 
+        // We only know the pixel size of our own default card. Elder photos are
+        // user-uploaded at arbitrary sizes, so we declare no dimensions for
+        // them rather than lying to the crawler.
+        const usingDefaultImage = image === DEFAULT_OG_IMAGE;
+
         const canonicalUrl = `${APP_URL}/api/og/invite/${code}`;
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.setHeader("Cache-Control", "public, max-age=300"); // 5 min cache
-        return res.send(buildOgHtml({ title, description, image, url: canonicalUrl, redirectUrl }));
+        return res.send(buildOgHtml({
+          title,
+          description,
+          image,
+          url: canonicalUrl,
+          redirectUrl,
+          imageWidth: usingDefaultImage ? DEFAULT_OG_IMAGE_WIDTH : undefined,
+          imageHeight: usingDefaultImage ? DEFAULT_OG_IMAGE_HEIGHT : undefined,
+        }));
       }
     } catch (err) {
       console.error("[OG] Error fetching elder for invite code:", err);
@@ -117,6 +155,8 @@ export function registerOgRoutes(app: Express) {
       title,
       description,
       image: DEFAULT_OG_IMAGE,
+      imageWidth: DEFAULT_OG_IMAGE_WIDTH,
+      imageHeight: DEFAULT_OG_IMAGE_HEIGHT,
       url: fallbackCanonical,
       redirectUrl: `${APP_URL}/join/${req.params.code}`,
     }));
@@ -132,6 +172,8 @@ export function registerOgRoutes(app: Express) {
       title,
       description,
       image: DEFAULT_OG_IMAGE,
+      imageWidth: DEFAULT_OG_IMAGE_WIDTH,
+      imageHeight: DEFAULT_OG_IMAGE_HEIGHT,
       url: `${APP_URL}/api/og/share`,
       redirectUrl: APP_URL,
     }));
