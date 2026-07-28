@@ -17,6 +17,20 @@ export default function Dashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
 
+  // Safety net for the invite-link flow: if sign-in dropped the return path and
+  // dumped the user here, pick up the stashed /join/CODE and finish the journey.
+  // TTL-limited (15 min) and /join/-only so a stale stash can't hijack later visits.
+  useEffect(() => {
+    if (!isAuthenticated || typeof window === "undefined") return;
+    const path = window.sessionStorage.getItem("gw_return_path");
+    const ts = Number(window.sessionStorage.getItem("gw_return_path_ts") ?? 0);
+    window.sessionStorage.removeItem("gw_return_path"); // consume once
+    window.sessionStorage.removeItem("gw_return_path_ts");
+    if (path && path.startsWith("/join/") && Date.now() - ts < 15 * 60 * 1000) {
+      navigate(path);
+    }
+  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Attribute referral signup — fire once if user arrived via a ref link
   const recordSignup = trpc.referral.recordSignup.useMutation();
   useEffect(() => {

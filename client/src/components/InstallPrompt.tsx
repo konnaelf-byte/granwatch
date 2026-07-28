@@ -149,7 +149,7 @@ export function InstallPrompt() {
       >
         {/* App icon */}
         <img
-          src="https://d2xsxph8kpxj0f.cloudfront.net/310519663467284809/kPXP5TfTQ4hUuXDHU4e2Bo/gran-icon-final_a6b9501a.png"
+          src="/og-gran.png"
           alt="GranWatch"
           className="w-12 h-12 rounded-xl flex-shrink-0 object-cover"
         />

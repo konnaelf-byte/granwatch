@@ -23,9 +23,24 @@ import { Capacitor } from "@capacitor/core";
 import { ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 
+/**
+ * Reads ?redirect_url= from the current URL and returns it only if it is a
+ * safe internal path (guards against open-redirect abuse). Used to send the
+ * user back to where they were headed (e.g. an invite link /join/CODE) after
+ * signing in, instead of dropping them on /dashboard.
+ */
+function getSafeRedirectParam(): string | null {
+  if (typeof window === "undefined") return null;
+  const raw = new URLSearchParams(window.location.search).get("redirect_url");
+  if (!raw) return null;
+  if (!raw.startsWith("/") || raw.startsWith("//")) return null;
+  return raw;
+}
+
 function SignInPage() {
   const [, navigate] = useLocation();
   const isNative = Capacitor.isNativePlatform();
+  const redirectUrl = getSafeRedirectParam();
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -45,10 +60,17 @@ function SignInPage() {
       <div className="flex-1 flex items-center justify-center p-4">
         {/* Native: use custom sign-in to avoid Safari bounce and Google's embedded-WebView block */}
         {isNative ? (
-          <NativeSignIn />
+          <NativeSignIn returnPath={redirectUrl} />
         ) : (
-          /* Web: keep Clerk's standard SignIn component exactly as before */
-          <SignIn routing="path" path="/sign-in" />
+          /* Web: Clerk's standard SignIn. forceRedirectUrl pins the post-auth
+             destination to the ?redirect_url= return path (e.g. /join/CODE from
+             an invite link) so OAuth round-trips can't fall back to /dashboard. */
+          <SignIn
+            routing="path"
+            path="/sign-in"
+            forceRedirectUrl={redirectUrl ?? undefined}
+            signUpForceRedirectUrl={redirectUrl ?? undefined}
+          />
         )}
       </div>
     </div>
@@ -58,11 +80,19 @@ function SignInPage() {
 // Completes an OAuth redirect (used by native Apple sign-in). Clerk finalizes the
 // session here and forwards to redirectUrlComplete (/dashboard).
 function SSOCallbackPage() {
+  // Prefer the ?redirect_url= param; else the return path stashed by an invite
+  // link before OAuth started (sessionStorage survives the round-trip in the
+  // same tab); else /dashboard.
+  const stashed =
+    typeof window !== "undefined" ? window.sessionStorage.getItem("gw_return_path") : null;
+  const safeStashed =
+    stashed && stashed.startsWith("/") && !stashed.startsWith("//") ? stashed : null;
+  const target = getSafeRedirectParam() ?? safeStashed ?? "/dashboard";
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <AuthenticateWithRedirectCallback
-        signInFallbackRedirectUrl="/dashboard"
-        signUpFallbackRedirectUrl="/dashboard"
+        signInFallbackRedirectUrl={target}
+        signUpFallbackRedirectUrl={target}
       />
       <p className="text-sm text-muted-foreground">Signing you in…</p>
     </div>

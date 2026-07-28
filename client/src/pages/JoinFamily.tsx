@@ -19,14 +19,22 @@ export default function JoinFamily() {
     if (code) setInviteCode(code.toUpperCase());
   }, [code]);
 
+  const clearStashedReturnPath = () => {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.removeItem("gw_return_path");
+    window.sessionStorage.removeItem("gw_return_path_ts");
+  };
+
   const joinFamily = trpc.elders.join.useMutation({
     onSuccess: (elder) => {
+      clearStashedReturnPath();
       toast.success(`Welcome to ${elder?.name}'s family! 💚`);
       navigate(`/elder/${elder?.id}`);
     },
     onError: (e) => {
       // If already a member, just navigate to the elder profile
       if (e.message.includes("already a member")) {
+        clearStashedReturnPath();
         toast.info("You're already part of this family!");
         navigate("/dashboard");
       } else {
@@ -54,6 +62,12 @@ export default function JoinFamily() {
   // Not signed in but has a code — show sign-in with return path
   if (!isAuthenticated) {
     const returnPath = code ? `/join/${code}` : undefined;
+    // Stash the return path so OAuth round-trips (which can drop the
+    // ?redirect_url= param) can still find their way back to this invite.
+    if (returnPath && typeof window !== "undefined") {
+      window.sessionStorage.setItem("gw_return_path", returnPath);
+      window.sessionStorage.setItem("gw_return_path_ts", String(Date.now()));
+    }
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4">
         <Heart className="w-12 h-12 text-primary fill-primary" />

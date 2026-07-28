@@ -79,9 +79,16 @@ function GoogleIcon() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export default function NativeSignIn() {
+export default function NativeSignIn({ returnPath }: { returnPath?: string | null }) {
   const clerk = useClerk();
   const [, navigate] = useLocation();
+
+  // Safe internal post-auth destination (e.g. /join/CODE from an invite link).
+  // Guards against open redirects: internal absolute paths only.
+  const postAuthPath =
+    returnPath && returnPath.startsWith("/") && !returnPath.startsWith("//")
+      ? returnPath
+      : "/dashboard";
 
   const [screen, setScreen] = useState<Screen>("buttons");
   const [email, setEmail] = useState("");
@@ -167,13 +174,13 @@ export default function NativeSignIn() {
   /** After a successful sign-in, activate the session and redirect. */
   async function completeSignIn(sessionId: string) {
     await clerk.setActive({ session: sessionId });
-    navigate("/dashboard");
+    navigate(postAuthPath);
   }
 
   /** After a successful sign-up, activate the session and redirect. */
   async function completeSignUp(sessionId: string) {
     await clerk.setActive({ session: sessionId });
-    navigate("/dashboard");
+    navigate(postAuthPath);
   }
 
   // ── Apple sign-in ────────────────────────────────────────────────────────────
@@ -192,7 +199,7 @@ export default function NativeSignIn() {
       await signIn.authenticateWithRedirect({
         strategy: "oauth_apple",
         redirectUrl: "https://granwatch.app/sso-callback",
-        redirectUrlComplete: "https://granwatch.app/dashboard",
+        redirectUrlComplete: `https://granwatch.app${postAuthPath}`,
       });
       // The redirect + the /sso-callback route finish the sign-in.
     } catch (err: unknown) {

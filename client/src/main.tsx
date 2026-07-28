@@ -87,6 +87,31 @@ if (Capacitor.isNativePlatform()) {
   }).catch((err) => console.warn("[SocialLogin] initialize error:", err));
 }
 
+// ─── Deep links (iOS Universal Links / Android App Links) ────────────────────
+// When the OS opens the app from a granwatch.app link, navigate the WebView to
+// the same path so the link actually lands somewhere (e.g. invite → /join/CODE).
+// The /api/og/invite/* share-preview URL maps to its real destination /join/*.
+// Guarded: on builds without the @capacitor/app native plugin this no-ops.
+if (Capacitor.isNativePlatform()) {
+  import("@capacitor/app")
+    .then(({ App: CapacitorApp }) => {
+      CapacitorApp.addListener("appUrlOpen", ({ url }) => {
+        try {
+          const u = new URL(url);
+          let path = u.pathname + u.search;
+          const ogInvite = u.pathname.match(/^\/api\/og\/invite\/([A-Za-z0-9_-]+)/);
+          if (ogInvite) path = `/join/${ogInvite[1]}`;
+          if (path.startsWith("/") && !path.startsWith("//")) {
+            window.location.href = path;
+          }
+        } catch (err) {
+          console.warn("[DeepLink] appUrlOpen parse failed:", err);
+        }
+      });
+    })
+    .catch((err) => console.warn("[DeepLink] @capacitor/app unavailable on this build:", err));
+}
+
 // ─── Service Worker Registration ─────────────────────────────────────────────
 // Register the SW in both the browser and Capacitor WebView (iOS / Android).
 // We skip registration in local dev (Vite HMR) to avoid caching stale builds.

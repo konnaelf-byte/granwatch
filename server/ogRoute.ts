@@ -3,8 +3,9 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { elders } from "../drizzle/schema";
 
-const DEFAULT_OG_IMAGE = "https://d2xsxph8kpxj0f.cloudfront.net/310519663467284809/kPXP5TfTQ4hUuXDHU4e2Bo/gran-icon-final_a6b9501a.png";
 const APP_URL = process.env.APP_URL ?? "https://granwatch.app";
+// Self-hosted (client/public/og-gran.png) — no third-party CDN dependency.
+const DEFAULT_OG_IMAGE = `${APP_URL}/og-gran.png`;
 
 function buildOgHtml({
   title,
@@ -88,7 +89,13 @@ export function registerOgRoutes(app: Express) {
       const redirectUrl = `${APP_URL}/join/${code}`;
 
       if (elderName) {
-        const image = elderPhoto || DEFAULT_OG_IMAGE;
+        // Elder photo must be an absolute URL for WhatsApp/iMessage crawlers;
+        // prefix relative paths with the app origin.
+        const image = elderPhoto
+          ? elderPhoto.startsWith("http")
+            ? elderPhoto
+            : `${APP_URL}${elderPhoto.startsWith("/") ? "" : "/"}${elderPhoto}`
+          : DEFAULT_OG_IMAGE;
         const title = `Join ${elderName}'s family on GranWatch`;
         const description = `You've been invited to help keep an eye on ${elderName}. Join the family, log visits, and make sure she's never forgotten. 💛`;
 
