@@ -91,18 +91,25 @@ async function activateGranPlus(elderId: number, userId: number, source: string)
     ))
     .limit(1);
 
-  if (existing?.isActive) {
-    console.log(`[RevenueCat ${source}] Already active for elder ${elderId} user ${userId}`);
-    return;
-  }
+  // elders.isPaid is the single source of truth for entitlement — this function
+  // only runs after a verified real RevenueCat entitlement (checked upstream),
+  // so it must ALWAYS set isPaid=true here. A subscriptionContributions row can
+  // already be isActive from the unrelated cost-split toggle
+  // (subscription.toggleContribution in routers.ts, which requires no payment),
+  // so gating this update on that row's isActive flag can silently swallow a
+  // real purchase — same bug found and fixed in lemonSqueezyRoute.ts on
+  // 2026-07-29, mirrored here since this function intentionally matches it.
+  const alreadyActiveContribution = !!existing?.isActive;
 
   await db.update(elders).set({ isPaid: true }).where(eq(elders.id, elderId));
 
   if (existing) {
-    await db
-      .update(subscriptionContributions)
-      .set({ isActive: true })
-      .where(eq(subscriptionContributions.id, existing.id));
+    if (!existing.isActive) {
+      await db
+        .update(subscriptionContributions)
+        .set({ isActive: true })
+        .where(eq(subscriptionContributions.id, existing.id));
+    }
   } else {
     await db.insert(subscriptionContributions).values({
       elderId,
@@ -112,6 +119,11 @@ async function activateGranPlus(elderId: number, userId: number, source: string)
   }
 
   console.log(`[RevenueCat ${source}] Gran+ activated for elder ${elderId} by user ${userId}`);
+
+  if (alreadyActiveContribution) {
+    console.log(`[RevenueCat ${source}] Contribution row already active for elder ${elderId} user ${userId}; isPaid re-affirmed, skipping referral re-fire`);
+    return;
+  }
 
   // Fire referral conversion — async, non-blocking (matches LS behaviour).
   import("./referralRouter")

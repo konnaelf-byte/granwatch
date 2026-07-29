@@ -140,18 +140,28 @@ async function activateGranPlus(elderId: number, userId: number, source: string)
     ))
     .limit(1);
 
-  if (existing?.isActive) {
-    console.log(`[LemonSqueezy ${source}] Already active for elder ${elderId} user ${userId}`);
-    return;
-  }
+  // elders.isPaid is the single source of truth for entitlement — this function
+  // only runs from a verified real payment event (webhook signature checked
+  // upstream), so it must ALWAYS set isPaid=true here. A subscriptionContributions
+  // row can already be isActive from the unrelated cost-split toggle
+  // (subscription.toggleContribution in routers.ts, which requires no payment),
+  // so gating this update on that row's isActive flag can silently swallow a
+  // real payment. Found 2026-07-29: elder 7 / user 673 — a "join the split" tap
+  // at 12:25:40 UTC pre-empted the real purchase webhook at 14:27:35 UTC and the
+  // old guard here returned early without ever setting isPaid. Fixed by making
+  // isPaid unconditional and restricting the "already active" check to skip only
+  // the duplicate referral-conversion fire.
+  const alreadyActiveContribution = !!existing?.isActive;
 
   await db.update(elders).set({ isPaid: true }).where(eq(elders.id, elderId));
 
   if (existing) {
-    await db
-      .update(subscriptionContributions)
-      .set({ isActive: true })
-      .where(eq(subscriptionContributions.id, existing.id));
+    if (!existing.isActive) {
+      await db
+        .update(subscriptionContributions)
+        .set({ isActive: true })
+        .where(eq(subscriptionContributions.id, existing.id));
+    }
   } else {
     await db.insert(subscriptionContributions).values({
       elderId,
@@ -161,6 +171,11 @@ async function activateGranPlus(elderId: number, userId: number, source: string)
   }
 
   console.log(`[LemonSqueezy ${source}] Gran+ activated for elder ${elderId} by user ${userId}`);
+
+  if (alreadyActiveContribution) {
+    console.log(`[LemonSqueezy ${source}] Contribution row already active for elder ${elderId} user ${userId}; isPaid re-affirmed, skipping referral re-fire`);
+    return;
+  }
 
   // Fire referral conversion — async, non-blocking
   import("./referralRouter")
