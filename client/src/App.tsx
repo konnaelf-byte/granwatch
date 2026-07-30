@@ -103,8 +103,12 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Landing} />
-      <Route path="/sign-in" component={SignInPage} />
-      <Route path="/sign-in/sso-callback" component={SignInPage} />
+      {/* Wildcard is required: Clerk's path-routed <SignIn> navigates to
+          sub-steps of /sign-in — /sign-in/factor-one is the password step,
+          plus /sign-in/sso-callback, /sign-in/verify, etc. With only exact
+          matches here, every sub-step fell through to the 404 catch-all,
+          making email+password sign-in impossible on web. */}
+      <Route path="/sign-in/*?" component={SignInPage} />
       <Route path="/sso-callback" component={SSOCallbackPage} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/elder/:id" component={ElderProfile} />
