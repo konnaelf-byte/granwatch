@@ -16,6 +16,7 @@ import { z } from "zod";
 import { getDb } from "./db";
 import { elders, elderMembers, elderMedications, medicationLogs, elderAppointments } from "../drizzle/schema";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { hasGranPlus, granPlusLockedError } from "./entitlement";
 
 // ─── Helper: assert Gran+ and membership ─────────────────────────────────────
 
@@ -25,7 +26,9 @@ async function assertMember(elderId: number, userId: number) {
 
   const [elder] = await db.select().from(elders).where(eq(elders.id, elderId)).limit(1);
   if (!elder) throw new Error("Gran profile not found");
-  if (!elder.isPaid) throw new Error("Gran+ required for care schedule features");
+  // Entitlement = real payment OR active free trial. Expired trial gets the
+  // warm "your data is safe" message, never deletion.
+  if (!hasGranPlus(elder)) throw granPlusLockedError(elder, "routines and appointments");
 
   const [member] = await db
     .select()

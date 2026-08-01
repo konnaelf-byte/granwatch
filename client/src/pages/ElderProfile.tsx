@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy,
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
+import { TrialBadge } from "@/components/TrialBadge";
 import { isNativeApp } from "@/utils/platform";
 import { initRevenueCat } from "@/utils/iap";
 import StatusRing from "@/components/StatusRing";
@@ -641,6 +642,7 @@ export default function ElderProfile() {
 
           {/* Care schedule — visible to all, but non-functional (locked) on free elders */}
           <TabsContent value="care">
+            <TrialBadge daysLeft={elder.trialDaysLeft} className="mb-2 px-1" />
             <CareSchedulePanel
               elderId={elderId}
               isAdmin={elder.memberRole === "admin"}
@@ -740,6 +742,7 @@ export default function ElderProfile() {
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
                 Mood trend
               </p>
+              <TrialBadge daysLeft={elder.trialDaysLeft} className="mb-2" />
               <div className="flex items-end justify-between gap-1.5 h-20">
                 {moodVisits.map((v: any, i: number) => {
                   const score = MOOD_SCORE[v.moodEmoji]; // 1..6
@@ -841,7 +844,8 @@ export default function ElderProfile() {
             {/* Visit photo — Gran+ feature. Free elders see a locked upsell. */}
             {elder.isPaid ? (
               <div>
-                <p className="text-sm font-medium text-foreground mb-2">Photo (optional)</p>
+                <p className="text-sm font-medium text-foreground mb-1">Photo (optional)</p>
+                <TrialBadge daysLeft={elder.trialDaysLeft} className="mb-2" />
                 {visitPhotoUrl ? (
                   <div className="relative inline-block">
                     <img src={visitPhotoUrl} alt="Visit photo" className="h-24 w-24 object-cover rounded-xl border" />

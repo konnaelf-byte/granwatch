@@ -17,6 +17,7 @@ import { pushRouter } from "./pushRouter";
 import { careRouter } from "./careRouter";
 import { revenueCatRouter } from "./revenueCatRouter";
 import { giftRouter } from "./giftRouter";
+import { hasGranPlus, presentElder, newTrialEnd, granPlusLockedError, trialDaysLeft, isTrialActive } from "./entitlement";
 
 /**
  * Fixed set of mood emojis a family member can attach to a visit.
@@ -289,7 +290,7 @@ export const appRouter = router({
         const lastVisitDate = lastVisitMap.get(elder.id) ?? null;
         const daysSinceVisit = lastVisitDate ? daysSince(lastVisitDate) : 999;
         return {
-          ...elder,
+          ...presentElder(elder),
           daysSinceVisit,
           status: getStatus(daysSinceVisit, elder.alertThresholdDays),
           memberCount: memberCountMap.get(elder.id) ?? 0,
@@ -337,7 +338,7 @@ export const appRouter = router({
         const myDaysSince = myLastVisit ? daysSince(myLastVisit.visitedAt) : 999;
 
         return {
-          ...elder,
+          ...presentElder(elder),
           daysSinceVisit,
           status,
           lastVisitDate: lastVisit?.visitedAt ?? null,
@@ -374,6 +375,9 @@ export const appRouter = router({
           city: input.city || null,
           inviteCode,
           createdByUserId: ctx.user.id,
+          // Every new profile starts a free Gran+ trial — full product from
+          // day one, no opt-in button. Locks (never deletes) at expiry.
+          trialEndsAt: newTrialEnd(),
         });
 
         const elderId = (result as any).insertId as number;
@@ -386,7 +390,7 @@ export const appRouter = router({
         });
 
         const [elder] = await db.select().from(elders).where(eq(elders.id, elderId)).limit(1);
-        return elder;
+        return presentElder(elder);
       }),
 
     // Update elder profile
@@ -426,19 +430,19 @@ export const appRouter = router({
         if (input.city !== undefined) updateData.city = input.city || null;
 
 
-        // Gran+ only features
+        // Gran+ only features (active subscription OR active trial)
         if (input.wellbeingEnabled !== undefined) {
-          if (!currentElder.isPaid) throw new Error("Wellbeing check-ins require Gran+");
+          if (!hasGranPlus(currentElder)) throw granPlusLockedError(currentElder, "wellbeing check-ins");
           updateData.wellbeingEnabled = input.wellbeingEnabled;
         }
         if (input.careNotes !== undefined) {
-          if (!currentElder.isPaid) throw new Error("Care notes require Gran+");
+          if (!hasGranPlus(currentElder)) throw granPlusLockedError(currentElder, "care notes");
           updateData.careNotes = input.careNotes;
         }
 
         await db.update(elders).set(updateData).where(eq(elders.id, input.elderId));
         const [elder] = await db.select().from(elders).where(eq(elders.id, input.elderId)).limit(1);
-        return elder;
+        return presentElder(elder);
       }),
 
     // Join an elder profile via invite code
@@ -463,9 +467,9 @@ export const appRouter = router({
           .limit(1);
         if (existing) throw new Error("Already a member");
 
-        // Check member limit (20 for free tier)
+        // Check member limit (20 for free tier; unlimited on Gran+ or active trial)
         const members = await db.select().from(elderMembers).where(eq(elderMembers.elderId, elder.id));
-        if (!elder.isPaid && members.length >= 20) throw new Error("Member limit reached (20). Upgrade to Gran+ for unlimited members.");
+        if (!hasGranPlus(elder) && members.length >= 20) throw new Error("Member limit reached (20). Upgrade to Gran+ for unlimited members.");
 
         await db.insert(elderMembers).values({
           elderId: elder.id,
@@ -473,7 +477,7 @@ export const appRouter = router({
           role: "member",
         });
 
-        return elder;
+        return presentElder(elder);
       }),
 
     // Transfer admin rights to another member (admin only)
@@ -755,11 +759,11 @@ export const appRouter = router({
         let photoUrl: string | null = null;
         if (input.moodNote || input.photoUrl) {
           const [elder] = await db
-            .select({ isPaid: elders.isPaid })
+            .select({ isPaid: elders.isPaid, trialEndsAt: elders.trialEndsAt })
             .from(elders)
             .where(eq(elders.id, input.elderId))
             .limit(1);
-          if (elder?.isPaid) {
+          if (elder && hasGranPlus(elder)) {
             moodNote = input.moodNote ?? null;
             photoUrl = input.photoUrl ?? null;
           }
@@ -1026,7 +1030,13 @@ export const appRouter = router({
         const perPerson = contributors.length > 0 ? Math.ceil(MONTHLY_COST_CENTS / contributors.length) : MONTHLY_COST_CENTS;
 
         return {
-          isPaid: elder.isPaid,
+          // Effective entitlement: real payment OR active trial. Old native
+          // bundles read this field and unlock accordingly.
+          isPaid: hasGranPlus(elder),
+          actuallyPaid: elder.isPaid,
+          trialActive: isTrialActive(elder),
+          trialDaysLeft: trialDaysLeft(elder),
+          trialEndsAt: elder.trialEndsAt ?? null,
           cancellationRequestedAt: elder.cancellationRequestedAt ?? null,
           contributors: contributorDetails,
           contributorCount: contributors.length,
@@ -1445,7 +1455,8 @@ export const appRouter = router({
         .select({
           id: elders.id,
           name: elders.name,
-          isPaid: elders.isPaid,
+          isPaid: elders.isPaid, // RAW payment truth — admin must see reality, not the trial alias
+          trialEndsAt: elders.trialEndsAt,
           alertThresholdDays: elders.alertThresholdDays,
           cancellationRequestedAt: elders.cancellationRequestedAt,
           createdAt: elders.createdAt,

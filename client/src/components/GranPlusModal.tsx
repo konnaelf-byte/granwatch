@@ -81,7 +81,13 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
   // UI was removed 2026-07-31: it only divided the DISPLAYED price — checkout
   // always charged the full amount — so it promised a split that never happened.
   const totalDisplay = pricing.priceDisplay;          // e.g. "R79", "£3.99"
-  const isPaid = subStatus?.isPaid ?? false;
+  // isPaid from the server is the EFFECTIVE entitlement (payment OR trial).
+  // actuallyPaid distinguishes a real subscription from an active free trial:
+  // trial users keep the subscribe path (billing starts immediately, countdown
+  // disappears) and have nothing to cancel.
+  const actuallyPaid = subStatus?.actuallyPaid ?? false;
+  const onTrial = !!subStatus?.trialActive;
+  const trialDays = subStatus?.trialDaysLeft ?? null;
   const cancellationPending = !!subStatus?.cancellationRequestedAt;
 
   return (
@@ -99,10 +105,15 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
           <div className="bg-primary/10 rounded-xl p-4 text-center mb-2">
             <div className="text-3xl font-bold text-primary">{totalDisplay}</div>
             <div className="text-sm text-muted-foreground">per month</div>
+            {onTrial && trialDays !== null && (
+              <div className="mt-2 text-sm font-semibold text-primary">
+                Included free for your first 6 months · {trialDays} day{trialDays === 1 ? "" : "s"} left
+              </div>
+            )}
           </div>
 
           {/* Active status badge */}
-          {isPaid && (
+          {actuallyPaid && (
             <div className="flex items-center justify-center gap-2 mb-2">
               {cancellationPending ? (
                 <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm font-semibold">
@@ -133,8 +144,13 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
 
           {/* Bottom action area */}
           <div className="space-y-3">
-            {!isPaid ? (
+            {!actuallyPaid ? (
               <>
+                {onTrial && (
+                  <p className="text-center text-xs text-muted-foreground">
+                    Subscribing now starts billing immediately and removes the trial countdown.
+                  </p>
+                )}
                 <div className="flex items-start gap-3 bg-muted/50 rounded-xl p-3">
                   <Checkbox
                     id="terms"

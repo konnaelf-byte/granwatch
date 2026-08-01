@@ -32,6 +32,11 @@ export const elders = mysqlTable("elders", {
   inviteCode: varchar("inviteCode", { length: 16 }).notNull().unique(),
   // subscription (Lemon Squeezy)
   isPaid: boolean("isPaid").default(false).notNull(),
+  // Free-trial end. Set to created+TRIAL_DAYS on profile creation (see
+  // server/entitlement.ts). Entitlement = isPaid OR trialEndsAt in the future.
+  // Trial expiry LOCKS Gran+ features, it never deletes data. NULL = no trial
+  // (should not occur for elders created after 2026-07-31; backfilled for older).
+  trialEndsAt: timestamp("trialEndsAt"),
   lemonsqueezySubscriptionId: varchar("lemonsqueezySubscriptionId", { length: 255 }),
   lemonsqueezyCustomerId: varchar("lemonsqueezyCustomerId", { length: 255 }),
   cancellationRequestedAt: timestamp("cancellationRequestedAt"),

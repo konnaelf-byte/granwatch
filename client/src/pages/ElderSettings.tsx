@@ -31,6 +31,8 @@ import {
 function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { elderId: number; elderName: string; onManage: () => void }) {
   const { data: subStatus } = trpc.subscription.status.useQuery({ elderId });
   const cancellationPending = !!subStatus?.cancellationRequestedAt;
+  const onTrial = !!subStatus?.trialActive;
+  const trialDays = subStatus?.trialDaysLeft ?? null;
 
   return (
     <div className={`rounded-xl border p-4 space-y-3 ${
@@ -39,11 +41,19 @@ function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { el
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />
-          <Label className="text-sm font-semibold text-primary">Gran+ Active</Label>
+          <Label className="text-sm font-semibold text-primary">
+            {onTrial ? "Gran+ Free Trial" : "Gran+ Active"}
+          </Label>
         </div>
         {cancellationPending ? (
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
             <AlertTriangle className="w-3 h-3" /> Cancellation pending
+          </span>
+        ) : onTrial ? (
+          <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+            trialDays !== null && trialDays <= 30 ? "text-amber-700 bg-amber-100" : "text-green-700 bg-green-100"
+          }`}>
+            <CheckCircle2 className="w-3 h-3" /> {trialDays !== null ? `${trialDays} days left` : "Active"}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
@@ -51,6 +61,11 @@ function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { el
           </span>
         )}
       </div>
+      {onTrial && (
+        <p className="text-xs text-muted-foreground">
+          All Gran+ features are included free for your first 6 months. Subscribe anytime to keep them running without a countdown.
+        </p>
+      )}
 
       {cancellationPending && (
         <p className="text-xs text-amber-700">
