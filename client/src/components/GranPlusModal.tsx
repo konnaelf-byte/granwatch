@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { Star, Users, Sparkles, Split, CreditCard, XCircle, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Star, Sparkles, CreditCard, XCircle, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocalizedPricing } from "@/utils/geolocation";
@@ -54,15 +54,6 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
     onError: (e) => toast.error(e.message),
   });
 
-  const toggleContribution = trpc.subscription.toggleContribution.useMutation({
-    onSuccess: () => {
-      const wasContributing = subStatus?.amIContributing;
-      toast.success(wasContributing ? "You've left the split." : "You've joined the split! 💚");
-      utils.subscription.status.invalidate({ elderId });
-    },
-    onError: (e) => toast.error(e.message),
-  });
-
   const requestCancellation = trpc.subscription.requestCancellation.useMutation({
     onSuccess: () => {
       toast.success("Cancellation request sent. Gran+ stays active until confirmed.");
@@ -85,26 +76,11 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
     createCheckout.mutate({ elderId });
   };
 
-  const handleJoinSplit = () => {
-    if (!user) {
-      toast.error("Please sign in first.");
-      return;
-    }
-    toggleContribution.mutate({ elderId }, {
-      onSuccess: () => {
-        createCheckout.mutate({ elderId });
-      },
-    });
-  };
-
   // Localised pricing — falls back to ZAR R79 while loading
+  // One volunteer family member pays the full amount. The old "split the bill"
+  // UI was removed 2026-07-31: it only divided the DISPLAYED price — checkout
+  // always charged the full amount — so it promised a split that never happened.
   const totalDisplay = pricing.priceDisplay;          // e.g. "R79", "£3.99"
-  const symbol       = pricing.currencySymbol;        // e.g. "R", "£"
-  const totalAmount  = parseFloat(pricing.priceAmount); // e.g. 79, 3.99
-
-  const contributorCount = subStatus?.contributorCount ?? 1;
-  // Divide the localised total price by contributor count for the split display
-  const perPersonDisplay = `${symbol}${(totalAmount / contributorCount).toFixed(2)}`;
   const isPaid = subStatus?.isPaid ?? false;
   const cancellationPending = !!subStatus?.cancellationRequestedAt;
 
@@ -123,11 +99,6 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
           <div className="bg-primary/10 rounded-xl p-4 text-center mb-2">
             <div className="text-3xl font-bold text-primary">{totalDisplay}</div>
             <div className="text-sm text-muted-foreground">per month</div>
-            {subStatus && subStatus.contributorCount > 1 && (
-              <div className="mt-2 text-sm font-semibold text-primary">
-                = {perPersonDisplay} each with {subStatus.contributorCount} contributors
-              </div>
-            )}
           </div>
 
           {/* Active status badge */}
@@ -146,66 +117,6 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
               )}
             </div>
           )}
-
-          {/* Split payment section */}
-          <div className="bg-card border rounded-xl p-4 mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <Split className="w-4 h-4 text-primary" />
-              <span className="font-semibold text-sm">Split with the family</span>
-            </div>
-            <p className="text-xs text-muted-foreground mb-3">
-              The more family members who chip in, the cheaper it gets for everyone.
-              {!isPaid && subStatus?.contributorCount === 0 && " Be the first to contribute!"}
-            </p>
-
-            {subStatus && subStatus.contributors.length > 0 && (
-              <div className="space-y-1.5 mb-3">
-                {subStatus.contributors.map((c: any) => (
-                  <div key={c.id} className="flex items-center justify-between text-sm">
-                    <span className="text-foreground">{c.isMe ? "You" : c.userName}</span>
-                    <span className="text-muted-foreground">{perPersonDisplay}/mo</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {isPaid ? (
-              subStatus?.amIContributing ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full text-muted-foreground"
-                  onClick={() => toggleContribution.mutate({ elderId })}
-                  disabled={toggleContribution.isPending}
-                >
-                  <Users className="w-4 h-4 mr-2" />
-                  {toggleContribution.isPending ? "Updating..." : "Leave the split"}
-                </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full"
-                  onClick={handleJoinSplit}
-                  disabled={toggleContribution.isPending || createCheckout.isPending}
-                >
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  {createCheckout.isPending ? "Redirecting..." : `Join split — ${symbol}${(totalAmount / (contributorCount + 1)).toFixed(2)}/mo`}
-                </Button>
-              )
-            ) : (
-              <Button
-                variant={subStatus?.amIContributing ? "outline" : "default"}
-                size="sm"
-                className="w-full"
-                onClick={() => toggleContribution.mutate({ elderId })}
-                disabled={toggleContribution.isPending}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                {subStatus?.amIContributing ? "Remove my contribution" : "Add my contribution"}
-              </Button>
-            )}
-          </div>
 
           {/* Features list */}
           <div className="mb-4">
@@ -242,11 +153,10 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
                   disabled={!termsAccepted || createCheckout.isPending}
                 >
                   <CreditCard className="w-4 h-4" />
-                  {createCheckout.isPending ? "Redirecting..." : `Subscribe — ${perPersonDisplay}/mo`}
+                  {createCheckout.isPending ? "Redirecting..." : `Subscribe — ${totalDisplay}/mo`}
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">
                   Secure payment via Lemon Squeezy. Cancel anytime.
-                  {contributorCount > 1 && ` Your share: ${perPersonDisplay}/month (${contributorCount} contributors).`}
                 </p>
               </>
             ) : (

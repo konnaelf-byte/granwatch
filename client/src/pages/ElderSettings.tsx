@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Sparkles, Lock, Bell, BellOff, LogOut, AlertTriangle, Users, CheckCircle2, Cake, Trash2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Lock, Bell, BellOff, LogOut, AlertTriangle, CheckCircle2, Cake, Trash2 } from "lucide-react";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
@@ -31,8 +31,6 @@ import {
 function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { elderId: number; elderName: string; onManage: () => void }) {
   const { data: subStatus } = trpc.subscription.status.useQuery({ elderId });
   const cancellationPending = !!subStatus?.cancellationRequestedAt;
-  const contributorCount = subStatus?.contributorCount ?? 0;
-  const perPersonRands = subStatus ? (subStatus.perPersonCost / 100).toFixed(2) : "79.00";
 
   return (
     <div className={`rounded-xl border p-4 space-y-3 ${
@@ -53,13 +51,7 @@ function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { el
           </span>
         )}
       </div>
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <span className="flex items-center gap-1">
-          <Users className="w-3.5 h-3.5" />
-          {contributorCount > 0 ? `${contributorCount} contributor${contributorCount !== 1 ? "s" : ""}` : "No contributors yet"}
-        </span>
-        <span>R{perPersonRands}/person/mo</span>
-      </div>
+
       {cancellationPending && (
         <p className="text-xs text-amber-700">
           Cancellation requested. Gran+ stays active until the end of the billing period.

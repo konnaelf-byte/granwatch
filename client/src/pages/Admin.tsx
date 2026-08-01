@@ -13,8 +13,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Heart, ArrowLeft, Crown } from "lucide-react";
+import { Users, Heart, ArrowLeft, Crown, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "—";
@@ -46,6 +47,20 @@ export default function Admin() {
 
   const { data: elders, isLoading: eldersLoading } = trpc.admin.listElders.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
+  });
+
+  // Owner-admin gifting: flips elders.isPaid via subscription.setPaid (server
+  // enforces role === "admin"). Used to comp Gran+ for strategic families —
+  // retirement villages, frail-care units, own family. NOTE: a gifted elder is
+  // indistinguishable from a paying one in the DB; track comps in the launch-kit
+  // tracking table so revenue metrics stay honest.
+  const utils = trpc.useUtils();
+  const setPaid = trpc.subscription.setPaid.useMutation({
+    onSuccess: (_data, vars) => {
+      toast.success(vars.isPaid ? "Gran+ gifted 💚" : "Gran+ revoked");
+      utils.admin.listElders.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
   });
 
   useEffect(() => {
@@ -216,6 +231,7 @@ export default function Admin() {
                           <TableHead>Members</TableHead>
                           <TableHead>Last visit</TableHead>
                           <TableHead>Created</TableHead>
+                          <TableHead className="text-right">Gift</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -259,6 +275,34 @@ export default function Admin() {
                             </TableCell>
                             <TableCell className="text-stone-500 text-sm">
                               {formatDate(e.createdAt)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {e.isPaid ? (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-xs text-stone-400 hover:text-red-600"
+                                  disabled={setPaid.isPending}
+                                  onClick={() => {
+                                    if (window.confirm(`Revoke Gran+ for ${e.name}? If this family PAID, revoke via Lemon Squeezy instead — this switch does not cancel billing.`)) {
+                                      setPaid.mutate({ elderId: e.id, isPaid: false });
+                                    }
+                                  }}
+                                >
+                                  Revoke
+                                </Button>
+                              ) : (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="h-7 text-xs border-primary/40 text-primary hover:bg-primary/5"
+                                  disabled={setPaid.isPending}
+                                  onClick={() => setPaid.mutate({ elderId: e.id, isPaid: true })}
+                                >
+                                  <Gift className="w-3 h-3 mr-1" />
+                                  Gift Gran+
+                                </Button>
+                              )}
                             </TableCell>
                           </TableRow>
                         ))}
