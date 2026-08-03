@@ -50,7 +50,12 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
     { elderId },
     { enabled: open }
   );
-  const isPaid = subStatus?.isPaid ?? false;
+  // actuallyPaid distinguishes a real subscription from the free trial. During
+  // the trial the subscribe path stays available to EVERY family member —
+  // buying mid-trial starts billing immediately and removes the countdown.
+  const actuallyPaid = subStatus?.actuallyPaid ?? false;
+  const onTrial = !!subStatus?.trialActive;
+  const trialDays = subStatus?.trialDaysLeft ?? null;
 
   const activateNative = trpc.revenueCat.activateNative.useMutation();
 
@@ -164,10 +169,15 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
             )}
           </div>
           <div className="text-sm text-muted-foreground">per month</div>
+          {onTrial && trialDays !== null && (
+            <div className="mt-2 text-sm font-semibold text-primary">
+              Included free for your first 6 months · {trialDays} day{trialDays === 1 ? "" : "s"} left
+            </div>
+          )}
         </div>
 
         {/* Active status badge */}
-        {isPaid && (
+        {actuallyPaid && (
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold">
               <CheckCircle2 className="w-4 h-4" />
@@ -196,8 +206,14 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
 
         {/* Bottom action area */}
         <div className="space-y-3">
-          {!isPaid && (
-            <Button
+          {!actuallyPaid && (
+            <>
+              {onTrial && (
+                <p className="text-center text-xs text-muted-foreground">
+                  Subscribing now starts billing immediately and removes the trial countdown.
+                </p>
+              )}
+              <Button
               className="w-full h-12 font-semibold gap-2"
               onClick={handleSubscribe}
               disabled={purchasing || loadingOffering || !priceString}
@@ -213,7 +229,8 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
                   Subscribe{priceString ? ` — ${priceString}/mo` : ""}
                 </>
               )}
-            </Button>
+              </Button>
+            </>
           )}
 
           <button

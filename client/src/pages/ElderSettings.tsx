@@ -184,6 +184,15 @@ export default function ElderSettings() {
     onError: (e) => toast.error(e.message),
   });
 
+  const stepDown = trpc.elders.stepDownAsAdmin.useMutation({
+    onSuccess: () => {
+      toast.success("You are now an ordinary member of this family.");
+      utils.elders.get.invalidate({ elderId });
+      utils.elders.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const deleteElder = trpc.elders.delete.useMutation({
     onSuccess: () => {
       toast.success("Profile deleted.");
@@ -494,27 +503,38 @@ export default function ElderSettings() {
           </div>
         )}
 
-        {/* Leave Family — non-admin members only */}
-        {!isAdmin && (
-          <div className="rounded-xl border border-destructive/30 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <LogOut className="w-4 h-4 text-destructive" />
-              <Label className="text-sm font-semibold text-destructive">Leave this family</Label>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              You'll be removed from {elder.name}'s profile and will no longer receive notifications or see visit history. You can rejoin with the invite code.
-            </p>
+        {/* Leave Family — everyone. Admins can leave (or step down) only when
+            another admin exists; the server enforces it and explains why. */}
+        <div className="rounded-xl border border-destructive/30 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <LogOut className="w-4 h-4 text-destructive" />
+            <Label className="text-sm font-semibold text-destructive">Leave this family</Label>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            You'll be removed from {elder.name}'s profile and will no longer receive notifications or see visit history. You can rejoin with the invite code.
+            {isAdmin && " As an admin, you first need another family member promoted to admin (Family tab on the profile)."}
+          </p>
+          {isAdmin && (
             <Button
               variant="outline"
               size="sm"
-              className="w-full border-destructive/40 text-destructive hover:bg-destructive/5"
-              onClick={() => setLeaveDialogOpen(true)}
+              className="w-full"
+              onClick={() => stepDown.mutate({ elderId })}
+              disabled={stepDown.isPending}
             >
-              <LogOut className="w-4 h-4 mr-2" />
-              Leave {elder.name}'s family
+              {stepDown.isPending ? "Stepping down…" : "Step down as admin (stay a member)"}
             </Button>
-          </div>
-        )}
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full border-destructive/40 text-destructive hover:bg-destructive/5"
+            onClick={() => setLeaveDialogOpen(true)}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Leave {elder.name}'s family
+          </Button>
+        </div>
       </main>
 
       {/* Gran+ Modal — web uses Lemon Squeezy; native uses RevenueCat IAP. */}

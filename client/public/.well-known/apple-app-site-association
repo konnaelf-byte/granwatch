@@ -6,6 +6,10 @@
         "appIDs": ["BFA6JYY9YD.app.granwatch"],
         "components": [
           {
+            "/": "/api/og/invite/*",
+            "comment": "Canonical shared invite URL (OG preview route) - MUST open the app; without this entry iOS sends the link people actually receive to the browser"
+          },
+          {
             "/": "/join/*",
             "comment": "Invite join links open in the native app"
           },

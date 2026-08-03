@@ -293,7 +293,10 @@ export default function ElderProfile() {
         </Button>
         <h1 className="font-bold text-foreground">{elder.name}</h1>
         <div className="flex items-center gap-1">
-          {!elder.isPaid && (
+          {/* Gran+ entry point — visible to EVERY family member (not just
+              admins) whenever the profile has no real subscription, INCLUDING
+              during the free trial, so anyone can subscribe at any time. */}
+          {!elder.actuallyPaid && (
             <Button
               variant="ghost"
               size="sm"
@@ -435,21 +438,26 @@ export default function ElderProfile() {
             <p className="font-mono font-bold text-lg text-foreground tracking-widest">{elder.inviteCode}</p>
           </div>
           <div className="flex items-center gap-1">
-            {elder.memberRole === "admin" && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground"
-                onClick={() => setRegenConfirmOpen(true)}
-                aria-label="Generate a new invite code"
-              >
-                <RefreshCw className="w-4 h-4" aria-hidden="true" />
-              </Button>
-            )}
             <Button variant="ghost" size="sm" onClick={handleShare}>
               <Copy className="w-4 h-4 mr-1.5" />
               Copy link
             </Button>
+            {/* Regenerate sits AFTER copy, behind a divider and extra gap —
+                it was directly beside Copy and got pressed by accident. */}
+            {elder.memberRole === "admin" && (
+              <>
+                <div className="h-5 w-px bg-border mx-1.5" aria-hidden="true" />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground/60 hover:text-muted-foreground"
+                  onClick={() => setRegenConfirmOpen(true)}
+                  aria-label="Generate a new invite code"
+                >
+                  <RefreshCw className="w-4 h-4" aria-hidden="true" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
 

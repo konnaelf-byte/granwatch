@@ -567,7 +567,8 @@ export const appRouter = router({
         return { inviteCode: newCode };
       }),
 
-    // Leave a family (non-admin members only)
+    // Leave a family. Admins may leave ONLY if at least one other admin
+    // remains, so no gran profile is ever orphaned without an admin.
     leave: protectedProcedure
       .input(z.object({ elderId: z.number() }))
       .mutation(async ({ ctx, input }) => {
@@ -580,11 +581,51 @@ export const appRouter = router({
           .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
           .limit(1);
         if (!membership) throw new Error("Not a member");
-        if (membership.role === "admin") throw new Error("The profile admin cannot leave. Transfer admin rights first, or delete the profile.");
+        if (membership.role === "admin") {
+          const admins = await db
+            .select()
+            .from(elderMembers)
+            .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.role, "admin")));
+          if (admins.filter(a => a.userId !== ctx.user.id).length === 0) {
+            throw new Error("You are the only admin. Promote another family member to admin first (Family tab), or delete the profile.");
+          }
+        }
 
         await db
           .delete(elderMembers)
           .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)));
+
+        return { success: true };
+      }),
+
+    // Step down from admin to ordinary member. Allowed only when at least one
+    // other admin remains — every profile must always have an admin.
+    stepDownAsAdmin: protectedProcedure
+      .input(z.object({ elderId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("DB unavailable");
+
+        const [membership] = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.userId, ctx.user.id)))
+          .limit(1);
+        if (!membership) throw new Error("Not a member");
+        if (membership.role !== "admin") throw new Error("You are not an admin of this profile");
+
+        const admins = await db
+          .select()
+          .from(elderMembers)
+          .where(and(eq(elderMembers.elderId, input.elderId), eq(elderMembers.role, "admin")));
+        if (admins.filter(a => a.userId !== ctx.user.id).length === 0) {
+          throw new Error("You are the only admin. Promote another family member to admin first (Family tab).");
+        }
+
+        await db
+          .update(elderMembers)
+          .set({ role: "member" })
+          .where(eq(elderMembers.id, membership.id));
 
         return { success: true };
       }),
