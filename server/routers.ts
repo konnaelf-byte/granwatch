@@ -278,8 +278,12 @@ export const appRouter = router({
 
       // Build maps for O(1) lookup
       const lastVisitMap = new Map<number, Date>();
+      // Current user's own last visit per elder — powers the personal flip
+      // counter on the dashboard. Derived from the SAME query, no extra cost.
+      const myLastVisitMap = new Map<number, Date>();
       for (const v of allRecentVisits) {
         if (!lastVisitMap.has(v.elderId)) lastVisitMap.set(v.elderId, v.visitedAt);
+        if (v.userId === ctx.user.id && !myLastVisitMap.has(v.elderId)) myLastVisitMap.set(v.elderId, v.visitedAt);
       }
       const memberCountMap = new Map<number, number>();
       for (const m of allMembers) {
@@ -289,12 +293,14 @@ export const appRouter = router({
       return elderRows.map(elder => {
         const lastVisitDate = lastVisitMap.get(elder.id) ?? null;
         const daysSinceVisit = lastVisitDate ? daysSince(lastVisitDate) : 999;
+        const myLastVisitDate = myLastVisitMap.get(elder.id) ?? null;
         return {
           ...presentElder(elder),
           daysSinceVisit,
           status: getStatus(daysSinceVisit, elder.alertThresholdDays),
           memberCount: memberCountMap.get(elder.id) ?? 0,
           lastVisitDate,
+          myDaysSince: myLastVisitDate ? daysSince(myLastVisitDate) : 999,
         };
       });
     }),

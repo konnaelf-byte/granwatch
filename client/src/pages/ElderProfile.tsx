@@ -325,6 +325,8 @@ export default function ElderProfile() {
             name={elder.name}
             daysSinceVisit={elder.daysSinceVisit}
             status={elder.status as VisitStatus}
+            threshold={elder.alertThresholdDays}
+            myDaysSince={elder.myDaysSince}
             size={200}
           />
 

@@ -172,6 +172,8 @@ export default function Dashboard() {
                     name={elder.name}
                     daysSinceVisit={elder.daysSinceVisit}
                     status={elder.status as VisitStatus}
+                    threshold={elder.alertThresholdDays}
+                    myDaysSince={elder.myDaysSince}
                     size={90}
                   />
                   <div className="flex-1 min-w-0">
