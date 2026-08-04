@@ -302,11 +302,13 @@ export function StatusRing({
                 {myNever ? (
                   <span
                     className="font-semibold text-center leading-snug px-2"
-                    style={{ fontSize: Math.max(imgSize * 0.11, 11) }}
+                    style={{ fontSize: Math.max(imgSize * 0.095, 10) }}
                   >
                     You haven't
                     <br />
-                    visited yet
+                    logged a
+                    <br />
+                    visit yet
                   </span>
                 ) : (
                   <>
