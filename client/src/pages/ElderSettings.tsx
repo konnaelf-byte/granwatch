@@ -9,6 +9,7 @@ import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Sparkles, Lock, Bell, BellOff, LogOut, AlertTriangle, CheckCircle2, Cake, Trash2 } from "lucide-react";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { BirthdayPicker } from "@/components/BirthdayPicker";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { GranPlusModal } from "@/components/GranPlusModal";
@@ -291,14 +292,7 @@ export default function ElderSettings() {
               <Cake className="w-4 h-4 text-primary" />
               Gran's birthday <span className="font-normal text-muted-foreground">(optional)</span>
             </Label>
-            <Input
-              type="date"
-              value={birthdayInput}
-              onChange={e => setBirthdayInput(e.target.value)}
-              min="1900-01-01"
-              max={new Date().toISOString().split("T")[0]}
-              className="h-12"
-            />
+            <BirthdayPicker value={birthdayInput} onChange={setBirthdayInput} />
             <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before their birthday. Leave blank to disable.</p>
           </div>
         )}

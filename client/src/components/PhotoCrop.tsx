@@ -22,16 +22,26 @@ export function PhotoCrop({ imageUrl, onConfirm, onCancel }: PhotoCropProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
-  // Preload the image
+  // Preload the image — with error + timeout guards so we never hang on "Loading…"
   useEffect(() => {
+    setImgLoaded(false);
+    setImgError(false);
     const img = new Image();
     img.crossOrigin = "anonymous";
+    const timer = window.setTimeout(() => setImgError(true), 15000);
     img.onload = () => {
+      window.clearTimeout(timer);
       imgRef.current = img;
       setImgLoaded(true);
     };
+    img.onerror = () => {
+      window.clearTimeout(timer);
+      setImgError(true);
+    };
     img.src = imageUrl;
+    return () => window.clearTimeout(timer);
   }, [imageUrl]);
 
   // Draw to canvas whenever offset/scale changes
@@ -83,9 +93,29 @@ export function PhotoCrop({ imageUrl, onConfirm, onCancel }: PhotoCropProps) {
   }, []);
 
   const handleConfirm = () => {
-    if (!canvasRef.current) return;
-    const dataUrl = canvasRef.current.toDataURL("image/jpeg", 0.92);
-    onConfirm(dataUrl);
+    const img = imgRef.current;
+    if (!img) return;
+    // Re-render the crop at 2× for a sharper stored avatar (520px instead of 260px)
+    const EXPORT = SIZE * 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = EXPORT;
+    canvas.height = EXPORT;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const R = EXPORT / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(R, R, R, 0, Math.PI * 2);
+    ctx.clip();
+    const baseScale = Math.max(SIZE / img.width, SIZE / img.height);
+    const s = baseScale * scale * 2;
+    const iw = img.width * s;
+    const ih = img.height * s;
+    const dx = (EXPORT - iw) / 2 + offset.x * 2;
+    const dy = (EXPORT - ih) / 2 + offset.y * 2;
+    ctx.drawImage(img, dx, dy, iw, ih);
+    ctx.restore();
+    onConfirm(canvas.toDataURL("image/jpeg", 0.92));
   };
 
   return (
@@ -110,8 +140,10 @@ export function PhotoCrop({ imageUrl, onConfirm, onCancel }: PhotoCropProps) {
           style={{ display: "block", width: SIZE, height: SIZE }}
         />
         {!imgLoaded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-muted">
-            <span className="text-muted-foreground text-sm">Loading…</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-muted px-4">
+            <span className="text-muted-foreground text-sm text-center">
+              {imgError ? "Couldn't open this photo. Tap Back and try another one." : "Loading…"}
+            </span>
           </div>
         )}
       </div>

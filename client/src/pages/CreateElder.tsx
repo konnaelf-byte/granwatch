@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import StatusRing from "@/components/StatusRing";
 import { PhotoUpload } from "@/components/PhotoUpload";
+import { BirthdayPicker } from "@/components/BirthdayPicker";
 import { COUNTRIES } from "@/lib/countries";
 
 export default function CreateElder() {
@@ -102,12 +103,7 @@ export default function CreateElder() {
               <Cake className="w-4 h-4 text-primary" />
               Gran's birthday <span className="font-normal text-muted-foreground">(optional)</span>
             </Label>
-            <Input
-              type="date"
-              value={birthdayInput}
-              onChange={e => setBirthdayInput(e.target.value)}
-              className="h-12"
-            />
+            <BirthdayPicker value={birthdayInput} onChange={setBirthdayInput} />
             <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before their birthday.</p>
           </div>
 
