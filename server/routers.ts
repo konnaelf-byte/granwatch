@@ -55,6 +55,35 @@ function generateInviteCode(): string {
   return Math.random().toString(36).substring(2, 10).toUpperCase();
 }
 
+/**
+ * Push the user's current unread notification count to all their devices as a
+ * silent iOS badge update (0 clears the red dot on the app icon). Called
+ * fire-and-forget after markRead/markAllRead — before this, the badge set by
+ * an incoming push stayed on the icon forever because nothing ever told Apple
+ * to lower it. Entirely server-side: works on every already-shipped build.
+ */
+async function syncBadgeForUser(userId: number): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    const tokenRows = await db
+      .select({ token: pushTokens.token })
+      .from(pushTokens)
+      .where(eq(pushTokens.userId, userId));
+    if (tokenRows.length === 0) return;
+
+    const unread = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+
+    const { sendBadgeSync } = await import("./push");
+    await sendBadgeSync(tokenRows.map((r) => r.token), unread.length);
+  } catch (e) {
+    console.warn("[Push] badge sync failed (non-fatal):", e);
+  }
+}
+
 // Calculate days since a date using calendar-day boundaries (midnight).
 // A visit at 11pm last night counts as 1 day ago at 12:01am today,
 // not 1 day ago at 11:01pm today.
@@ -1068,6 +1097,9 @@ export const appRouter = router({
 
   // ─── NOTIFICATIONS ─────────────────────────────────────────────────────────
   notifications: router({
+    // (badge sync: after any read-state change we push the user's remaining
+    // unread count to their devices so the iOS icon badge clears — see
+    // syncBadgeForUser below the router definition.)
     list: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
@@ -1101,6 +1133,7 @@ export const appRouter = router({
           .update(notifications)
           .set({ read: true })
           .where(and(eq(notifications.id, input.notificationId), eq(notifications.userId, ctx.user.id)));
+        void syncBadgeForUser(ctx.user.id);
         return { success: true };
       }),
 
@@ -1113,6 +1146,7 @@ export const appRouter = router({
           ? and(eq(notifications.userId, ctx.user.id), eq(notifications.elderId, input.elderId))
           : eq(notifications.userId, ctx.user.id);
         await db.update(notifications).set({ read: true }).where(condition);
+        void syncBadgeForUser(ctx.user.id);
         return { success: true };
       }),
   }),

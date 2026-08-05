@@ -72,7 +72,12 @@ export function nudgeDaysFor(alertThresholdDays: number): number {
   return Math.max(1, Math.round((alertThresholdDays * 2) / 3));
 }
 
-/** Push to every registered device of the given users. Returns delivered count. */
+/**
+ * Push to every registered device of the given users. Returns delivered count.
+ * The iOS badge is set to each recipient's real unread in-app count (min 1),
+ * so the red dot matches what they'll see in the app — and clears properly
+ * when markRead/markAllRead later syncs it back down (see routers.ts).
+ */
 async function pushToUsers(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
   userIds: number[],
@@ -80,12 +85,35 @@ async function pushToUsers(
 ): Promise<number> {
   if (userIds.length === 0) return 0;
   const rows = await db
-    .select({ token: pushTokens.token })
+    .select({ token: pushTokens.token, userId: pushTokens.userId })
     .from(pushTokens)
     .where(inArray(pushTokens.userId, userIds));
-  const tokens = rows.map((r) => r.token);
-  if (tokens.length === 0) return 0;
-  return sendPush(tokens, payload);
+  if (rows.length === 0) return 0;
+
+  // Unread in-app notifications per user (the nudge/red inserts happen before
+  // this call, so the fresh notification is already counted).
+  const unreadRows = await db
+    .select({ userId: notifications.userId })
+    .from(notifications)
+    .where(and(inArray(notifications.userId, userIds), eq(notifications.read, false)));
+  const unreadByUser = new Map<number, number>();
+  for (const r of unreadRows) unreadByUser.set(r.userId, (unreadByUser.get(r.userId) ?? 0) + 1);
+
+  const tokensByUser = new Map<number, string[]>();
+  for (const r of rows) {
+    const list = tokensByUser.get(r.userId) ?? [];
+    list.push(r.token);
+    tokensByUser.set(r.userId, list);
+  }
+
+  let delivered = 0;
+  for (const [userId, tokens] of Array.from(tokensByUser.entries())) {
+    delivered += await sendPush(tokens, {
+      ...payload,
+      badge: Math.max(1, unreadByUser.get(userId) ?? 0),
+    });
+  }
+  return delivered;
 }
 
 export function startCronJobs() {

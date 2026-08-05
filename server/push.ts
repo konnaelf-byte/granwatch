@@ -53,6 +53,12 @@ export interface PushPayload {
   body: string;
   /** Deep-link path, e.g. "/elder/42" */
   data?: Record<string, string>;
+  /**
+   * iOS app-icon badge number to set with this alert.
+   * Defaults to 1 when omitted (legacy behaviour). Pass the recipient's real
+   * unread count so the red dot is honest.
+   */
+  badge?: number;
 }
 
 /**
@@ -84,7 +90,7 @@ export async function sendPush(tokens: string[], payload: PushPayload): Promise<
           payload: {
             aps: {
               sound: "default",
-              badge: 1,
+              badge: payload.badge ?? 1,
             },
           },
         },
@@ -120,4 +126,48 @@ export async function sendPush(tokens: string[], payload: PushPayload): Promise<
   }
 
   return successCount;
+}
+
+/**
+ * Silently sync the iOS app-icon badge to `badge` (0 clears the red dot).
+ *
+ * Sends a banner-less APNs alert containing only the badge number — Apple
+ * updates the icon without showing anything or making a sound. Fired when the
+ * user marks notifications read in-app, so the red dot finally goes away
+ * without requiring any native-app update (the fix is entirely server-side).
+ *
+ * Android tokens receive a data-only message ({type:"badge_sync"}) which the
+ * app ignores — Android launcher badges clear with the notifications
+ * themselves, so no action is needed there.
+ */
+export async function sendBadgeSync(tokens: string[], badge: number): Promise<void> {
+  if (tokens.length === 0) return;
+
+  const messaging = await getMessaging();
+  if (!messaging) return;
+
+  const CHUNK = 500;
+  for (let i = 0; i < tokens.length; i += CHUNK) {
+    const chunk = tokens.slice(i, i + CHUNK);
+    try {
+      await messaging.sendEachForMulticast({
+        tokens: chunk,
+        // No `notification` block → nothing visible, no sound.
+        data: { type: "badge_sync" },
+        apns: {
+          headers: {
+            // Badge-only payloads are still "alert" type pushes per Apple docs
+            // ("background" is reserved for content-available wakes).
+            "apns-push-type": "alert",
+            "apns-priority": "10",
+          },
+          payload: {
+            aps: { badge },
+          },
+        },
+      });
+    } catch (err) {
+      console.error(`[Push] sendBadgeSync error:`, err);
+    }
+  }
 }
