@@ -149,12 +149,30 @@ async function runNightlyNotifications() {
   const { users } = await import("../drizzle/schema");
 
   const allElders = await db.select().from(elders);
+
+  // ── Spike protection: jitter the blast ─────────────────────────────────────
+  // Without this, EVERY family's nudge/alert lands in the same minute (20:00
+  // SAST) — the app manufactures its own thundering herd of opens. Shuffle the
+  // elder order and pace sends so the whole run spreads across up to ~15 min
+  // regardless of family count (per-elder delay shrinks as we grow; capped at
+  // 5s so small fleets still finish in seconds).
+  const JITTER_WINDOW_MS = 15 * 60 * 1000;
+  const perElderDelayMs = Math.min(5000, JITTER_WINDOW_MS / Math.max(allElders.length, 1));
+  const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+  for (let i = allElders.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allElders[i], allElders[j]] = [allElders[j], allElders[i]];
+  }
+
   let totalInAppSent = 0;
   let totalEmailsSent = 0;
   let totalPushSent = 0;
 
   for (const elder of allElders) {
     try {
+      // Jittered pacing (see above) — spreads the nightly blast.
+      await sleep(perElderDelayMs * (0.5 + Math.random()));
+
       const members = await db
         .select()
         .from(elderMembers)
