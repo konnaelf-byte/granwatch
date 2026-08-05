@@ -62,6 +62,8 @@ function generateInviteCode(): string {
  * an incoming push stayed on the icon forever because nothing ever told Apple
  * to lower it. Entirely server-side: works on every already-shipped build.
  */
+const lastBadgeSync = new Map<number, { count: number; at: number }>();
+
 async function syncBadgeForUser(userId: number): Promise<void> {
   try {
     const db = await getDb();
@@ -76,6 +78,12 @@ async function syncBadgeForUser(userId: number): Promise<void> {
       .select({ id: notifications.id })
       .from(notifications)
       .where(and(eq(notifications.userId, userId), eq(notifications.read, false)));
+
+    // Throttle: notifications.list fires this on every app open / refetch;
+    // skip when we already synced this exact count in the last minute.
+    const prev = lastBadgeSync.get(userId);
+    if (prev && prev.count === unread.length && Date.now() - prev.at < 60_000) return;
+    lastBadgeSync.set(userId, { count: unread.length, at: Date.now() });
 
     const { sendBadgeSync } = await import("./push");
     await sendBadgeSync(tokenRows.map((r) => r.token), unread.length);
@@ -1103,6 +1111,12 @@ export const appRouter = router({
     list: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
+
+      // Self-healing badge: every time the app loads the notification list
+      // (dashboard bell, notifications page), silently sync the iOS icon badge
+      // to the real unread count — so stale badges clear on app open even when
+      // everything was already read (throttled inside syncBadgeForUser).
+      void syncBadgeForUser(ctx.user.id);
 
       const rows = await db
         .select()
