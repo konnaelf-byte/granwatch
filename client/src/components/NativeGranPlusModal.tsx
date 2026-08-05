@@ -45,6 +45,10 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
   const [purchasing, setPurchasing] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // True when in-app billing isn't available in this build (e.g. Android before
+  // the Play billing setup is complete). We show a warm fallback instead of a
+  // developer-facing error — the trial keeps everything unlocked anyway.
+  const [billingUnavailable, setBillingUnavailable] = useState(false);
 
   const { data: subStatus } = trpc.subscription.status.useQuery(
     { elderId },
@@ -70,6 +74,7 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
     if (!open) return;
     let cancelled = false;
     setError(null);
+    setBillingUnavailable(false);
     setLoadingOffering(true);
     getGranPlusOffering()
       .then((offering) => {
@@ -80,21 +85,20 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
           null;
         const price = pkg?.product.priceString ?? null;
         setPriceString(price);
-        // No price → surface the real RevenueCat reason so we know what to fix.
+        // No price → billing isn't available in this build. Log the technical
+        // reason to the console; show the user a warm fallback instead.
         if (!price) {
           const status = getRevenueCatStatus();
-          if (status.error) setError(status.error);
-          else if (!status.configured)
-            setError("RevenueCat is still initializing — reopen in a moment.");
-          else if (!offering)
-            setError("No Gran+ offering is available from the store yet.");
+          console.warn("[Gran+] billing unavailable:", status.error ?? "no offering/package");
+          setBillingUnavailable(true);
         }
       })
       .catch((e) => {
         if (cancelled) return;
-        // getOfferings throws when the SDK isn't configured — show why.
+        // getOfferings throws when the SDK isn't configured — same fallback.
         const status = getRevenueCatStatus();
-        setError(status.error ?? (e instanceof Error ? e.message : "Could not load pricing."));
+        console.warn("[Gran+] billing unavailable:", status.error ?? e);
+        setBillingUnavailable(true);
       })
       .finally(() => {
         if (!cancelled) setLoadingOffering(false);
@@ -161,16 +165,21 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
 
         {/* Price */}
         <div className="bg-primary/10 rounded-xl p-4 text-center mb-2">
-          <div className="text-3xl font-bold text-primary">
-            {loadingOffering ? (
-              <Loader2 className="w-7 h-7 animate-spin mx-auto" />
-            ) : (
-              priceString ?? "—"
-            )}
-          </div>
-          <div className="text-sm text-muted-foreground">per month</div>
+          {loadingOffering ? (
+            <>
+              <div className="text-3xl font-bold text-primary">
+                <Loader2 className="w-7 h-7 animate-spin mx-auto" />
+              </div>
+              <div className="text-sm text-muted-foreground">per month</div>
+            </>
+          ) : billingUnavailable ? null : (
+            <>
+              <div className="text-3xl font-bold text-primary">{priceString ?? "—"}</div>
+              <div className="text-sm text-muted-foreground">per month</div>
+            </>
+          )}
           {onTrial && trialDays !== null && (
-            <div className="mt-2 text-sm font-semibold text-primary">
+            <div className={`text-sm font-semibold text-primary ${loadingOffering || !billingUnavailable ? "mt-2" : ""}`}>
               Included free for your first 6 months · {trialDays} day{trialDays === 1 ? "" : "s"} left
             </div>
           )}
@@ -206,7 +215,14 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
 
         {/* Bottom action area */}
         <div className="space-y-3">
-          {!actuallyPaid && (
+          {billingUnavailable && !actuallyPaid && (
+            <p className="text-center text-sm text-muted-foreground bg-muted rounded-lg px-3 py-3">
+              {onTrial
+                ? "Everything is unlocked during your free 6 months — nothing to do for now. Subscribing in the app is coming soon; you can also subscribe any time at granwatch.app."
+                : "Subscribing in the app is coming soon. In the meantime you can subscribe at granwatch.app."}
+            </p>
+          )}
+          {!actuallyPaid && !billingUnavailable && (
             <>
               {onTrial && (
                 <p className="text-center text-xs text-muted-foreground">
@@ -233,22 +249,26 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
             </>
           )}
 
-          <button
-            type="button"
-            className="w-full text-center text-xs text-muted-foreground underline underline-offset-2 disabled:opacity-50"
-            onClick={handleRestore}
-            disabled={restoring}
-          >
-            {restoring ? "Restoring..." : "Restore purchases"}
-          </button>
+          {!billingUnavailable && (
+            <button
+              type="button"
+              className="w-full text-center text-xs text-muted-foreground underline underline-offset-2 disabled:opacity-50"
+              onClick={handleRestore}
+              disabled={restoring}
+            >
+              {restoring ? "Restoring..." : "Restore purchases"}
+            </button>
+          )}
 
           {/* Required subscription info (App Review 3.1.2c): title, length, price, legal links */}
-          <p className="text-center text-xs text-muted-foreground">
-            Gran+ Monthly is a 1-month auto-renewable subscription
-            {priceString ? ` at ${priceString}/month` : ""}. It renews automatically unless
-            cancelled at least 24 hours before the end of the period. Billed through your
-            app store account. Cancel anytime in your device settings.
-          </p>
+          {!billingUnavailable && (
+            <p className="text-center text-xs text-muted-foreground">
+              Gran+ Monthly is a 1-month auto-renewable subscription
+              {priceString ? ` at ${priceString}/month` : ""}. It renews automatically unless
+              cancelled at least 24 hours before the end of the period. Billed through your
+              app store account. Cancel anytime in your device settings.
+            </p>
+          )}
           <p className="text-center text-xs">
             <button
               type="button"
