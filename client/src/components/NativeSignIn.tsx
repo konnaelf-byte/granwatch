@@ -22,6 +22,7 @@ import { useLocation } from "wouter";
 import { Loader2, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { trpc } from "@/lib/trpc";
 import { currentPlatform } from "@/utils/platform";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -81,6 +82,8 @@ function GoogleIcon() {
 
 export default function NativeSignIn({ returnPath }: { returnPath?: string | null }) {
   const clerk = useClerk();
+  // Server-verified native Google exchange — see auth.nativeGoogle (2026-08-05).
+  const nativeGoogle = trpc.auth.nativeGoogle.useMutation();
   const [, navigate] = useLocation();
 
   // Safe internal post-auth destination (e.g. /join/CODE from an invite link).
@@ -244,21 +247,15 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
       const idToken = googleResult.idToken;
       if (!idToken) throw new Error("Google sign-in did not return an ID token.");
 
-      // clerk.authenticateWithGoogleOneTap handles both sign-in and sign-up automatically
-      const clerkResult = await clerk.authenticateWithGoogleOneTap({ token: idToken });
-
-      // The result is a SignInResource or SignUpResource — both have status and createdSessionId
-      if (clerkResult.status === "complete") {
-        const sessionId = (clerkResult as { createdSessionId: string | null }).createdSessionId;
-        if (sessionId) {
-          // Determine if it's a signIn or signUp by checking for firstFactorVerification
-          if ("firstFactorVerification" in clerkResult) {
-            await completeSignIn(sessionId);
-          } else {
-            await completeSignUp(sessionId);
-          }
-          return;
-        }
+      // Server-verified exchange. Clerk's One Tap endpoint 403s natively-minted
+      // Google tokens on BOTH platforms (authorization_invalid, 2026-08-05), so
+      // our server verifies the token with Google directly and returns a
+      // one-time Clerk sign-in ticket. See auth.nativeGoogle in server/routers.ts.
+      const { ticket } = await nativeGoogle.mutateAsync({ idToken });
+      const attempt = await clerk.client.signIn.create({ strategy: "ticket", ticket });
+      if (attempt.status === "complete" && attempt.createdSessionId) {
+        await completeSignIn(attempt.createdSessionId);
+        return;
       }
 
       throw new Error("Google sign-in completed but session could not be established.");

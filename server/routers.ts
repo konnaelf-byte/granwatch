@@ -87,6 +87,81 @@ export const appRouter = router({
     me: publicProcedure.query(opts => opts.ctx.user),
 
     /**
+     * Native Google sign-in, server-verified.
+     *
+     * WHY THIS EXISTS (2026-08-05): Clerk's authenticateWithGoogleOneTap
+     * rejects ID tokens minted by the native Google plugins with a 403
+     * authorization_invalid ("You are not authorized to perform this
+     * request") on BOTH iOS and Android, for new AND existing users — every
+     * dashboard setting was verified sane. So the native apps hand the Google
+     * ID token to US instead: we verify it against Google directly, find or
+     * create the Clerk user for the verified email, and mint a one-time
+     * Clerk sign-in ticket the client exchanges for a real session.
+     *
+     * Security: the token is validated by Google's own tokeninfo endpoint
+     * (signature + expiry) and we additionally require our exact web client
+     * audience, Google issuer, and a verified email. This grants exactly the
+     * same access a normal Google OAuth sign-in would.
+     */
+    nativeGoogle: publicProcedure
+      .input(z.object({ idToken: z.string().min(20) }))
+      .mutation(async ({ input }) => {
+        const GOOGLE_WEB_CLIENT_ID =
+          "156428600768-4bdsso544vgd5o6ri81r97kqp27a351u.apps.googleusercontent.com";
+
+        // 1. Ask Google to validate the token (checks signature + expiry).
+        const resp = await fetch(
+          `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(input.idToken)}`
+        );
+        if (!resp.ok) throw new Error("Google sign-in could not be verified. Please try again.");
+        const claims = (await resp.json()) as {
+          aud?: string; iss?: string; email?: string; email_verified?: string;
+          given_name?: string; family_name?: string; name?: string;
+        };
+
+        // 2. Enforce our audience + Google issuer + verified email.
+        if (claims.aud !== GOOGLE_WEB_CLIENT_ID)
+          throw new Error("Google sign-in could not be verified (wrong app).");
+        if (claims.iss !== "https://accounts.google.com" && claims.iss !== "accounts.google.com")
+          throw new Error("Google sign-in could not be verified (issuer).");
+        if (claims.email_verified !== "true" || !claims.email)
+          throw new Error("Your Google account has no verified email address.");
+        const email = claims.email.toLowerCase();
+
+        const { clerkClient } = await import("./_core/sdk");
+
+        // 3. Find or create the Clerk user for this verified email.
+        const existing = await clerkClient.users.getUserList({ emailAddress: [email], limit: 1 });
+        let clerkUserId = existing.data[0]?.id;
+        if (!clerkUserId) {
+          const created = await clerkClient.users.createUser({
+            emailAddress: [email],
+            firstName: claims.given_name || undefined,
+            lastName: claims.family_name || undefined,
+            skipPasswordRequirement: true,
+          });
+          clerkUserId = created.id;
+          // Google already verified this email — reflect that in Clerk so
+          // OTP sign-in and notifications work for this address.
+          const emailId = created.emailAddresses[0]?.id;
+          if (emailId) {
+            try {
+              await clerkClient.emailAddresses.updateEmailAddress(emailId, { verified: true });
+            } catch (e) {
+              console.warn("[nativeGoogle] could not mark email verified:", e);
+            }
+          }
+        }
+
+        // 4. One-time sign-in ticket (5 min validity) — exchanged client-side.
+        const token = await clerkClient.signInTokens.createSignInToken({
+          userId: clerkUserId,
+          expiresInSeconds: 300,
+        });
+        return { ticket: token.token };
+      }),
+
+    /**
      * Update the current user's display name (and ONLY the name).
      * Email, role and paid status are intentionally NOT editable here.
      *
