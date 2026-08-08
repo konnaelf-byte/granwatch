@@ -64,8 +64,13 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
 
-    <!-- Media images — granular storage permission for Android 13+ -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <!-- Media images/videos — NOT requested. Photo upload uses the WebView file
+         input, which opens the Android system photo picker and gets access to
+         the chosen file with NO permission (Play policy: use pickers instead of
+         broad media permissions — this was the cause of the Aug 2026 rejection).
+         tools:node="remove" also strips any copy merged in by SDK dependencies. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" tools:node="remove" />
 
     <!-- Push notifications — for FCM / Firebase Cloud Messaging -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
