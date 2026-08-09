@@ -1,4 +1,11 @@
 import { useMemo } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface BirthdayPickerProps {
   /** "YYYY-MM-DD" or "" */
@@ -21,6 +28,11 @@ function daysInMonth(year: number | null, month: number | null): number {
  * Three simple dropdowns (Day / Month / Year) instead of the platform
  * calendar widget — scrolling back to the 1940s in a month-by-month
  * calendar is painful. Emits "YYYY-MM-DD" once all three are chosen.
+ *
+ * Uses the app's Radix Select (JS-rendered dropdown) rather than native
+ * <select>: the iOS WKWebView refused to open native select pickers here
+ * (field report 2026-08-09), while Radix Select is proven working in the
+ * native app (Care schedule panel uses it).
  */
 export function BirthdayPicker({ value, onChange }: BirthdayPickerProps) {
   const parsed = useMemo(() => {
@@ -52,46 +64,51 @@ export function BirthdayPicker({ value, onChange }: BirthdayPickerProps) {
     }
   };
 
-  const selectClass =
-    "h-12 rounded-md border border-input bg-background px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring";
+  const triggerClass = "h-12 w-full";
 
   return (
     <div className="grid grid-cols-[1fr_1.6fr_1.2fr] gap-2">
-      <select
-        aria-label="Birthday day"
-        className={selectClass}
-        value={parsed.day ?? ""}
-        onChange={(e) => emit(parsed.year, parsed.month, e.target.value ? Number(e.target.value) : null)}
+      <Select
+        value={parsed.day ? String(parsed.day) : ""}
+        onValueChange={(v) => emit(parsed.year, parsed.month, v ? Number(v) : null)}
       >
-        <option value="">Day</option>
-        {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
-          <option key={d} value={d}>{d}</option>
-        ))}
-      </select>
+        <SelectTrigger className={triggerClass} aria-label="Birthday day">
+          <SelectValue placeholder="Day" />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          {Array.from({ length: maxDay }, (_, i) => i + 1).map((d) => (
+            <SelectItem key={d} value={String(d)}>{d}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      <select
-        aria-label="Birthday month"
-        className={selectClass}
-        value={parsed.month ?? ""}
-        onChange={(e) => emit(parsed.year, e.target.value ? Number(e.target.value) : null, parsed.day)}
+      <Select
+        value={parsed.month ? String(parsed.month) : ""}
+        onValueChange={(v) => emit(parsed.year, v ? Number(v) : null, parsed.day)}
       >
-        <option value="">Month</option>
-        {MONTHS.map((name, i) => (
-          <option key={name} value={i + 1}>{name}</option>
-        ))}
-      </select>
+        <SelectTrigger className={triggerClass} aria-label="Birthday month">
+          <SelectValue placeholder="Month" />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          {MONTHS.map((name, i) => (
+            <SelectItem key={name} value={String(i + 1)}>{name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-      <select
-        aria-label="Birthday year"
-        className={selectClass}
-        value={parsed.year ?? ""}
-        onChange={(e) => emit(e.target.value ? Number(e.target.value) : null, parsed.month, parsed.day)}
+      <Select
+        value={parsed.year ? String(parsed.year) : ""}
+        onValueChange={(v) => emit(v ? Number(v) : null, parsed.month, parsed.day)}
       >
-        <option value="">Year</option>
-        {years.map((y) => (
-          <option key={y} value={y}>{y}</option>
-        ))}
-      </select>
+        <SelectTrigger className={triggerClass} aria-label="Birthday year">
+          <SelectValue placeholder="Year" />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          {years.map((y) => (
+            <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
