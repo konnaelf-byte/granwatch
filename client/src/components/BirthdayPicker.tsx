@@ -18,6 +18,18 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ];
 
+/**
+ * iOS WebKit (iPhone/iPod + iPadOS Safari). On these devices BOTH native
+ * <select> and Radix Select dropdowns proved unreliable in the field
+ * (list opens, tapping an item closes it without selecting — 2026-08-09).
+ * iOS's own <input type="date"> wheel is OS-rendered and cannot be broken
+ * by page CSS/JS, and its year wheel handles old birth years well.
+ */
+const IS_IOS =
+  typeof navigator !== "undefined" &&
+  (/iP(hone|ad|od)/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+
 function daysInMonth(year: number | null, month: number | null): number {
   if (!month) return 31;
   // Use a leap-safe year when the year isn't chosen yet
@@ -35,6 +47,28 @@ function daysInMonth(year: number | null, month: number | null): number {
  * native app (Care schedule panel uses it).
  */
 export function BirthdayPicker({ value, onChange }: BirthdayPickerProps) {
+  // iOS: use the OS-native date wheel — see IS_IOS note above. The dropdown
+  // row below is for Android + desktop, where it's tested and working.
+  if (IS_IOS) {
+    const today = new Date();
+    const max = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    return (
+      <input
+        type="date"
+        aria-label="Gran's birthday"
+        className="h-12 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+        value={value}
+        min="1900-01-01"
+        max={max}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    );
+  }
+
+  return <BirthdayDropdowns value={value} onChange={onChange} />;
+}
+
+function BirthdayDropdowns({ value, onChange }: BirthdayPickerProps) {
   const parsed = useMemo(() => {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
     if (!m) return { year: null as number | null, month: null as number | null, day: null as number | null };
