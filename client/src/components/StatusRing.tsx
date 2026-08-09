@@ -228,7 +228,12 @@ export function StatusRing({
         </svg>
 
         {/* Photo or grandma avatar — tappable when a personal counter exists:
-            flips to "days since YOUR last visit" on a solid status disc. */}
+            flips to "days since YOUR last visit" on a solid status disc.
+            IMPORTANT: the 3D styles (perspective / preserve-3d / backface)
+            are applied ONLY when flippable. iOS WebKit has hit-testing bugs
+            around 3D-transformed layers that made unrelated controls further
+            down the page untappable (CreateElder birthday picker, field
+            report 2026-08-09) — a purely decorative ring must stay flat. */}
         <div
           className="absolute"
           role={flippable ? "button" : undefined}
@@ -247,22 +252,27 @@ export function StatusRing({
             height: imgSize,
             top: (size - imgSize) / 2,
             left: (size - imgSize) / 2,
-            perspective: 600,
+            perspective: flippable ? 600 : undefined,
             cursor: flippable ? "pointer" : undefined,
+            pointerEvents: flippable ? undefined : "none",
           }}
         >
           <div
             className="relative w-full h-full"
-            style={{
-              transformStyle: "preserve-3d",
-              transition: "transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1)",
-              transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-            }}
+            style={
+              flippable
+                ? {
+                    transformStyle: "preserve-3d",
+                    transition: "transform 0.55s cubic-bezier(0.4, 0.2, 0.2, 1)",
+                    transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                  }
+                : undefined
+            }
           >
             {/* FRONT — the photo */}
             <div
               className="absolute inset-0 overflow-hidden bg-muted"
-              style={{ borderRadius: "50%", backfaceVisibility: "hidden" }}
+              style={{ borderRadius: "50%", ...(flippable ? { backfaceVisibility: "hidden" as const } : {}) }}
             >
               {photoUrl ? (
                 <img
