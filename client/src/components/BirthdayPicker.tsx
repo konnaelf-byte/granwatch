@@ -66,13 +66,23 @@ export function BirthdayPicker({ value, onChange }: BirthdayPickerProps) {
 
   const triggerClass = "h-12 w-full";
 
+  /**
+   * iOS guard: if a text input still has focus (e.g. the user was typing the
+   * name), blur it before the dropdown opens. A focused input + open keyboard
+   * made dropdown taps dead on iPhone (field report 2026-08-09).
+   */
+  const blurActive = (e: React.PointerEvent) => {
+    const el = document.activeElement;
+    if (el instanceof HTMLElement && el !== e.currentTarget) el.blur();
+  };
+
   return (
     <div className="grid grid-cols-[1fr_1.6fr_1.2fr] gap-2">
       <Select
         value={parsed.day ? String(parsed.day) : ""}
         onValueChange={(v) => emit(parsed.year, parsed.month, v ? Number(v) : null)}
       >
-        <SelectTrigger className={triggerClass} aria-label="Birthday day">
+        <SelectTrigger className={triggerClass} aria-label="Birthday day" onPointerDown={blurActive}>
           <SelectValue placeholder="Day" />
         </SelectTrigger>
         <SelectContent className="max-h-72">
@@ -86,7 +96,7 @@ export function BirthdayPicker({ value, onChange }: BirthdayPickerProps) {
         value={parsed.month ? String(parsed.month) : ""}
         onValueChange={(v) => emit(parsed.year, v ? Number(v) : null, parsed.day)}
       >
-        <SelectTrigger className={triggerClass} aria-label="Birthday month">
+        <SelectTrigger className={triggerClass} aria-label="Birthday month" onPointerDown={blurActive}>
           <SelectValue placeholder="Month" />
         </SelectTrigger>
         <SelectContent className="max-h-72">
@@ -100,7 +110,7 @@ export function BirthdayPicker({ value, onChange }: BirthdayPickerProps) {
         value={parsed.year ? String(parsed.year) : ""}
         onValueChange={(v) => emit(v ? Number(v) : null, parsed.month, parsed.day)}
       >
-        <SelectTrigger className={triggerClass} aria-label="Birthday year">
+        <SelectTrigger className={triggerClass} aria-label="Birthday year" onPointerDown={blurActive}>
           <SelectValue placeholder="Year" />
         </SelectTrigger>
         <SelectContent className="max-h-72">

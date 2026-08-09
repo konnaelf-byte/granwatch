@@ -93,7 +93,10 @@ export default function CreateElder() {
               value={name}
               onChange={e => setName(e.target.value)}
               className="h-12 text-base"
-              autoFocus
+              // No autoFocus: on iOS the focused input + open keyboard broke
+              // every dropdown below it (birthday picker taps ignored —
+              // field report 2026-08-09). Auto-popping the keyboard on page
+              // load was dubious mobile UX anyway.
             />
           </div>
 
