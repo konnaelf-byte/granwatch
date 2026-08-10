@@ -15,6 +15,7 @@ import { storageDelete } from "./storage";
 import { referralRouter } from "./referralRouter";
 import { pushRouter } from "./pushRouter";
 import { careRouter } from "./careRouter";
+import { counterRouter } from "./counterRouter";
 import { revenueCatRouter } from "./revenueCatRouter";
 import { giftRouter } from "./giftRouter";
 import { hasGranPlus, presentElder, newTrialEnd, granPlusLockedError, trialDaysLeft, isTrialActive } from "./entitlement";
@@ -118,6 +119,7 @@ export const appRouter = router({
   referral: referralRouter,
   pushToken: pushRouter,
   care: careRouter,
+  counters: counterRouter,
   revenueCat: revenueCatRouter,
   gifts: giftRouter,
   auth: router({

@@ -30,10 +30,11 @@
  */
 
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
-import { elders, elderMembers, visits, plannedVisits, plannedVisitReminders, notifications, pushTokens } from "../drizzle/schema";
+import { elders, elderMembers, visits, plannedVisits, plannedVisitReminders, notifications, pushTokens, elderCounters, counterLogs } from "../drizzle/schema";
 import { getDb } from "./db";
 import { sendVisitReminderEmails, sendBirthdayReminderEmails, sendTrialEndingEmails, type EmailRecipient } from "./email";
 import { sendPush } from "./push";
+import { hasGranPlus } from "./entitlement";
 
 const SAST_OFFSET_MS = 2 * 60 * 60 * 1000; // UTC+2
 
@@ -475,6 +476,54 @@ async function runNightlyNotifications() {
             totalPushSent += pushed;
             console.log(`[Cron] Elder ${elder.id} (${elder.name}) — TRIAL T-${trialDaysLeft}d warning: ${sent} email, ${pushed} push`);
           }
+        }
+      }
+
+      // ── CUSTOM COUNTERS: overdue push, once per crossing ─────────────────
+      // Push-only (no email, no in-app row, no feed entry — counters are
+      // deliberately quiet). "Once per crossing" via lastNotifiedAt: we only
+      // fire when lastNotifiedAt is empty OR a log has happened since the
+      // last notification (which re-arms the cycle).
+      //   private → owner only.  family → all notifyable members.
+      if (hasGranPlus(elder)) {
+        const activeCounters = await db
+          .select()
+          .from(elderCounters)
+          .where(and(eq(elderCounters.elderId, elder.id), eq(elderCounters.isActive, true)));
+
+        for (const counter of activeCounters) {
+          const [lastLog] = await db
+            .select()
+            .from(counterLogs)
+            .where(eq(counterLogs.counterId, counter.id))
+            .orderBy(desc(counterLogs.loggedAt))
+            .limit(1);
+
+          const anchor = lastLog ? lastLog.loggedAt : counter.createdAt;
+          const overdueDays = daysSince(anchor);
+          if (overdueDays < counter.intervalDays) continue;
+
+          // Already notified for THIS crossing? (no log since last notify)
+          if (counter.lastNotifiedAt && counter.lastNotifiedAt.getTime() >= anchor.getTime()) continue;
+
+          const targets = counter.scope === "private"
+            ? (counter.ownerUserId ? [counter.ownerUserId] : [])
+            : notifyableMembers.map((m) => m.userId);
+          if (targets.length === 0) continue;
+
+          const pushed = await pushToUsers(db, targets, {
+            title: `${counter.emoji} ${counter.name} — it's been ${overdueDays} days`,
+            body: counter.scope === "private"
+              ? `Your ${counter.intervalDays}-day goal for ${elder.name} is due. Tap to log it.`
+              : `The family's ${counter.intervalDays}-day goal for ${elder.name} is due. Tap to log it.`,
+            data: { path: `/elder/${elder.id}` },
+          });
+          await db
+            .update(elderCounters)
+            .set({ lastNotifiedAt: new Date() })
+            .where(eq(elderCounters.id, counter.id));
+          totalPushSent += pushed;
+          console.log(`[Cron] Elder ${elder.id} — counter "${counter.name}" (${counter.scope}) overdue ${overdueDays}/${counter.intervalDays}d: ${pushed} push`);
         }
       }
     } catch (elderErr) {

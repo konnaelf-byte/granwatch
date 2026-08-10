@@ -6,6 +6,7 @@ import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy,
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
+import { CustomCounters } from "@/components/CustomCounters";
 import { TrialBadge } from "@/components/TrialBadge";
 import { isNativeApp } from "@/utils/platform";
 import { initRevenueCat } from "@/utils/iap";
@@ -339,6 +340,15 @@ export default function ElderProfile() {
             </p>
           </div>
         </div>
+
+        {/* Custom counters — Gran+ horizontal drain bars (near the ring, per spec) */}
+        <CustomCounters
+          elderId={elderId}
+          locked={!elder.isPaid}
+          onUnlock={openGranPlus}
+          isAdmin={elder.memberRole === "admin"}
+          currentUserId={user?.id}
+        />
 
         {/* Red alert banner — only once there's a real visit baseline.
             New profiles (no visit yet, daysSinceVisit === 999) stay calm. */}

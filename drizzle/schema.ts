@@ -315,3 +315,54 @@ export const giftLogs = mysqlTable("giftLogs", {
 
 export type GiftLog = typeof giftLogs.$inferSelect;
 export type InsertGiftLog = typeof giftLogs.$inferInsert;
+
+/**
+ * Gran+ custom counters — "text Gran weekly", "day trip 4×/year", etc.
+ * Displayed as a horizontal drain bar on the elder profile (distinct from
+ * the main status ring). scope "family" = visible to the whole family;
+ * scope "private" = visible ONLY to ownerUserId (and its logs must never
+ * appear in the family feed — Konstand's call 2026-08-10).
+ */
+export const elderCounters = mysqlTable("elderCounters", {
+  id: int("id").autoincrement().primaryKey(),
+  elderId: int("elderId").notNull(),
+  name: varchar("name", { length: 30 }).notNull(),           // e.g. "Text Gran" (≤30 chars)
+  /** Single emoji shown on the bar (and later in the iOS widget, native build 14) */
+  emoji: varchar("emoji", { length: 16 }).notNull().default("💚"),
+  /** Target interval in days: 7 = weekly, 91 = quarterly, 1–365 allowed */
+  intervalDays: int("intervalDays").notNull(),
+  scope: mysqlEnum("scope", ["private", "family"]).notNull().default("family"),
+  /** For scope "private": the only user who sees/logs this counter */
+  ownerUserId: int("ownerUserId"),
+  createdByUserId: int("createdByUserId").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  /** Set by nightly cron when the overdue push fires; cleared conceptually
+   *  by comparing against the latest log — ensures once-per-crossing pushes. */
+  lastNotifiedAt: timestamp("lastNotifiedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  elderIdIdx: index("elderCounters_elderId_idx").on(table.elderId),
+}));
+
+export type ElderCounter = typeof elderCounters.$inferSelect;
+export type InsertElderCounter = typeof elderCounters.$inferInsert;
+
+/**
+ * Log each time a counter is "done" (family member taps Log it 💚).
+ * NOT mirrored into the visits feed — counters have their own history.
+ */
+export const counterLogs = mysqlTable("counterLogs", {
+  id: int("id").autoincrement().primaryKey(),
+  counterId: int("counterId").notNull(),
+  elderId: int("elderId").notNull(),
+  loggedByUserId: int("loggedByUserId").notNull(),
+  loggedAt: timestamp("loggedAt").defaultNow().notNull(),
+  note: varchar("note", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  counterIdIdx: index("counterLogs_counterId_idx").on(table.counterId),
+  elderIdIdx: index("counterLogs_elderId_idx").on(table.elderId),
+}));
+
+export type CounterLog = typeof counterLogs.$inferSelect;
+export type InsertCounterLog = typeof counterLogs.$inferInsert;
