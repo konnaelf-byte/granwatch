@@ -95,7 +95,7 @@ export const careRouter = router({
         // Names of everyone who logged this week, for the "Last: done by X" line.
         const { users } = await import("../drizzle/schema");
         const { inArray } = await import("drizzle-orm");
-        const loggerIds = [...new Set(weekLogs.map(l => l.loggedByUserId))];
+        const loggerIds = Array.from(new Set(weekLogs.map(l => l.loggedByUserId)));
         const loggers = loggerIds.length > 0
           ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, loggerIds))
           : [];
