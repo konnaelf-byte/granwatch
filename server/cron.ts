@@ -32,7 +32,7 @@
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { elders, elderMembers, visits, plannedVisits, plannedVisitReminders, notifications, pushTokens } from "../drizzle/schema";
 import { getDb } from "./db";
-import { sendVisitReminderEmails, sendBirthdayReminderEmails, type EmailRecipient } from "./email";
+import { sendVisitReminderEmails, sendBirthdayReminderEmails, sendTrialEndingEmails, type EmailRecipient } from "./email";
 import { sendPush } from "./push";
 
 const SAST_OFFSET_MS = 2 * 60 * 60 * 1000; // UTC+2
@@ -165,6 +165,8 @@ const SENTINEL_NUDGE = -14;
 const SENTINEL_RED = -21;
 const SENTINEL_BDAY_3 = -30;
 const SENTINEL_BDAY_TODAY = -31;
+/** "Free Gran+ period ends in ≤14 days" warning — fired once per elder, ever. */
+const SENTINEL_TRIAL_14 = -40;
 
 async function runNightlyNotifications() {
   console.log("[Cron] Running nightly visit-status notifications...");
@@ -426,6 +428,54 @@ async function runNightlyNotifications() {
 
         if (daysUntilBd === 0 && !bdTodayAlreadySent) await fireBirthday(true, SENTINEL_BDAY_TODAY);
         else if (daysUntilBd === 3 && !bd3dayAlreadySent) await fireBirthday(false, SENTINEL_BDAY_3);
+      }
+
+      // ── TRIAL ENDING: whole family, once per elder, at T-14 days ─────────
+      // Fires when the free Gran+ period has ≤14 days left and nobody has
+      // subscribed. `<= 14` (not `=== 14`) so a missed night still delivers.
+      if (!elder.isPaid && elder.trialEndsAt) {
+        const msLeft = elder.trialEndsAt.getTime() - Date.now();
+        const trialDaysLeft = Math.ceil(msLeft / 86_400_000);
+        if (trialDaysLeft > 0 && trialDaysLeft <= 14) {
+          const [trialSentinel] = await db
+            .select()
+            .from(notifications)
+            .where(
+              and(
+                eq(notifications.elderId, elder.id),
+                eq(notifications.type, "weekly_digest"),
+                eq(notifications.userId, SENTINEL_TRIAL_14)
+              )
+            )
+            .limit(1);
+          if (!trialSentinel) {
+            const recipients: EmailRecipient[] = notifyableMembers
+              .filter((m) => m.userEmail)
+              .map((m) => ({ name: m.userName, email: m.userEmail! }));
+            const sent = recipients.length > 0
+              ? await sendTrialEndingEmails({
+                  recipients,
+                  granName: elder.name,
+                  granPhotoUrl: elder.photoUrl,
+                  daysLeft: trialDaysLeft,
+                })
+              : 0;
+            const pushed = await pushToUsers(db, notifyableMembers.map((m) => m.userId), {
+              title: `💛 Free Gran+ for ${elder.name} ends in ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}`,
+              body: `Everything stays saved. Subscribe once and the whole family keeps Gran+.`,
+              data: { path: `/elder/${elder.id}` },
+            });
+            await db.insert(notifications).values({
+              userId: SENTINEL_TRIAL_14,
+              elderId: elder.id,
+              type: "weekly_digest" as const,
+              read: true,
+            });
+            totalEmailsSent += sent;
+            totalPushSent += pushed;
+            console.log(`[Cron] Elder ${elder.id} (${elder.name}) — TRIAL T-${trialDaysLeft}d warning: ${sent} email, ${pushed} push`);
+          }
+        }
       }
     } catch (elderErr) {
       console.error(`[Cron] Error processing elder ${elder.id}:`, elderErr);

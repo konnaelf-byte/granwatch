@@ -356,6 +356,86 @@ export async function sendBirthdayReminderEmails(params: SendBirthdayReminderPar
 }
 
 /**
+ * Send "your free Gran+ period ends soon" emails to all opted-in family
+ * members of an elder. Warm, no-pressure tone: everything stays saved; the
+ * subscription simply keeps the premium features unlocked.
+ * Returns the number of emails successfully sent.
+ */
+export async function sendTrialEndingEmails(params: {
+  recipients: EmailRecipient[];
+  granName: string;
+  granPhotoUrl?: string | null;
+  daysLeft: number;
+}): Promise<number> {
+  const { recipients, granName, granPhotoUrl, daysLeft } = params;
+
+  if (!ENV.resendApiKey) {
+    console.warn("[Email] RESEND_API_KEY not set — skipping trial-ending email send");
+    return 0;
+  }
+
+  const resend = getResend();
+  let sent = 0;
+
+  const photoSection = granPhotoUrl
+    ? `<img src="${granPhotoUrl}" alt="${granName}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid #f97316;display:block;margin:0 auto 16px;" />`
+    : `<div style="width:80px;height:80px;border-radius:50%;background:#f97316;margin:0 auto 16px;font-size:32px;line-height:80px;text-align:center;">👵</div>`;
+
+  for (const recipient of recipients) {
+    if (!recipient.email) continue;
+    try {
+      const name = recipient.name || "there";
+      const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>GranWatch — Gran+ update</title></head>
+<body style="margin:0;padding:0;background:#fafaf9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#fafaf9;padding:32px 16px;"><tr><td align="center">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+      <tr><td style="background:#f97316;padding:24px 32px;text-align:center;">
+        <span style="font-size:28px;">🌿</span>
+        <h1 style="margin:8px 0 0;color:#ffffff;font-size:22px;font-weight:700;">GranWatch</h1>
+        <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px;">Keeping family connected</p>
+      </td></tr>
+      <tr><td style="padding:32px;">
+        <div style="text-align:center;margin-bottom:8px;">${photoSection}</div>
+        <h2 style="margin:20px 0 8px;font-size:20px;font-weight:700;color:#1c1917;text-align:center;">Your free Gran+ months for ${granName} end in ${daysLeft} day${daysLeft === 1 ? "" : "s"}</h2>
+        <p style="margin:0 0 16px;font-size:15px;color:#44403c;line-height:1.6;">Hi ${name},</p>
+        <p style="margin:0 0 16px;font-size:15px;color:#44403c;line-height:1.6;">For the past months your family has had every Gran+ feature for ${granName} — routines, appointments, care notes, visit photos and mood insights — included free.</p>
+        <p style="margin:0 0 24px;font-size:15px;color:#44403c;line-height:1.6;"><strong>Nothing gets deleted</strong> when the free period ends — all of ${granName}'s history stays safely stored. Subscribing simply keeps the premium features unlocked for the whole family, and one family member covers everyone.</p>
+        <div style="text-align:center;margin-bottom:24px;">
+          <a href="https://granwatch.app/dashboard" style="display:inline-block;background:#f97316;color:#ffffff;font-size:15px;font-weight:600;padding:12px 28px;border-radius:99px;text-decoration:none;">Keep Gran+ going</a>
+        </div>
+        <p style="margin:0;font-size:13px;color:#78716c;line-height:1.5;">The colour ring, visit logging and family alerts stay free forever — that promise doesn't change. 💚</p>
+      </td></tr>
+      <tr><td style="background:#f5f5f4;padding:16px 32px;text-align:center;border-top:1px solid #e7e5e4;">
+        <p style="margin:0;font-size:12px;color:#a8a29e;">You're receiving this because you're a family member on GranWatch.</p>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
+
+      const { error } = await resend.emails.send({
+        from: `GranWatch <${ENV.resendFromEmail}>`,
+        to: recipient.email,
+        subject: `Your free Gran+ months for ${granName} end in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`,
+        html,
+        text: `Hi ${name},\n\nYour family's free Gran+ months for ${granName} end in ${daysLeft} day${daysLeft === 1 ? "" : "s"}.\n\nNothing gets deleted — all of ${granName}'s history stays safely stored. Subscribing keeps the premium features (routines, appointments, care notes, visit photos, mood insights) unlocked for the whole family, and one member covers everyone.\n\nKeep Gran+ going: https://granwatch.app/dashboard\n\nThe colour ring, visit logging and family alerts stay free forever. 💚\n\n— GranWatch`,
+      });
+
+      if (error) {
+        console.error(`[Email] Trial-ending email failed for ${recipient.email}:`, error);
+      } else {
+        console.log(`[Email] Sent trial-ending (${daysLeft}d) email to ${recipient.email} for ${granName}`);
+        sent++;
+      }
+    } catch (err) {
+      console.error(`[Email] Unexpected error sending trial-ending email to ${recipient.email}:`, err);
+    }
+  }
+
+  return sent;
+}
+
+/**
  * Validate that the Resend API key is working.
  * The key is send-only so we can't list domains — instead we check the error type.
  * A 403 "domain not verified" error means the key IS valid but the domain needs DNS setup.
