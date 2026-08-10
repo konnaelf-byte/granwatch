@@ -14,7 +14,7 @@
  *   render the countdown badge.
  */
 
-export const TRIAL_DAYS = 180; // phase 1: 6 months; later 90, then 30
+export const TRIAL_DAYS = 120; // 4 months (was 180 at launch; Konstand's call 2026-08-10). Applies to NEW profiles only — existing trialEndsAt dates are untouched.
 
 type EntitlementFields = { isPaid: boolean; trialEndsAt: Date | null };
 

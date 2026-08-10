@@ -64,7 +64,7 @@ function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { el
       </div>
       {onTrial && (
         <p className="text-xs text-muted-foreground">
-          All Gran+ features are included free for your first 6 months. Subscribe anytime to keep them running without a countdown.
+          All Gran+ features are included free for your first 4 months. Subscribe anytime to keep them running without a countdown.
         </p>
       )}
 

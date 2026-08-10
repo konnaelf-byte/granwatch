@@ -167,17 +167,16 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
             <Pill className="w-4 h-4 text-primary" />
             <h3 className="font-semibold text-sm text-foreground">Routines</h3>
           </div>
-          {(isAdmin || locked) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => (locked ? handleLockedTap() : setAddMedOpen(true))}
-              className="text-primary h-8 px-2"
-            >
-              {locked ? <Lock className="w-3.5 h-3.5 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
-              Add
-            </Button>
-          )}
+          {/* Any family member can add (field report 2026-08-10) */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => (locked ? handleLockedTap() : setAddMedOpen(true))}
+            className="text-primary h-8 px-2"
+          >
+            {locked ? <Lock className="w-3.5 h-3.5 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+            Add
+          </Button>
         </div>
 
         {medsLoading ? (
@@ -190,7 +189,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
               <Button variant="link" size="sm" onClick={handleLockedTap}>
                 Unlock with Gran+
               </Button>
-            ) : isAdmin && (
+            ) : (
               <Button variant="link" size="sm" onClick={() => setAddMedOpen(true)}>
                 Add the first one
               </Button>
@@ -247,6 +246,16 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                   </div>
                 )}
 
+                {/* Human-readable last entry — the "useful log" line */}
+                {med.lastLog && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Last: {med.lastLog.status === "taken" ? "✓ done" : "✗ missed"} by{" "}
+                    <span className="font-medium text-foreground">{med.lastLog.byName}</span>
+                    {" · "}
+                    {new Date(med.lastLog.at).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}
+                  </p>
+                )}
+
                 {/* Today's status */}
                 <div className="flex gap-2 mt-3">
                   <Button
@@ -283,17 +292,16 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
             <Stethoscope className="w-4 h-4 text-primary" />
             <h3 className="font-semibold text-sm text-foreground">Appointments</h3>
           </div>
-          {(isAdmin || locked) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => (locked ? handleLockedTap() : setAddApptOpen(true))}
-              className="text-primary h-8 px-2"
-            >
-              {locked ? <Lock className="w-3.5 h-3.5 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
-              Add
-            </Button>
-          )}
+          {/* Any family member can add (field report 2026-08-10) */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => (locked ? handleLockedTap() : setAddApptOpen(true))}
+            className="text-primary h-8 px-2"
+          >
+            {locked ? <Lock className="w-3.5 h-3.5 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+            Add
+          </Button>
         </div>
 
         {apptsLoading ? (
@@ -306,7 +314,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
               <Button variant="link" size="sm" onClick={handleLockedTap}>
                 Unlock with Gran+
               </Button>
-            ) : isAdmin && (
+            ) : (
               <Button variant="link" size="sm" onClick={() => setAddApptOpen(true)}>
                 Add one
               </Button>

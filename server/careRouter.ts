@@ -5,10 +5,12 @@
  * All procedures are Gran+ gated (elder.isPaid must be true).
  *
  * Medication flow:
- *   Admin adds medications → family members see them → mark "taken" during a visit
+ *   Any family member adds routines → family sees them → mark "done" during a visit
+ *   (removal stays admin-only to prevent accidental cleanup)
  *
  * Appointment flow:
- *   Admin adds upcoming appointments → family sees them → admin marks completed
+ *   Any family member adds appointments → family sees them → anyone marks completed
+ *   (removal stays admin-only)
  */
 
 import { router, protectedProcedure } from "./_core/trpc";
@@ -90,6 +92,15 @@ export const careRouter = router({
             ))
           : [];
 
+        // Names of everyone who logged this week, for the "Last: done by X" line.
+        const { users } = await import("../drizzle/schema");
+        const { inArray } = await import("drizzle-orm");
+        const loggerIds = [...new Set(weekLogs.map(l => l.loggedByUserId))];
+        const loggers = loggerIds.length > 0
+          ? await db.select({ id: users.id, name: users.name }).from(users).where(inArray(users.id, loggerIds))
+          : [];
+        const loggerName = (id: number) => loggers.find(u => u.id === id)?.name ?? "a family member";
+
         const dayKey = (d: Date) =>
           `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
@@ -110,11 +121,20 @@ export const careRouter = router({
             todayStatus: todayLog?.status ?? null,
             todayLogId: todayLog?.id ?? null,
             week,
+            // Most recent log this week, humanised — "done by Marie on Tue".
+            lastLog: (() => {
+              const mine = weekLogs
+                .filter(l => l.medicationId === med.id)
+                .sort((a, b) => b.takenAt.getTime() - a.takenAt.getTime())[0];
+              return mine
+                ? { status: mine.status, at: mine.takenAt, byName: loggerName(mine.loggedByUserId) }
+                : null;
+            })(),
           };
         });
       }),
 
-    /** Add a medication (admin only). */
+    /** Add a medication (any family member — field report 2026-08-10). */
     add: protectedProcedure
       .input(z.object({
         elderId: z.number(),
@@ -127,7 +147,7 @@ export const careRouter = router({
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) throw new Error("DB unavailable");
-        await assertAdmin(input.elderId, ctx.user.id);
+        await assertMember(input.elderId, ctx.user.id);
 
         const [result] = await db.insert(elderMedications).values({
           elderId: input.elderId,
@@ -255,7 +275,7 @@ export const careRouter = router({
           .orderBy(elderAppointments.scheduledAt);
       }),
 
-    /** Add a new appointment (admin only). */
+    /** Add a new appointment (any family member — field report 2026-08-10). */
     add: protectedProcedure
       .input(z.object({
         elderId: z.number(),
@@ -268,7 +288,7 @@ export const careRouter = router({
       .mutation(async ({ input, ctx }) => {
         const db = await getDb();
         if (!db) throw new Error("DB unavailable");
-        await assertAdmin(input.elderId, ctx.user.id);
+        await assertMember(input.elderId, ctx.user.id);
 
         const [result] = await db.insert(elderAppointments).values({
           elderId: input.elderId,

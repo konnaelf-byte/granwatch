@@ -180,7 +180,7 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
           )}
           {onTrial && trialDays !== null && (
             <div className={`text-sm font-semibold text-primary ${loadingOffering || !billingUnavailable ? "mt-2" : ""}`}>
-              Included free for your first 6 months · {trialDays} day{trialDays === 1 ? "" : "s"} left
+              Included free for your first 4 months · {trialDays} day{trialDays === 1 ? "" : "s"} left
             </div>
           )}
         </div>
@@ -218,7 +218,7 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
           {billingUnavailable && !actuallyPaid && (
             <p className="text-center text-sm text-muted-foreground bg-muted rounded-lg px-3 py-3">
               {onTrial
-                ? "Everything is unlocked during your free 6 months — nothing to do for now. Subscribing in the app is coming soon; you can also subscribe any time at granwatch.app."
+                ? "Everything is unlocked during your free 4 months — nothing to do for now. Subscribing in the app is coming soon; you can also subscribe any time at granwatch.app."
                 : "Subscribing in the app is coming soon. In the meantime you can subscribe at granwatch.app."}
             </p>
           )}

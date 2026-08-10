@@ -107,7 +107,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
             <div className="text-sm text-muted-foreground">per month</div>
             {onTrial && trialDays !== null && (
               <div className="mt-2 text-sm font-semibold text-primary">
-                Included free for your first 6 months · {trialDays} day{trialDays === 1 ? "" : "s"} left
+                Included free for your first 4 months · {trialDays} day{trialDays === 1 ? "" : "s"} left
               </div>
             )}
           </div>
