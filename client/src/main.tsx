@@ -93,21 +93,37 @@ if (Capacitor.isNativePlatform()) {
 // The /api/og/invite/* share-preview URL maps to its real destination /join/*.
 // Guarded: on builds without the @capacitor/app native plugin this no-ops.
 if (Capacitor.isNativePlatform()) {
+  // Map a granwatch.app URL to an in-app path and navigate there.
+  // Dedup guard: on cold start BOTH getLaunchUrl and appUrlOpen can report
+  // the same link — navigate once.
+  let lastDeepLink = "";
+  const handleDeepLink = (url: string | undefined | null) => {
+    if (!url || url === lastDeepLink) return;
+    try {
+      const u = new URL(url);
+      let path = u.pathname + u.search;
+      const ogInvite = u.pathname.match(/^\/api\/og\/invite\/([A-Za-z0-9_-]+)/);
+      if (ogInvite) path = `/join/${ogInvite[1]}`;
+      if (path.startsWith("/") && !path.startsWith("//") && path !== "/") {
+        lastDeepLink = url;
+        window.location.href = path;
+      }
+    } catch (err) {
+      console.warn("[DeepLink] parse failed:", err);
+    }
+  };
+
   import("@capacitor/app")
     .then(({ App: CapacitorApp }) => {
-      CapacitorApp.addListener("appUrlOpen", ({ url }) => {
-        try {
-          const u = new URL(url);
-          let path = u.pathname + u.search;
-          const ogInvite = u.pathname.match(/^\/api\/og\/invite\/([A-Za-z0-9_-]+)/);
-          if (ogInvite) path = `/join/${ogInvite[1]}`;
-          if (path.startsWith("/") && !path.startsWith("//")) {
-            window.location.href = path;
-          }
-        } catch (err) {
-          console.warn("[DeepLink] appUrlOpen parse failed:", err);
-        }
-      });
+      // Warm start / app already running: link tap fires appUrlOpen.
+      CapacitorApp.addListener("appUrlOpen", ({ url }) => handleDeepLink(url));
+      // COLD start: the app is LAUNCHED by the link — appUrlOpen may never
+      // fire because the event happened before this listener existed. The
+      // launch URL must be pulled explicitly (this was the missing half:
+      // "opens the app but doesn't navigate", field report 2026-08-11).
+      CapacitorApp.getLaunchUrl()
+        .then((launch) => handleDeepLink(launch?.url))
+        .catch(() => {});
     })
     .catch((err) => console.warn("[DeepLink] @capacitor/app unavailable on this build:", err));
 }
