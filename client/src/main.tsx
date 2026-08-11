@@ -94,20 +94,25 @@ if (Capacitor.isNativePlatform()) {
 // Guarded: on builds without the @capacitor/app native plugin this no-ops.
 if (Capacitor.isNativePlatform()) {
   // Map a granwatch.app URL to an in-app path and navigate there.
-  // Dedup guard: on cold start BOTH getLaunchUrl and appUrlOpen can report
-  // the same link — navigate once.
-  let lastDeepLink = "";
+  //
+  // LOOP GUARD (field report 2026-08-11, infinite splash/join loop):
+  // navigation happens via window.location.href = FULL RELOAD, which resets
+  // module state — so an in-memory "already handled" flag is useless. The
+  // launch URL from getLaunchUrl() persists for the whole app session, so
+  // after the reload it fired again → navigate → reload → forever.
+  // The only guard that survives reloads is comparing against where we
+  // already ARE: if the current location matches the link target, do nothing.
   const handleDeepLink = (url: string | undefined | null) => {
-    if (!url || url === lastDeepLink) return;
+    if (!url) return;
     try {
       const u = new URL(url);
       let path = u.pathname + u.search;
       const ogInvite = u.pathname.match(/^\/api\/og\/invite\/([A-Za-z0-9_-]+)/);
       if (ogInvite) path = `/join/${ogInvite[1]}`;
-      if (path.startsWith("/") && !path.startsWith("//") && path !== "/") {
-        lastDeepLink = url;
-        window.location.href = path;
-      }
+      if (!path.startsWith("/") || path.startsWith("//") || path === "/") return;
+      const current = window.location.pathname + window.location.search;
+      if (current === path || window.location.pathname === path.split("?")[0]) return; // already there
+      window.location.href = path;
     } catch (err) {
       console.warn("[DeepLink] parse failed:", err);
     }
@@ -118,9 +123,7 @@ if (Capacitor.isNativePlatform()) {
       // Warm start / app already running: link tap fires appUrlOpen.
       CapacitorApp.addListener("appUrlOpen", ({ url }) => handleDeepLink(url));
       // COLD start: the app is LAUNCHED by the link — appUrlOpen may never
-      // fire because the event happened before this listener existed. The
-      // launch URL must be pulled explicitly (this was the missing half:
-      // "opens the app but doesn't navigate", field report 2026-08-11).
+      // fire because the event happened before this listener existed.
       CapacitorApp.getLaunchUrl()
         .then((launch) => handleDeepLink(launch?.url))
         .catch(() => {});
