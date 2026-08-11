@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Plus, Trash2, Lock, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { Plus, Trash2, Pencil, Lock, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 
 interface Props {
   elderId: number;
@@ -50,6 +50,7 @@ function barColor(pct: number, neverLogged: boolean): string {
 export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = false, currentUserId }: Props) {
   const utils = trpc.useUtils();
   const [addOpen, setAddOpen] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // Add-dialog state
@@ -76,6 +77,16 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
       invalidate();
       setAddOpen(false);
       setName(""); setEmoji("💚"); setIntervalDays(7); setUseCustom(false); setCustomDays(""); setScope("family");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updateCounter = trpc.counters.update.useMutation({
+    onSuccess: () => {
+      toast.success("Counter updated");
+      invalidate();
+      setAddOpen(false);
+      setEditingId(null);
     },
     onError: (e) => toast.error(e.message),
   });
@@ -119,7 +130,23 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
     const days = useCustom ? parseInt(customDays, 10) : intervalDays;
     if (!name.trim()) { toast.error("Give your counter a name"); return; }
     if (!days || days < 1 || days > 365) { toast.error("Interval must be 1–365 days"); return; }
-    addCounter.mutate({ elderId, name: name.trim(), emoji, intervalDays: days, scope });
+    if (editingId !== null) {
+      updateCounter.mutate({ counterId: editingId, name: name.trim(), emoji, intervalDays: days });
+    } else {
+      addCounter.mutate({ elderId, name: name.trim(), emoji, intervalDays: days, scope });
+    }
+  };
+
+  /** Open the dialog prefilled with an existing counter's values. */
+  const openEdit = (c: any) => {
+    setEditingId(c.id);
+    setName(c.name);
+    setEmoji(c.emoji);
+    setScope(c.scope);
+    const preset = INTERVAL_PRESETS.find(p => p.days === c.intervalDays);
+    if (preset) { setIntervalDays(c.intervalDays); setUseCustom(false); setCustomDays(""); }
+    else { setUseCustom(true); setCustomDays(String(c.intervalDays)); }
+    setAddOpen(true);
   };
 
   return (
@@ -197,12 +224,20 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
                   ))
                 )}
                 {canRemove && (
-                  <button
-                    className="text-xs text-destructive/80 inline-flex items-center gap-1 pt-1"
-                    onClick={() => removeCounter.mutate({ counterId: c.id })}
-                  >
-                    <Trash2 className="w-3 h-3" /> Remove counter
-                  </button>
+                  <div className="flex items-center gap-4 pt-1">
+                    <button
+                      className="text-xs text-muted-foreground inline-flex items-center gap-1"
+                      onClick={() => openEdit(c)}
+                    >
+                      <Pencil className="w-3 h-3" /> Edit
+                    </button>
+                    <button
+                      className="text-xs text-destructive/80 inline-flex items-center gap-1"
+                      onClick={() => removeCounter.mutate({ counterId: c.id })}
+                    >
+                      <Trash2 className="w-3 h-3" /> Remove counter
+                    </button>
+                  </div>
                 )}
               </div>
             )}
@@ -212,7 +247,13 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
 
       {canAdd && (
         <button
-          onClick={() => { setScope(canAddFamily ? "family" : "private"); setAddOpen(true); }}
+          onClick={() => {
+            // Fresh add — clear any leftover edit state
+            setEditingId(null);
+            setName(""); setEmoji("💚"); setIntervalDays(7); setUseCustom(false); setCustomDays("");
+            setScope(canAddFamily ? "family" : "private");
+            setAddOpen(true);
+          }}
           className="w-full rounded-xl border border-dashed border-muted-foreground/30 p-2.5 flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -221,10 +262,10 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
       )}
 
       {/* ── Add dialog — chips + native inputs only (iOS-safe) ── */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) setEditingId(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>New custom counter</DialogTitle>
+            <DialogTitle>{editingId !== null ? "Edit counter" : "New custom counter"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -288,6 +329,8 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
               )}
             </div>
 
+            {/* Scope is fixed after creation (privacy of existing logs) — hidden when editing */}
+            {editingId === null && (
             <div>
               <label className="text-xs font-medium text-muted-foreground">Who is this for?</label>
               <div className="mt-1 flex gap-1.5">
@@ -314,10 +357,13 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
                 </p>
               )}
             </div>
+            )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddOpen(false)}>Cancel</Button>
-            <Button onClick={submitAdd} disabled={addCounter.isPending}>Add counter</Button>
+            <Button variant="outline" onClick={() => { setAddOpen(false); setEditingId(null); }}>Cancel</Button>
+            <Button onClick={submitAdd} disabled={addCounter.isPending || updateCounter.isPending}>
+              {editingId !== null ? "Save changes" : "Add counter"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

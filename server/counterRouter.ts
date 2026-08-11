@@ -219,6 +219,35 @@ export const counterRouter = router({
     }),
 
   /**
+   * Edit a counter's name / emoji / interval (scope is fixed after creation —
+   * flipping family↔private would have privacy implications for existing logs).
+   * Same permission as remove: family → creator or an admin; private → owner only.
+   */
+  update: protectedProcedure
+    .input(z.object({
+      counterId: z.number(),
+      name: z.string().trim().min(1).max(30),
+      emoji: z.string().trim().min(1).max(16),
+      intervalDays: z.number().int().min(1).max(365),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+      const { counter, member } = await assertCounterAccess(input.counterId, ctx.user.id);
+
+      const allowed = counter.scope === "private"
+        ? counter.ownerUserId === ctx.user.id
+        : counter.createdByUserId === ctx.user.id || member.role === "admin";
+      if (!allowed) throw new Error("Only the person who created this counter (or an admin) can edit it");
+
+      await db
+        .update(elderCounters)
+        .set({ name: input.name, emoji: input.emoji, intervalDays: input.intervalDays })
+        .where(eq(elderCounters.id, input.counterId));
+      return { ok: true };
+    }),
+
+  /**
    * Soft-delete a counter (isActive=false; history kept).
    * family → creator or an admin; private → owner only.
    */
