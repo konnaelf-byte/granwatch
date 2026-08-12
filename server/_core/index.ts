@@ -12,6 +12,7 @@ import { registerPayfastRoutes } from "../payfastRoute";
 import { registerLemonSqueezyRoutes } from "../lemonSqueezyRoute";
 import { registerRevenueCatRoutes } from "../revenueCatRouter";
 import { registerOgRoutes } from "../ogRoute";
+import { registerContentRoutes } from "../contentRoutes";
 import { registerUploadRoutes } from "../uploadRoute";
 import { registerCalendarRoutes } from "../calendarRoute";
 import { appRouter } from "../routers";
@@ -214,6 +215,9 @@ async function startServer() {
 
   // OG image generation.
   registerOgRoutes(app);
+
+  // Server-rendered SEO/GEO content pages (guides, FAQ, comparisons, sitemap).
+  registerContentRoutes(app);
 
   // Configure body parser — 2mb is generous for a JSON API.
   app.use(express.json({ limit: "2mb" }));

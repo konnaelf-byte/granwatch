@@ -174,6 +174,10 @@ export default function Landing() {
 
       <footer className="text-center py-6 text-xs text-muted-foreground border-t space-y-2">
         <div className="flex items-center justify-center gap-4">
+          <a href="/guides" className="hover:text-foreground transition-colors">Guides</a>
+          <span>·</span>
+          <a href="/faq" className="hover:text-foreground transition-colors">FAQ</a>
+          <span>·</span>
           <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
           <span>·</span>
           <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>

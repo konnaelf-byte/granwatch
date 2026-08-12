@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2, UserMinus, RefreshCw } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2, UserMinus, RefreshCw, MessageCircle } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
@@ -247,12 +247,33 @@ export default function ElderProfile() {
     onError: (e) => toast.error(e.message),
   });
 
+  const inviteUrl = elder ? `${window.location.origin}/api/og/invite/${elder.inviteCode}` : "";
+  // Warm prefilled invite text — WhatsApp is the family channel (98% open rates).
+  const inviteText = elder
+    ? `Join our family on GranWatch 💚 It shows when ${elder.name} was last visited — one tap to log a visit, and she doesn't need a phone. Takes a minute, it's free: ${inviteUrl}`
+    : "";
+
   const handleShare = () => {
     if (!elder) return;
-    // Use /og/invite/:code so WhatsApp/iMessage generate a rich preview card.
-    // That page sets OG meta tags and immediately redirects to /join/:code.
-    const url = `${window.location.origin}/api/og/invite/${elder.inviteCode}`;
-    navigator.clipboard.writeText(url).then(() => {
+    // Native share sheet first (mobile: WhatsApp/iMessage with prefilled text).
+    if (navigator.share) {
+      navigator.share({ text: inviteText }).catch(() => {/* user dismissed */});
+      return;
+    }
+    // Desktop fallback: copy the rich-preview link.
+    navigator.clipboard.writeText(inviteUrl).then(() => {
+      toast.success("Invite link copied to clipboard!");
+    });
+  };
+
+  const handleWhatsAppShare = () => {
+    if (!elder) return;
+    window.open(`https://wa.me/?text=${encodeURIComponent(inviteText)}`, "_blank");
+  };
+
+  const handleCopy = () => {
+    if (!elder) return;
+    navigator.clipboard.writeText(inviteUrl).then(() => {
       toast.success("Invite link copied to clipboard!");
     });
   };
@@ -450,7 +471,11 @@ export default function ElderProfile() {
             <p className="font-mono font-bold text-lg text-foreground tracking-widest">{elder.inviteCode}</p>
           </div>
           <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={handleShare}>
+            <Button variant="ghost" size="sm" onClick={handleWhatsAppShare} className="text-green-600 hover:text-green-700">
+              <MessageCircle className="w-4 h-4 mr-1.5" />
+              WhatsApp
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleCopy}>
               <Copy className="w-4 h-4 mr-1.5" />
               Copy link
             </Button>
