@@ -1,8 +1,11 @@
 # GranWatch — Brand One-Pager (source of truth)
 *Created 2026-08-13 after Konna flagged share-card inconsistency. Any asset — OG image, store screenshot, social post, email, page — must match this. If something here changes, change it HERE first, then everywhere.*
 
+## Logo (UPDATED 2026-08-13, Konna's call)
+**The app icon IS the logo** — the illustrated granny inside the green watch-dial ring (with crown button and red heart on her cardigan), dark green background (`client/public/icon-512.png`). Use it everywhere a mark is needed: app headers, landing header, guide pages, share cards (in an iOS-style rounded square on cream), favicons. The lucide heart is retired as a brand mark (fine as a decorative UI icon).
+
 ## Wordmark
-**♥ GranWatch** — the red heart, then "GranWatch" in **Inter ExtraBold/Bold, single ink colour**. Never split-coloured, never serif. (This matches the app header and splash.)
+**GranWatch** in **Inter ExtraBold/Bold, single ink colour**, set beside the logo. Never split-coloured, never serif.
 
 ## Mascot
 The illustrated granny in the green ring (`client/public/og-gran.png` / app icon). She is the face of the brand on any image asset. Never replace her with abstract symbols (the old checkmark card is retired).
