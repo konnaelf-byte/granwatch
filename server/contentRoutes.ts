@@ -42,7 +42,7 @@ function layout(opts: {
 <meta property="og:title" content="${opts.title}">
 <meta property="og:description" content="${opts.description}">
 <meta property="og:url" content="${canonical}">
-<meta property="og:image" content="${APP_URL}/og-default.png">
+<meta property="og:image" content="${APP_URL}/og-default.png?v=2">
 <meta property="og:type" content="article">
 <link rel="icon" href="/icon-192.png">
 ${schemaTag}
@@ -51,8 +51,8 @@ ${schemaTag}
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
   header{padding:20px 24px;border-bottom:1px solid #e8e2d8}
-  header a{color:var(--ink);text-decoration:none;font-weight:700;font-size:20px}
-  header a span{color:var(--green)}
+  header a{color:var(--ink);text-decoration:none;font-weight:800;font-size:20px;display:inline-flex;align-items:center;gap:7px}
+  header a svg{width:19px;height:19px;fill:#BA2D1F}
   main{max-width:720px;margin:0 auto;padding:32px 24px 64px}
   h1{font-size:32px;line-height:1.25;margin:0 0 8px}
   h2{font-size:22px;margin:36px 0 8px}
@@ -75,11 +75,11 @@ ${schemaTag}
 </style>
 </head>
 <body>
-<header><a href="${APP_URL}">Gran<span>Watch</span></a></header>
+<header><a href="${APP_URL}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>GranWatch</a></header>
 <main>${opts.bodyHtml}</main>
 <footer>
   <a href="${APP_URL}">Home</a><a href="/guides">Guides</a><a href="/faq">FAQ</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>
-  <div style="margin-top:8px">GranWatch — see when Gran was last visited. She doesn't need a phone.</div>
+  <div style="margin-top:8px">GranWatch — Keep Gran in the green. She doesn't need a phone.</div>
 </footer>
 </body>
 </html>`;
