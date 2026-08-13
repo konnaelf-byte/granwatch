@@ -37,7 +37,8 @@ export default function Landing() {
       {/* Header — only show Sign in button when we know user is NOT authenticated */}
       <header className="flex items-center justify-between px-6 py-4 border-b bg-card">
         <div className="flex items-center gap-2">
-          <Heart className="w-6 h-6 text-primary fill-primary" />
+          {/* Brand mark = the app icon (BRAND.md, Konna 2026-08-13) */}
+          <img src="/icon-192.png" alt="" className="w-7 h-7 rounded-md" />
           <span className="text-xl font-bold text-foreground">GranWatch</span>
         </div>
         {/* Only show Sign in button once auth check is complete and user is not signed in */}
