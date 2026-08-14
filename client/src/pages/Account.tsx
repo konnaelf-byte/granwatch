@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { useLocation } from "wouter";
 import { Heart, ArrowLeft, LogOut, Mail, User, Share2, Trash2, Check } from "lucide-react";
 import { ReferralCard } from "@/components/ReferralCard";
+import { LanguagePicker } from "@/components/LanguagePicker";
+import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -32,6 +34,7 @@ function isNameMissing(name: string | null | undefined): boolean {
 }
 
 export default function Account() {
+  const { t } = useTranslation();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
   const [copied, setCopied] = useState(false);
@@ -221,6 +224,13 @@ export default function Account() {
           <Share2 className="w-4 h-4 mr-2" />
           {copied ? "Link copied!" : "Share GranWatch"}
         </Button>
+
+        {/* Language */}
+        <div className="bg-card border rounded-2xl p-5">
+          <h2 className="font-semibold text-foreground mb-1">{t("lang.title")}</h2>
+          <p className="text-xs text-muted-foreground mb-4">{t("lang.sub")}</p>
+          <LanguagePicker />
+        </div>
 
         {/* Sign out */}
         <Button

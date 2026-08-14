@@ -3,14 +3,16 @@ import { getSignInUrl } from "@/const";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { Heart, Bell, Calendar, Users, Camera, CheckCircle } from "lucide-react";
-import { MONTHLY_COST_CENTS } from "@shared/const";
 import { isNativeApp } from "@/utils/platform";
 import HeroLogoRing from "@/components/HeroLogoRing";
+import { LanguageButton } from "@/components/LanguagePicker";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function Landing() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
+  const { t } = useTranslation();
 
   // Persist referral code from ?ref= param so we can attribute the signup
   useEffect(() => {
@@ -32,6 +34,24 @@ export default function Landing() {
     return null;
   }
 
+  const steps = [
+    { step: "1", icon: <Camera className="w-5 h-5" />, title: t("landing.step1Title"), desc: t("landing.step1Desc") },
+    { step: "2", icon: <Users className="w-5 h-5" />, title: t("landing.step2Title"), desc: t("landing.step2Desc") },
+    { step: "3", icon: <CheckCircle className="w-5 h-5" />, title: t("landing.step3Title"), desc: t("landing.step3Desc") },
+  ];
+
+  const feats = [
+    { icon: <Heart className="w-5 h-5" />, title: t("landing.feat1Title"), desc: t("landing.feat1Desc") },
+    { icon: <Bell className="w-5 h-5" />, title: t("landing.feat2Title"), desc: t("landing.feat2Desc") },
+    { icon: <Calendar className="w-5 h-5" />, title: t("landing.feat3Title"), desc: t("landing.feat3Desc") },
+    { icon: <Users className="w-5 h-5" />, title: t("landing.feat4Title"), desc: t("landing.feat4Desc") },
+  ];
+
+  const plusFeats = [
+    t("landing.plusFeat1"), t("landing.plusFeat2"), t("landing.plusFeat3"),
+    t("landing.plusFeat4"), t("landing.plusFeat5"), t("landing.plusFeat6"),
+  ];
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header — only show Sign in button when we know user is NOT authenticated */}
@@ -41,12 +61,14 @@ export default function Landing() {
           <img src="/icon-192.png" alt="" className="w-7 h-7 rounded-md" />
           <span className="text-xl font-bold text-foreground">GranWatch</span>
         </div>
-        {/* Only show Sign in button once auth check is complete and user is not signed in */}
-        {!loading && !isAuthenticated && (
-          <Button asChild size="sm">
-            <a href={getSignInUrl()}>Sign in</a>
-          </Button>
-        )}
+        <div className="flex items-center gap-1">
+          <LanguageButton />
+          {!loading && !isAuthenticated && (
+            <Button asChild size="sm">
+              <a href={getSignInUrl()}>{t("common.signIn")}</a>
+            </Button>
+          )}
+        </div>
       </header>
 
       {/* Hero */}
@@ -59,48 +81,28 @@ export default function Landing() {
           </div>
 
           <h1 className="text-4xl font-bold text-foreground mb-4 leading-tight">
-            Make sure Gran<br />never goes unvisited
+            {t("landing.heroLine1")}<br />{t("landing.heroLine2")}
           </h1>
           <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-            A simple family app that keeps everyone on the same page.
-            The colour ring tells you at a glance — and alerts the whole family when it turns red.
+            {t("landing.heroSub")}
           </p>
 
           <Button asChild size="lg" className="w-full max-w-xs text-base h-12">
-            <a href={getSignInUrl()}>Get started — it's free</a>
+            <a href={getSignInUrl()}>{t("landing.ctaGetStarted")}</a>
           </Button>
 
           <p className="text-sm text-muted-foreground mt-4">
-            No app store needed. Works on any phone or computer.
+            {t("landing.noAppStore")}
           </p>
         </div>
 
         {/* How it works */}
         <div className="mt-20 max-w-lg w-full">
-          <h2 className="text-2xl font-bold text-foreground mb-2">How it works</h2>
-          <p className="text-muted-foreground text-sm mb-10">Three simple steps. No fuss.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">{t("landing.howTitle")}</h2>
+          <p className="text-muted-foreground text-sm mb-10">{t("landing.howSub")}</p>
 
           <div className="flex flex-col gap-6 text-left">
-            {[
-              {
-                step: "1",
-                icon: <Camera className="w-5 h-5" />,
-                title: "Add your gran",
-                desc: "Create a profile with their name and photo. Set how often they should be visited — the ring starts counting.",
-              },
-              {
-                step: "2",
-                icon: <Users className="w-5 h-5" />,
-                title: "Invite the family",
-                desc: "Share a link or code. Everyone joins the same profile. No accounts needed for family members — just tap and join.",
-              },
-              {
-                step: "3",
-                icon: <CheckCircle className="w-5 h-5" />,
-                title: "Log visits, stay green",
-                desc: "After each visit, tap 'Log a Visit'. The ring resets to green. If it turns red, the family gets a nudge — privately, not publicly.",
-              },
-            ].map((item) => (
+            {steps.map((item) => (
               <div key={item.step} className="flex items-start gap-4 bg-card border rounded-2xl p-5">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-primary-foreground font-bold text-sm"
@@ -122,12 +124,7 @@ export default function Landing() {
 
         {/* Feature highlights */}
         <div className="grid grid-cols-2 gap-4 mt-16 max-w-md w-full">
-          {[
-            { icon: <Heart className="w-5 h-5" />, title: "Visual status ring", desc: "Green to red — see instantly how long it's been" },
-            { icon: <Bell className="w-5 h-5" />, title: "Family alerts", desc: "Everyone gets notified when Gran needs a visit" },
-            { icon: <Calendar className="w-5 h-5" />, title: "Book a slot", desc: "Claim a date so the family knows it's covered" },
-            { icon: <Users className="w-5 h-5" />, title: "Up to 20 members", desc: "Invite the whole family with a single link" },
-          ].map((f, i) => (
+          {feats.map((f, i) => (
             <div key={i} className="bg-card rounded-xl p-4 text-left border">
               <div className="text-primary mb-2">{f.icon}</div>
               <div className="font-semibold text-sm text-foreground mb-1">{f.title}</div>
@@ -136,22 +133,18 @@ export default function Landing() {
           ))}
         </div>
 
-        {/* Pricing teaser — price is platform-aware: native = App Store IAP
-            ($2.99, localised by Apple at purchase), web = Lemon Squeezy (R39). */}
+        {/* Pricing teaser — $2.99/mo flat worldwide (parity with the stores;
+            Konna 2026-08-13). Same price whether native or web. */}
         <div className="mt-12 max-w-sm w-full bg-card border rounded-2xl p-6 text-left">
           <div className="flex items-center justify-between mb-3">
             <span className="font-bold text-foreground">Gran+</span>
-            <span className="text-primary font-bold">
-              {isNativeApp ? "$2.99/month" : `R${(MONTHLY_COST_CENTS / 100).toFixed(0)}/month`}
-            </span>
+            <span className="text-primary font-bold">{t("landing.pricePerMonth")}</span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">
-            {isNativeApp
-              ? "One subscription covers the whole family."
-              : `Split between the whole family — could be as little as R${Math.ceil(MONTHLY_COST_CENTS / 300).toFixed(0)} each.`}
+            {t("landing.priceLine")}
           </p>
           <ul className="text-sm text-muted-foreground space-y-1">
-            {["Routines — e.g. prescriptions, physio", "Appointments — e.g. doctor, hairdresser", "Care notes for all visitors", "Photos on visit logs", "Mood notes & mood trend insights", "Unlimited family members"].map(f => (
+            {plusFeats.map(f => (
               <li key={f} className="flex items-center gap-2">
                 <span className="text-primary">✓</span> {f}
               </li>
@@ -159,7 +152,7 @@ export default function Landing() {
           </ul>
           {isNativeApp && (
             <p className="text-xs text-muted-foreground mt-3">
-              Billed through the App Store in your local currency.
+              {t("landing.billedAppStore")}
             </p>
           )}
         </div>
@@ -167,25 +160,25 @@ export default function Landing() {
         {/* Final CTA */}
         <div className="mt-12 text-center">
           <Button asChild size="lg" className="w-full max-w-xs text-base h-12">
-            <a href={getSignInUrl()}>Start for free</a>
+            <a href={getSignInUrl()}>{t("landing.ctaStart")}</a>
           </Button>
-          <p className="text-xs text-muted-foreground mt-3">No credit card needed. Free forever for one gran profile.</p>
+          <p className="text-xs text-muted-foreground mt-3">{t("landing.noCard")}</p>
         </div>
       </main>
 
       <footer className="text-center py-6 text-xs text-muted-foreground border-t space-y-2">
         <div className="flex items-center justify-center gap-4">
-          <a href="/guides" className="hover:text-foreground transition-colors">Guides</a>
+          <a href="/guides" className="hover:text-foreground transition-colors">{t("landing.footGuides")}</a>
           <span>·</span>
-          <a href="/faq" className="hover:text-foreground transition-colors">FAQ</a>
+          <a href="/faq" className="hover:text-foreground transition-colors">{t("landing.footFaq")}</a>
           <span>·</span>
-          <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+          <a href="/privacy" className="hover:text-foreground transition-colors">{t("landing.footPrivacy")}</a>
           <span>·</span>
-          <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
+          <a href="/terms" className="hover:text-foreground transition-colors">{t("landing.footTerms")}</a>
           <span>·</span>
-          <a href="mailto:hello@granwatch.app" className="hover:text-foreground transition-colors">Contact</a>
+          <a href="mailto:hello@granwatch.app" className="hover:text-foreground transition-colors">{t("landing.footContact")}</a>
         </div>
-        <p>© 2026 GranWatch — made with love, for every gran.</p>
+        <p>{t("landing.footMade")}</p>
       </footer>
     </div>
   );

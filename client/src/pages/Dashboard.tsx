@@ -10,8 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect } from "react";
 import { useWidgetSync } from "@/hooks/useWidgetSync";
 import { getPushToken } from "@/utils/push";
+import { useTranslation } from "react-i18next";
 
 export default function Dashboard() {
+  const { t, i18n } = useTranslation();
   // Sync elder data to iOS home-screen widget whenever the list changes
   useWidgetSync();
   const { user, isAuthenticated, loading, logout } = useAuth();
@@ -46,8 +48,8 @@ export default function Dashboard() {
   const registerPush = trpc.pushToken.register.useMutation();
   useEffect(() => {
     if (!isAuthenticated) return;
-    void getPushToken().then((t) => {
-      if (t) registerPush.mutate({ token: t.token, platform: t.platform });
+    void getPushToken().then((tok) => {
+      if (tok) registerPush.mutate({ token: tok.token, platform: tok.platform });
     });
   }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -66,7 +68,7 @@ export default function Dashboard() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Heart className="w-8 h-8 text-primary fill-primary animate-pulse" />
-          <p className="text-muted-foreground text-sm">Loading...</p>
+          <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
         </div>
       </div>
     );
@@ -75,7 +77,7 @@ export default function Dashboard() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Button asChild><a href={getSignInUrl()}>Sign in</a></Button>
+        <Button asChild><a href={getSignInUrl()}>{t("common.signIn")}</a></Button>
       </div>
     );
   }
@@ -105,7 +107,7 @@ export default function Dashboard() {
             size="icon"
             className="relative"
             onClick={() => navigate("/notifications")}
-            aria-label={unreadCount > 0 ? `Notifications — ${unreadCount} unread` : "Notifications"}
+            aria-label={unreadCount > 0 ? `${t("dashboard.notifications")} — ${unreadCount}` : t("dashboard.notifications")}
           >
             <Bell className="w-5 h-5" aria-hidden="true" />
             {unreadCount > 0 && (
@@ -122,7 +124,7 @@ export default function Dashboard() {
           <button
             onClick={() => navigate("/account")}
             className="w-9 h-9 rounded-full bg-primary text-primary-foreground text-sm font-bold flex items-center justify-center flex-shrink-0 hover:opacity-80 transition-opacity"
-            aria-label="My account"
+            aria-label={t("dashboard.myAccount")}
           >
             {user?.name ? user.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase() : "?"}
           </button>
@@ -133,10 +135,10 @@ export default function Dashboard() {
         {/* Greeting */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">
-            Hello, {user?.name?.split(" ")[0] ?? "there"} 👋
+            {t("dashboard.hello", { name: user?.name?.split(" ")[0] ?? t("dashboard.helloFallback") })}
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Here's how your grans are doing today.
+            {t("dashboard.sub")}
           </p>
         </div>
 
@@ -190,11 +192,11 @@ export default function Dashboard() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-0.5">
-                      {elder.memberCount} family member{elder.memberCount !== 1 ? "s" : ""}
+                      {t("dashboard.memberCount", { count: elder.memberCount })}
                     </p>
                     {elder.lastVisitDate && (
                       <p className="text-xs text-muted-foreground mt-1">
-                        Last visit: {new Date(elder.lastVisitDate).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                        {t("dashboard.lastVisit", { date: new Date(elder.lastVisitDate).toLocaleDateString(i18n.language, { day: "numeric", month: "short" }) })}
                       </p>
                     )}
                     <div className="mt-2 flex items-center gap-2 flex-wrap">
@@ -215,14 +217,14 @@ export default function Dashboard() {
                             "#dc2626",
                         }}
                       >
-                        {elder.daysSinceVisit >= 999 ? "No visits yet" :
-                         elder.status === "green" ? "All good" :
-                         elder.status === "yellow" ? "Due soon" :
-                         elder.status === "orange" ? "Overdue" :
-                         "⚠ Alert!"}
+                        {elder.daysSinceVisit >= 999 ? t("dashboard.noVisitsYet") :
+                         elder.status === "green" ? t("dashboard.allGood") :
+                         elder.status === "yellow" ? t("dashboard.dueSoon") :
+                         elder.status === "orange" ? t("dashboard.overdue") :
+                         t("dashboard.alertBadge")}
                       </span>
                       {birthdayDaysUntil === 0 && (
-                        <span className="text-xs font-semibold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">🎂 Today!</span>
+                        <span className="text-xs font-semibold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">{t("dashboard.bdayToday")}</span>
                       )}
                       {birthdayDaysUntil !== null && birthdayDaysUntil > 0 && (
                         <span className="text-xs font-semibold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">🎂 {birthdayDaysUntil}d</span>
@@ -236,17 +238,17 @@ export default function Dashboard() {
         ) : (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Heart className="w-12 h-12 text-muted-foreground/40 mb-4" />
-            <h2 className="font-semibold text-foreground mb-2">No gran profiles yet</h2>
+            <h2 className="font-semibold text-foreground mb-2">{t("dashboard.noProfilesTitle")}</h2>
             <p className="text-sm text-muted-foreground mb-6 max-w-xs">
-              Create a profile for your gran, or join an existing family with an invite code.
+              {t("dashboard.noProfilesSub")}
             </p>
             <div className="flex gap-3">
               <Button onClick={() => navigate("/create")}>
                 <Plus className="w-4 h-4 mr-2" />
-                Add a Gran
+                {t("dashboard.addGran")}
               </Button>
               <Button variant="outline" onClick={() => navigate("/join")}>
-                Join Family
+                {t("dashboard.joinFamily")}
               </Button>
             </div>
           </div>
@@ -257,10 +259,10 @@ export default function Dashboard() {
           <div className="mt-6 flex gap-3">
             <Button className="flex-1" onClick={() => navigate("/create")}>
               <Plus className="w-4 h-4 mr-2" />
-              Add a Gran
+              {t("dashboard.addGran")}
             </Button>
             <Button variant="outline" className="flex-1" onClick={() => navigate("/join")}>
-              Join Family
+              {t("dashboard.joinFamily")}
             </Button>
           </div>
         )}

@@ -8,6 +8,7 @@ import superjson from "superjson";
 import App from "./App";
 import { getSignInUrl } from "./const";
 import "./index.css";
+import "./i18n"; // 8-language i18n — must load before App renders
 import { Capacitor } from "@capacitor/core";
 import { SocialLogin } from "@capgo/capacitor-social-login";
 

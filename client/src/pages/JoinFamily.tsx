@@ -7,8 +7,10 @@ import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Heart, Users, Loader2 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function JoinFamily() {
+  const { t } = useTranslation();
   const { code } = useParams<{ code?: string }>();
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
@@ -28,14 +30,14 @@ export default function JoinFamily() {
   const joinFamily = trpc.elders.join.useMutation({
     onSuccess: (elder) => {
       clearStashedReturnPath();
-      toast.success(`Welcome to ${elder?.name}'s family! 💚`);
+      toast.success(t("join.welcomeToast", { name: elder?.name }));
       navigate(`/elder/${elder?.id}`);
     },
     onError: (e) => {
       // If already a member, just navigate to the elder profile
       if (e.message.includes("already a member")) {
         clearStashedReturnPath();
-        toast.info("You're already part of this family!");
+        toast.info(t("join.alreadyMember"));
         navigate("/dashboard");
       } else {
         toast.error(e.message);
@@ -71,12 +73,12 @@ export default function JoinFamily() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4">
         <Heart className="w-12 h-12 text-primary fill-primary" />
-        <h1 className="text-2xl font-bold">Join Gran's Family</h1>
+        <h1 className="text-2xl font-bold">{t("join.signInTitle")}</h1>
         <p className="text-muted-foreground text-sm max-w-xs">
-          Sign in to join the family and start tracking visits.
+          {t("join.signInSub")}
         </p>
         <Button asChild className="w-full max-w-xs h-12">
-          <a href={getSignInUrl(returnPath)}>Sign in to join</a>
+          <a href={getSignInUrl(returnPath)}>{t("join.signInBtn")}</a>
         </Button>
       </div>
     );
@@ -87,8 +89,8 @@ export default function JoinFamily() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-4">
         <Loader2 className="w-10 h-10 text-primary animate-spin" />
-        <h1 className="text-xl font-bold text-foreground">Joining the family...</h1>
-        <p className="text-muted-foreground text-sm">Hang tight, we're adding you now.</p>
+        <h1 className="text-xl font-bold text-foreground">{t("join.joiningTitle")}</h1>
+        <p className="text-muted-foreground text-sm">{t("join.joiningSub")}</p>
       </div>
     );
   }
@@ -100,20 +102,20 @@ export default function JoinFamily() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="font-bold text-foreground">Join a Family</h1>
+        <h1 className="font-bold text-foreground">{t("join.headerTitle")}</h1>
         <div className="w-10" />
       </header>
 
       <main className="flex-1 px-5 py-12 max-w-lg mx-auto w-full flex flex-col items-center">
         <Users className="w-16 h-16 text-primary mb-6" />
-        <h2 className="text-2xl font-bold text-foreground mb-2 text-center">Enter the invite code</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-2 text-center">{t("join.enterCode")}</h2>
         <p className="text-muted-foreground text-sm text-center mb-8 max-w-xs">
-          Ask a family member for the 8-character code from Gran's profile page.
+          {t("join.codeHelp")}
         </p>
 
         <div className="w-full max-w-xs space-y-4">
           <Input
-            placeholder="e.g. ABCD1234"
+            placeholder={t("join.codePlaceholder")}
             value={inviteCode}
             onChange={e => setInviteCode(e.target.value.toUpperCase())}
             className="h-14 text-center text-2xl font-mono tracking-widest uppercase"
@@ -126,12 +128,12 @@ export default function JoinFamily() {
             disabled={inviteCode.length < 6 || joinFamily.isPending}
             onClick={() => joinFamily.mutate({ inviteCode })}
           >
-            {joinFamily.isPending ? "Joining..." : "Join Family"}
+            {joinFamily.isPending ? t("join.joiningBtn") : t("join.joinBtn")}
           </Button>
         </div>
 
         <p className="text-xs text-muted-foreground mt-8 text-center max-w-xs">
-          By joining, you'll be able to see Gran's status, log visits, and book upcoming slots.
+          {t("join.joinFooter")}
         </p>
       </main>
     </div>
