@@ -67,7 +67,7 @@ export default function Account() {
       // Update the cached current user so the new name shows immediately.
       utils.auth.me.setData(undefined, updated);
       await utils.auth.me.invalidate().catch(() => {});
-      toast.success("Name saved 💛");
+      toast.success(t("account.toastNameSaved"));
     } catch (err: any) {
       toast.error(err?.message ?? "Could not save your name. Please try again.");
     }
@@ -77,7 +77,7 @@ export default function Account() {
     setDeleting(true);
     try {
       await deleteAccountMutation.mutateAsync();
-      toast.success("Account deleted. Goodbye 💛");
+      toast.success(t("account.toastDeleted"));
       // Give toast time to show, then log out
       setTimeout(() => logout(), 1500);
     } catch (err: any) {
@@ -97,7 +97,7 @@ export default function Account() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Button asChild><a href={getSignInUrl()}>Sign in</a></Button>
+        <Button asChild><a href={getSignInUrl()}>{t("common.signIn")}</a></Button>
       </div>
     );
   }
@@ -109,7 +109,7 @@ export default function Account() {
   async function handleShareApp() {
     const shareData = {
       title: "GranWatch",
-      text: "Let's take good care of Gran 💛 — track family visits and make sure she's never forgotten.",
+      text: t("account.shareText"),
       url: OG_SHARE_URL,
     };
     if (navigator.share) {
@@ -142,7 +142,7 @@ export default function Account() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
             <ArrowLeft className="w-5 h-5" aria-hidden="true" />
           </Button>
-          <span className="font-bold text-foreground">My Account</span>
+          <span className="font-bold text-foreground">{t("dashboard.myAccount")}</span>
         </div>
       </header>
 
@@ -153,17 +153,16 @@ export default function Account() {
             {initials}
           </div>
           <h1 className="text-xl font-bold text-foreground">
-            {nameMissing ? "Welcome 💛" : user?.name}
+            {nameMissing ? t("account.welcome") : user?.name}
           </h1>
         </div>
 
         {/* Gentle prompt when the name is missing (common for Apple Private Relay) */}
         {nameMissing && (
           <div className="bg-primary/10 border border-primary/20 rounded-2xl px-5 py-4">
-            <p className="text-sm font-medium text-foreground mb-0.5">Add your name</p>
+            <p className="text-sm font-medium text-foreground mb-0.5">{t("account.addYourName")}</p>
             <p className="text-xs text-muted-foreground">
-              Looks like we don't have your name yet. Adding it helps your family
-              recognise your visits and notes. You can set it below 👇
+              {t("account.addNameSub")}
             </p>
           </div>
         )}
@@ -175,7 +174,7 @@ export default function Account() {
             <User className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-6" aria-hidden="true" />
             <div className="min-w-0 flex-1">
               <Label htmlFor="account-name" className="text-xs text-muted-foreground mb-1.5 block">
-                Full name
+                {t("account.fullName")}
               </Label>
               <div className="flex items-center gap-2">
                 <Input
@@ -185,18 +184,18 @@ export default function Account() {
                   onKeyDown={e => {
                     if (e.key === "Enter") handleSaveName();
                   }}
-                  placeholder="Your name"
+                  placeholder={t("account.yourNamePlaceholder")}
                   maxLength={100}
                   autoComplete="name"
                   className="flex-1"
                 />
                 <Button onClick={handleSaveName} disabled={!canSaveName} className="flex-shrink-0">
                   {updateProfileMutation.isPending ? (
-                    "Saving…"
+                    t("common.saving")
                   ) : (
                     <>
                       <Check className="w-4 h-4 mr-1.5" aria-hidden="true" />
-                      Save
+                      {t("common.save")}
                     </>
                   )}
                 </Button>
@@ -206,7 +205,7 @@ export default function Account() {
           <div className="flex items-center gap-4 px-5 py-4">
             <Mail className="w-5 h-5 text-muted-foreground flex-shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground mb-0.5">Email address</p>
+              <p className="text-xs text-muted-foreground mb-0.5">{t("account.emailAddress")}</p>
               <p className="text-sm font-medium text-foreground truncate">{user?.email ?? "—"}</p>
             </div>
           </div>
@@ -222,7 +221,7 @@ export default function Account() {
           onClick={handleShareApp}
         >
           <Share2 className="w-4 h-4 mr-2" />
-          {copied ? "Link copied!" : "Share GranWatch"}
+          {copied ? t("account.linkCopied") : t("account.shareGranWatch")}
         </Button>
 
         {/* Language */}
@@ -239,14 +238,14 @@ export default function Account() {
           onClick={logout}
         >
           <LogOut className="w-4 h-4 mr-2" />
-          Sign out
+          {t("account.signOut")}
         </Button>
 
         {/* Legal links */}
         <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
-          <a href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</a>
+          <a href="/privacy" className="hover:text-foreground transition-colors">{t("landing.footPrivacy")}</a>
           <span>·</span>
-          <a href="/terms" className="hover:text-foreground transition-colors">Terms of Service</a>
+          <a href="/terms" className="hover:text-foreground transition-colors">{t("landing.footTerms")}</a>
         </div>
 
         {/* Delete account — shown at bottom, low prominence */}
@@ -259,27 +258,24 @@ export default function Account() {
                 className="w-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 text-xs"
               >
                 <Trash2 className="w-3.5 h-3.5 mr-1.5" />
-                Delete account
+                {t("account.deleteAccount")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete your account?</AlertDialogTitle>
+                <AlertDialogTitle>{t("account.deleteAccountTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete your account and all your personal data.
-                  Any gran profiles you administer will also be deleted — make sure to
-                  transfer admin rights first if someone else should keep the profile.
-                  This action cannot be undone.
+                  {t("account.deleteAccountDesc")}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-destructive hover:bg-destructive/90"
                   onClick={handleDeleteAccount}
                   disabled={deleting}
                 >
-                  {deleting ? "Deleting…" : "Yes, delete everything"}
+                  {deleting ? t("account.deleting") : t("account.yesDeleteEverything")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

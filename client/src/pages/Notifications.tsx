@@ -4,14 +4,16 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { ArrowLeft, Bell, BellOff, CheckCheck } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const TYPE_LABELS: Record<string, { label: string; icon: string; color: string }> = {
-  nudge: { label: "Gentle nudge", icon: "💛", color: "text-yellow-600" },
-  red_alert: { label: "Red alert!", icon: "🚨", color: "text-red-600" },
-  weekly_digest: { label: "Weekly update", icon: "📋", color: "text-blue-600" },
+  nudge: { label: "notif.typeNudge", icon: "💛", color: "text-yellow-600" },
+  red_alert: { label: "notif.typeRedAlert", icon: "🚨", color: "text-red-600" },
+  weekly_digest: { label: "notif.typeWeekly", icon: "📋", color: "text-blue-600" },
 };
 
 export default function Notifications() {
+  const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
 
@@ -23,7 +25,7 @@ export default function Notifications() {
 
   const markAllRead = trpc.notifications.markAllRead.useMutation({
     onSuccess: () => {
-      toast.success("All notifications marked as read");
+      toast.success(t("notif.toastAllRead"));
       utils.notifications.list.invalidate();
     },
   });
@@ -47,7 +49,7 @@ export default function Notifications() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
           <ArrowLeft className="w-5 h-5" aria-hidden="true" />
         </Button>
-        <h1 className="font-bold text-foreground">Notifications</h1>
+        <h1 className="font-bold text-foreground">{t("dashboard.notifications")}</h1>
         {unread.length > 0 ? (
           <Button
             variant="ghost"
@@ -56,7 +58,7 @@ export default function Notifications() {
             disabled={markAllRead.isPending}
           >
             <CheckCheck className="w-4 h-4 mr-1" />
-            All read
+            {t("notif.allRead")}
           </Button>
         ) : (
           <div className="w-20" />
@@ -88,20 +90,20 @@ export default function Notifications() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <p className={`font-semibold text-sm ${meta.color}`}>{meta.label}</p>
+                        <p className={`font-semibold text-sm ${meta.color}`}>{t(meta.label)}</p>
                         {n.elderName && (
                           <span className="text-xs text-muted-foreground truncate">— {n.elderName}</span>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground flex-shrink-0">
-                        {new Date(n.sentAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                        {new Date(n.sentAt).toLocaleDateString(i18n.language, { day: "numeric", month: "short" })}
                       </p>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {n.type === "nudge" && `${n.elderName ?? "Gran"} is waiting for a visit.`}
-                      {n.type === "red_alert" && `${n.elderName ?? "Gran"} hasn't had a visitor in a long time!`}
-                      {n.type === "weekly_digest" && "Family visit update."}
-                      {!["nudge", "red_alert", "weekly_digest"].includes(n.type) && "Tap to view."}
+                      {n.type === "nudge" && t("notif.nudgeBody", { name: n.elderName ?? t("create.defaultGran") })}
+                      {n.type === "red_alert" && t("notif.redAlertBody", { name: n.elderName ?? t("create.defaultGran") })}
+                      {n.type === "weekly_digest" && t("notif.weeklyBody")}
+                      {!["nudge", "red_alert", "weekly_digest"].includes(n.type) && t("notif.tapToView")}
                     </p>
                     {!n.read && (
                       <div className="w-1.5 h-1.5 bg-primary rounded-full mt-1.5" />
@@ -114,9 +116,9 @@ export default function Notifications() {
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <BellOff className="w-12 h-12 text-muted-foreground/40 mb-4" />
-            <h2 className="font-semibold text-foreground mb-2">All quiet</h2>
+            <h2 className="font-semibold text-foreground mb-2">{t("notif.allQuiet")}</h2>
             <p className="text-sm text-muted-foreground">
-              No notifications yet. You'll hear from us when Gran needs attention.
+              {t("notif.emptySub")}
             </p>
           </div>
         )}

@@ -17,6 +17,7 @@ import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { isNativeApp } from "@/utils/platform";
 import { initRevenueCat } from "@/utils/iap";
 import { COUNTRIES } from "@/lib/countries";
+import { useTranslation } from "react-i18next";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +31,7 @@ import {
 
 // Inline card component for Gran+ status in settings
 function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { elderId: number; elderName: string; onManage: () => void }) {
+  const { t } = useTranslation();
   const { data: subStatus } = trpc.subscription.status.useQuery({ elderId });
   const cancellationPending = !!subStatus?.cancellationRequestedAt;
   const onTrial = !!subStatus?.trialActive;
@@ -43,45 +45,46 @@ function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { el
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-primary" />
           <Label className="text-sm font-semibold text-primary">
-            {onTrial ? "Gran+ Free Trial" : "Gran+ Active"}
+            {onTrial ? t("settings.granPlusTrial") : t("settings.granPlusActive")}
           </Label>
         </div>
         {cancellationPending ? (
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-            <AlertTriangle className="w-3 h-3" /> Cancellation pending
+            <AlertTriangle className="w-3 h-3" /> {t("settings.cancellationPending")}
           </span>
         ) : onTrial ? (
           <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
             trialDays !== null && trialDays <= 30 ? "text-amber-700 bg-amber-100" : "text-green-700 bg-green-100"
           }`}>
-            <CheckCircle2 className="w-3 h-3" /> {trialDays !== null ? `${trialDays} days left` : "Active"}
+            <CheckCircle2 className="w-3 h-3" /> {trialDays !== null ? t("settings.daysLeft", { count: trialDays }) : t("settings.activeBadge")}
           </span>
         ) : (
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
-            <CheckCircle2 className="w-3 h-3" /> Active
+            <CheckCircle2 className="w-3 h-3" /> {t("settings.activeBadge")}
           </span>
         )}
       </div>
       {onTrial && (
         <p className="text-xs text-muted-foreground">
-          All Gran+ features are included free for your first 4 months. Subscribe anytime to keep them running without a countdown.
+          {t("settings.trialCardNote")}
         </p>
       )}
 
       {cancellationPending && (
         <p className="text-xs text-amber-700">
-          Cancellation requested. Gran+ stays active until the end of the billing period.
+          {t("settings.cancelPendingNote")}
         </p>
       )}
       <Button variant="outline" size="sm" className="w-full" onClick={onManage}>
         <Sparkles className="w-4 h-4 mr-2" />
-        Manage Gran+ Subscription
+        {t("settings.manageSub")}
       </Button>
     </div>
   );
 }
 
 export default function ElderSettings() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const elderId = parseInt(id ?? "0");
   const { isAuthenticated, user } = useAuth();
@@ -178,7 +181,7 @@ export default function ElderSettings() {
 
   const leaveFamily = trpc.elders.leave.useMutation({
     onSuccess: () => {
-      toast.success("You have left this family.");
+      toast.success(t("settings.toastLeft"));
       utils.elders.list.invalidate();
       navigate("/dashboard");
     },
@@ -187,7 +190,7 @@ export default function ElderSettings() {
 
   const stepDown = trpc.elders.stepDownAsAdmin.useMutation({
     onSuccess: () => {
-      toast.success("You are now an ordinary member of this family.");
+      toast.success(t("settings.toastSteppedDown"));
       utils.elders.get.invalidate({ elderId });
       utils.elders.list.invalidate();
     },
@@ -196,7 +199,7 @@ export default function ElderSettings() {
 
   const deleteElder = trpc.elders.delete.useMutation({
     onSuccess: () => {
-      toast.success("Profile deleted.");
+      toast.success(t("settings.toastDeleted"));
       utils.elders.list.invalidate();
       navigate("/dashboard");
     },
@@ -224,7 +227,7 @@ export default function ElderSettings() {
         careNotes: isPaid ? careNotes : undefined,
       }, {
         onSuccess: () => {
-          toast.success("Settings saved!");
+          toast.success(t("settings.toastSaved"));
           navigate(`/elder/${elderId}`);
         },
       });
@@ -237,7 +240,7 @@ export default function ElderSettings() {
       updateNotifPrefs.mutate({ elderId, notificationsEnabled, socialNotificationsEnabled });
     }
     if (!isAdmin) {
-      toast.success("Preferences saved!");
+      toast.success(t("settings.toastPrefsSaved"));
       navigate(`/elder/${elderId}`);
     }
   };
@@ -248,14 +251,14 @@ export default function ElderSettings() {
         <Button variant="ghost" size="icon" onClick={() => navigate(`/elder/${elderId}`)} aria-label="Back to gran profile">
           <ArrowLeft className="w-5 h-5" aria-hidden="true" />
         </Button>
-        <h1 className="font-bold text-foreground">Settings</h1>
+        <h1 className="font-bold text-foreground">{t("settings.title")}</h1>
         <div className="w-10" />
       </header>
 
       <main className="flex-1 px-5 py-6 max-w-lg mx-auto w-full space-y-6">
         {!isAdmin && (
           <div className="bg-muted rounded-xl p-4 text-sm text-muted-foreground text-center">
-            Only the profile admin can change gran's settings. You can update your personal preferences below.
+            {t("settings.adminOnly")}
           </div>
         )}
 
@@ -276,7 +279,7 @@ export default function ElderSettings() {
         {/* Name — admin only */}
         {isAdmin && (
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Gran's name</Label>
+            <Label className="text-sm font-semibold">{t("create.granName")}</Label>
             <Input
               value={name}
               onChange={e => setName(e.target.value)}
@@ -290,34 +293,34 @@ export default function ElderSettings() {
           <div className="space-y-2">
             <Label className="text-sm font-semibold flex items-center gap-2">
               <Cake className="w-4 h-4 text-primary" />
-              Gran's birthday <span className="font-normal text-muted-foreground">(optional)</span>
+              {t("create.granBirthday")} <span className="font-normal text-muted-foreground">{t("common.optional")}</span>
             </Label>
             <BirthdayPicker value={birthdayInput} onChange={setBirthdayInput} />
-            <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before their birthday. Leave blank to disable.</p>
+            <p className="text-xs text-muted-foreground">{t("settings.bdayHelp2")}</p>
           </div>
         )}
 
         {/* Location — for gift/flower delivery partners (admin only) */}
         {isAdmin && (
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Where does Gran live? <span className="font-normal text-muted-foreground">(optional)</span></Label>
+            <Label className="text-sm font-semibold">{t("create.whereLive")} <span className="font-normal text-muted-foreground">{t("common.optional")}</span></Label>
             <select
               value={country}
               onChange={e => setCountry(e.target.value)}
               className="h-12 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="">Select country…</option>
+              <option value="">{t("create.selectCountry")}</option>
               {COUNTRIES.map(c => (
                 <option key={c.code} value={c.code}>{c.name}</option>
               ))}
             </select>
             <Input
-              placeholder="City or town (optional)"
+              placeholder={t("create.cityPlaceholder")}
               value={city}
               onChange={e => setCity(e.target.value)}
               className="h-12"
             />
-            <p className="text-xs text-muted-foreground">Used only to find gift &amp; flower delivery services near Gran.</p>
+            <p className="text-xs text-muted-foreground">{t("create.locationHelp")}</p>
           </div>
         )}
 
@@ -325,8 +328,8 @@ export default function ElderSettings() {
         {isAdmin && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Alert after</Label>
-              <span className="text-primary font-bold text-sm">{threshold} days</span>
+              <Label className="text-sm font-semibold">{t("create.alertAfter")}</Label>
+              <span className="text-primary font-bold text-sm">{t("create.daysValue", { count: threshold })}</span>
             </div>
             <Slider
               min={7}
@@ -336,8 +339,8 @@ export default function ElderSettings() {
               onValueChange={([v]) => setThreshold(v)}
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>7 days</span>
-              <span>60 days</span>
+              <span>{t("create.days7")}</span>
+              <span>{t("create.days60")}</span>
             </div>
           </div>
         )}
@@ -351,12 +354,10 @@ export default function ElderSettings() {
                   ? <Bell className="w-4 h-4 text-primary" />
                   : <BellOff className="w-4 h-4 text-muted-foreground" />
                 }
-                <Label className="text-sm font-semibold">My notifications</Label>
+                <Label className="text-sm font-semibold">{t("settings.myNotifications")}</Label>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                {notificationsEnabled
-                  ? "You'll receive nudges and alerts for this gran profile."
-                  : "Notifications are off. You won't be nudged for this profile."}
+                {notificationsEnabled ? t("settings.notifOn") : t("settings.notifOff")}
               </p>
             </div>
             <Switch
@@ -367,9 +368,9 @@ export default function ElderSettings() {
           {notificationsEnabled && (
             <div className="flex items-center justify-between border-t pt-4">
               <div className="flex-1">
-                <Label className="text-sm font-semibold">Family visit updates</Label>
+                <Label className="text-sm font-semibold">{t("settings.familyUpdates")}</Label>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Get a ping when someone else visits — e.g. "Barry just visited {elder.name}".
+                  {t("settings.familyUpdatesSub", { name: elder.name })}
                 </p>
               </div>
               <Switch
@@ -385,11 +386,11 @@ export default function ElderSettings() {
         {isAdmin && (
           <div className={`space-y-2 ${!isPaid ? "opacity-75" : ""}`}>
             <div className="flex items-center gap-2">
-              <Label className="text-sm font-semibold">Care notes</Label>
+              <Label className="text-sm font-semibold">{t("settings.careNotes")}</Label>
               {!isPaid && <Lock className="w-3.5 h-3.5 text-muted-foreground" />}
             </div>
             <Textarea
-              placeholder="Reminders for visitors — medication, dietary needs, things they love..."
+              placeholder={t("settings.careNotesPlaceholder")}
               value={careNotes}
               onChange={e => setCareNotes(e.target.value)}
               rows={4}
@@ -405,7 +406,7 @@ export default function ElderSettings() {
                 onClick={openGranPlus}
               >
                 <Sparkles className="w-3.5 h-3.5 mr-1" />
-                Unlock with Gran+
+                {t("care.unlockCta")}
               </Button>
             )}
           </div>
@@ -470,7 +471,7 @@ export default function ElderSettings() {
           onClick={handleSave}
           disabled={updateElder.isPending || updateNotifPrefs.isPending}
         >
-          {updateElder.isPending || updateNotifPrefs.isPending ? "Saving..." : "Save Settings"}
+          {updateElder.isPending || updateNotifPrefs.isPending ? t("settings.saving") : t("settings.saveSettings")}
         </Button>
 
         {/* Delete this gran — admin only. Destructive: removes the profile and
@@ -479,11 +480,10 @@ export default function ElderSettings() {
           <div className="rounded-xl border border-destructive/30 p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Trash2 className="w-4 h-4 text-destructive" />
-              <Label className="text-sm font-semibold text-destructive">Delete this gran</Label>
+              <Label className="text-sm font-semibold text-destructive">{t("settings.deleteGran")}</Label>
             </div>
             <p className="text-xs text-muted-foreground">
-              Permanently removes {elder.name}'s profile and all visits, photos, care notes, medications,
-              appointments and history — for every family member. This cannot be undone.
+              {t("settings.deleteGranDesc", { name: elder.name })}
             </p>
             <Button
               variant="outline"
@@ -492,7 +492,7 @@ export default function ElderSettings() {
               onClick={() => setDeleteDialogOpen(true)}
             >
               <Trash2 className="w-4 h-4 mr-2" />
-              Delete {elder.name}'s profile
+              {t("settings.deleteGranBtn", { name: elder.name })}
             </Button>
           </div>
         )}
@@ -502,11 +502,11 @@ export default function ElderSettings() {
         <div className="rounded-xl border border-destructive/30 p-4 space-y-3">
           <div className="flex items-center gap-2">
             <LogOut className="w-4 h-4 text-destructive" />
-            <Label className="text-sm font-semibold text-destructive">Leave this family</Label>
+            <Label className="text-sm font-semibold text-destructive">{t("settings.leaveFamily")}</Label>
           </div>
           <p className="text-xs text-muted-foreground">
-            You'll be removed from {elder.name}'s profile and will no longer receive notifications or see visit history. You can rejoin with the invite code.
-            {isAdmin && " As an admin, you first need another family member promoted to admin (Family tab on the profile)."}
+            {t("settings.leaveDesc", { name: elder.name })}
+            {isAdmin && " " + t("settings.leaveAdminNote")}
           </p>
           {isAdmin && (
             <Button
@@ -516,7 +516,7 @@ export default function ElderSettings() {
               onClick={() => stepDown.mutate({ elderId })}
               disabled={stepDown.isPending}
             >
-              {stepDown.isPending ? "Stepping down…" : "Step down as admin (stay a member)"}
+              {stepDown.isPending ? t("settings.steppingDown") : t("settings.stepDown")}
             </Button>
           )}
           <Button
@@ -526,7 +526,7 @@ export default function ElderSettings() {
             onClick={() => setLeaveDialogOpen(true)}
           >
             <LogOut className="w-4 h-4 mr-2" />
-            Leave {elder.name}'s family
+            {t("settings.leaveBtn", { name: elder.name })}
           </Button>
         </div>
       </main>
@@ -555,19 +555,19 @@ export default function ElderSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-destructive" />
-              Leave {elder.name}'s family?
+              {t("settings.leaveTitle", { name: elder.name })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              You'll be removed from this profile immediately. You can rejoin later using the family invite code, but your visit history will remain.
+              {t("settings.leaveDialogDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => leaveFamily.mutate({ elderId })}
             >
-              {leaveFamily.isPending ? "Leaving..." : "Yes, leave family"}
+              {leaveFamily.isPending ? t("settings.leaving") : t("settings.yesLeave")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -579,21 +579,19 @@ export default function ElderSettings() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-destructive" />
-              Delete {elder.name}'s profile?
+              {t("settings.deleteTitle", { name: elder.name })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This permanently removes {elder.name} and ALL of her data — visits, photos, care notes,
-              medications, appointments and history — for every family member, not just you.
-              This cannot be undone.
+              {t("settings.deleteDialogDesc", { name: elder.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => deleteElder.mutate({ elderId })}
             >
-              {deleteElder.isPending ? "Deleting..." : "Yes, delete forever"}
+              {deleteElder.isPending ? t("settings.deleting") : t("settings.yesDeleteForever")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

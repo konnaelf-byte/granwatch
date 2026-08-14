@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export type VisitStatus = "green" | "yellow" | "orange" | "red";
 
@@ -68,7 +69,7 @@ function GrandmaAvatar({ size }: { size: number }) {
 const NO_VISITS_COLORS = {
   stroke: "#94a3b8", // slate-400
   glow: "none",
-  label: "No visits yet",
+  label: "ring.noVisits",
   overlay: "transparent",
 };
 
@@ -76,25 +77,25 @@ const STATUS_COLORS: Record<VisitStatus, { stroke: string; glow: string; label: 
   green: {
     stroke: "#22c55e",
     glow: "drop-shadow(0 0 10px rgba(34, 197, 94, 0.5))",
-    label: "All good",
+    label: "ring.allGood",
     overlay: "transparent",
   },
   yellow: {
     stroke: "#eab308",
     glow: "drop-shadow(0 0 12px rgba(234, 179, 8, 0.5))",
-    label: "Due soon",
+    label: "ring.dueSoon",
     overlay: "transparent",
   },
   orange: {
     stroke: "#f97316",
     glow: "drop-shadow(0 0 14px rgba(249, 115, 22, 0.6))",
-    label: "Overdue",
+    label: "ring.overdue",
     overlay: "transparent",
   },
   red: {
     stroke: "#ef4444",
     glow: "drop-shadow(0 0 20px rgba(239, 68, 68, 0.9))",
-    label: "Alert!",
+    label: "ring.alert",
     overlay: "rgba(239, 68, 68, 0.35)",
   },
 };
@@ -109,6 +110,7 @@ export function StatusRing({
   className = "",
   myDaysSince,
 }: StatusRingProps) {
+  const { t } = useTranslation();
   // ── Personal flip counter ──────────────────────────────────────────────────
   const flippable = myDaysSince !== undefined;
   const [flipped, setFlipped] = useState(false);
@@ -172,15 +174,13 @@ export function StatusRing({
 
   const daysText =
     hasNoVisits
-      ? "No visits logged yet"
+      ? t("ring.noVisitsLogged")
       : daysSinceVisit === 0
-      ? "Visited today!"
-      : daysSinceVisit === 1
-      ? "1 day ago"
-      : `${daysSinceVisit} days ago`;
+      ? t("ring.visitedToday")
+      : t("elder.daysAgo", { count: daysSinceVisit });
 
   // Accessible description for VoiceOver / TalkBack
-  const ringAriaLabel = `${name} — ${colors.label}. ${daysText}.`;
+  const ringAriaLabel = `${name} — ${t(colors.label)}. ${daysText}.`;
 
   return (
     <div
@@ -314,11 +314,7 @@ export function StatusRing({
                     className="font-semibold text-center leading-snug px-2"
                     style={{ fontSize: Math.max(imgSize * 0.095, 10) }}
                   >
-                    You haven't
-                    <br />
-                    logged a
-                    <br />
-                    visit yet
+                    {t("ring.youNoVisit")}
                   </span>
                 ) : (
                   <>
@@ -332,9 +328,7 @@ export function StatusRing({
                       className="font-medium text-center leading-tight opacity-90"
                       style={{ fontSize: Math.max(imgSize * 0.085, 9) }}
                     >
-                      day{myDaysSince === 1 ? "" : "s"} since
-                      <br />
-                      your visit
+                      {t("ring.sinceYour", { count: myDaysSince })}
                     </span>
                   </>
                 )}
@@ -353,7 +347,7 @@ export function StatusRing({
           {daysText}
         </div>
         <div className="text-xs text-muted-foreground mt-0.5 font-medium uppercase tracking-wide">
-          {colors.label}
+          {t(colors.label)}
         </div>
       </div>
 

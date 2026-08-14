@@ -6,6 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import i18next from "i18next";
 
 interface BirthdayPickerProps {
   /** "YYYY-MM-DD" or "" */
@@ -13,10 +14,9 @@ interface BirthdayPickerProps {
   onChange: (value: string) => void;
 }
 
-const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
-];
+const MONTHS = Array.from({ length: 12 }, (_, i) =>
+  new Intl.DateTimeFormat(i18next.language || "en", { month: "long" }).format(new Date(2000, i, 1))
+);
 
 /**
  * iOS WebKit (iPhone/iPod + iPadOS Safari). On these devices BOTH native

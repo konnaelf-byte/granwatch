@@ -7,6 +7,7 @@ import { Star, Sparkles, CreditCard, XCircle, CheckCircle2, AlertTriangle } from
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocalizedPricing } from "@/utils/geolocation";
+import { useTranslation } from "react-i18next";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,15 +28,16 @@ interface GranPlusModalProps {
 }
 
 const FEATURES = [
-  "Routines — e.g. prescriptions, physio, plants",
-  "Appointments — e.g. doctor, hairdresser",
-  "Care notes visible to all visitors",
-  "Photos on visit logs",
-  "Mood notes & mood trend insights",
-  "Unlimited family members",
+  "landing.plusFeat1",
+  "landing.plusFeat2",
+  "landing.plusFeat3",
+  "landing.plusFeat4",
+  "landing.plusFeat5",
+  "landing.plusFeat6",
 ];
 
 export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin = false }: GranPlusModalProps) {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
@@ -56,7 +58,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
 
   const requestCancellation = trpc.subscription.requestCancellation.useMutation({
     onSuccess: () => {
-      toast.success("Cancellation request sent. Gran+ stays active until confirmed.");
+      toast.success(t("plus.toastCancelSent"));
       utils.subscription.status.invalidate({ elderId });
       utils.elders.get.invalidate({ elderId });
       setCancelDialogOpen(false);
@@ -66,11 +68,11 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
 
   const handleSubscribe = () => {
     if (!termsAccepted) {
-      toast.error("Please accept the terms before subscribing.");
+      toast.error(t("plus.errAcceptTerms"));
       return;
     }
     if (!user) {
-      toast.error("Please sign in to subscribe.");
+      toast.error(t("plus.errSignIn"));
       return;
     }
     createCheckout.mutate({ elderId });
@@ -97,17 +99,17 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              Gran+ for {elderName}
+              {t("plus.title", { name: elderName })}
             </DialogTitle>
           </DialogHeader>
 
           {/* Price */}
           <div className="bg-primary/10 rounded-xl p-4 text-center mb-2">
             <div className="text-3xl font-bold text-primary">{totalDisplay}</div>
-            <div className="text-sm text-muted-foreground">per month</div>
+            <div className="text-sm text-muted-foreground">{t("plus.perMonth")}</div>
             {onTrial && trialDays !== null && (
               <div className="mt-2 text-sm font-semibold text-primary">
-                Included free for your first 4 months · {trialDays} day{trialDays === 1 ? "" : "s"} left
+                {t("plus.trialLine", { count: trialDays })}
               </div>
             )}
           </div>
@@ -118,12 +120,12 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
               {cancellationPending ? (
                 <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-700 px-4 py-2 rounded-full text-sm font-semibold">
                   <AlertTriangle className="w-4 h-4" />
-                  Cancellation requested
+                  {t("plus.cancellationRequested")}
                 </div>
               ) : (
                 <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold">
                   <CheckCircle2 className="w-4 h-4" />
-                  Gran+ is active
+                  {t("plus.active")}
                 </div>
               )}
             </div>
@@ -131,12 +133,12 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
 
           {/* Features list */}
           <div className="mb-4">
-            <p className="text-sm font-semibold text-foreground mb-2">What you unlock:</p>
+            <p className="text-sm font-semibold text-foreground mb-2">{t("plus.whatYouUnlock")}</p>
             <ul className="space-y-1.5">
               {FEATURES.map(f => (
                 <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
                   <Star className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5 fill-primary" />
-                  {f}
+                  {t(f)}
                 </li>
               ))}
             </ul>
@@ -148,7 +150,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
               <>
                 {onTrial && (
                   <p className="text-center text-xs text-muted-foreground">
-                    Subscribing now starts billing immediately and removes the trial countdown.
+                    {t("plus.trialSubscribeNote")}
                   </p>
                 )}
                 <div className="flex items-start gap-3 bg-muted/50 rounded-xl p-3">
@@ -159,7 +161,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
                     className="mt-0.5 flex-shrink-0"
                   />
                   <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
-                    I understand that Gran+ subscriptions are <strong className="text-foreground">non-refundable</strong>. Payments are charged monthly and you may cancel at any time to stop future charges. No refunds are issued for partial months.
+                    {t("plus.termsLabel")}
                   </label>
                 </div>
 
@@ -169,10 +171,10 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
                   disabled={!termsAccepted || createCheckout.isPending}
                 >
                   <CreditCard className="w-4 h-4" />
-                  {createCheckout.isPending ? "Redirecting..." : `Subscribe — ${totalDisplay}/mo`}
+                  {createCheckout.isPending ? t("plus.redirecting") : t("plus.subscribePrice", { price: totalDisplay })}
                 </Button>
                 <p className="text-center text-xs text-muted-foreground">
-                  Secure payment via Lemon Squeezy. Cancel anytime.
+                  {t("plus.securePayment")}
                 </p>
               </>
             ) : (
@@ -185,17 +187,17 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
                     onClick={() => setCancelDialogOpen(true)}
                   >
                     <XCircle className="w-4 h-4 mr-2" />
-                    Cancel Gran+
+                    {t("plus.cancelPlus")}
                   </Button>
                 )}
                 {cancellationPending && (
                   <p className="text-xs text-amber-600 text-center px-2">
-                    Cancellation has been requested. Gran+ will stay active until the end of the billing period. No further charges will be made.
+                    {t("plus.cancellationPendingLong")}
                   </p>
                 )}
                 {!isAdmin && (
                   <p className="text-xs text-muted-foreground text-center px-2">
-                    Only the profile admin can cancel Gran+. Contact your family admin if you need to cancel.
+                    {t("plus.onlyAdminCancel")}
                   </p>
                 )}
               </>
@@ -210,25 +212,25 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="w-5 h-5 text-destructive" />
-              Cancel Gran+ for {elderName}?
+              {t("plus.cancelTitle", { name: elderName })}
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
               <span className="block">
-                A cancellation request will be sent to the GranWatch owner, who will cancel the subscription in Lemon Squeezy.
+                {t("plus.cancelDesc1")}
               </span>
               <span className="block font-medium text-foreground">
-                Gran+ features remain active until the end of the current billing period. No refund will be issued for partial months.
+                {t("plus.cancelDesc2")}
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep Gran+</AlertDialogCancel>
+            <AlertDialogCancel>{t("plus.keepPlus")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => requestCancellation.mutate({ elderId })}
               disabled={requestCancellation.isPending}
             >
-              {requestCancellation.isPending ? "Sending request..." : "Yes, request cancellation"}
+              {requestCancellation.isPending ? t("plus.sendingRequest") : t("plus.yesRequestCancel")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

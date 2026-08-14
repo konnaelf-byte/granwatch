@@ -19,6 +19,7 @@ import {
   purchaseGranPlus,
   restorePurchases,
 } from "@/utils/iap";
+import { useTranslation } from "react-i18next";
 
 interface NativeGranPlusModalProps {
   open: boolean;
@@ -28,15 +29,16 @@ interface NativeGranPlusModalProps {
 }
 
 const FEATURES = [
-  "Routines — e.g. prescriptions, physio, plants",
-  "Appointments — e.g. doctor, hairdresser",
-  "Care notes visible to all visitors",
-  "Photos on visit logs",
-  "Mood notes & mood trend insights",
-  "Unlimited family members",
+  "landing.plusFeat1",
+  "landing.plusFeat2",
+  "landing.plusFeat3",
+  "landing.plusFeat4",
+  "landing.plusFeat5",
+  "landing.plusFeat6",
 ];
 
 export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: NativeGranPlusModalProps) {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { user } = useAuth();
 
@@ -110,14 +112,14 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
 
   const handleSubscribe = async () => {
     if (!user) {
-      toast.error("Please sign in to subscribe.");
+      toast.error(t("plus.errSignIn"));
       return;
     }
     setError(null);
     setPurchasing(true);
     try {
       await purchaseGranPlus(elderId, activate);
-      toast.success("Gran+ is now active! 💚");
+      toast.success(t("plus.toastActive"));
       onOpenChange(false);
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Purchase failed.";
@@ -139,10 +141,10 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
     try {
       const restored = await restorePurchases(elderId, activate);
       if (restored) {
-        toast.success("Purchases restored — Gran+ is active.");
+        toast.success(t("plus.toastRestored"));
         onOpenChange(false);
       } else {
-        toast.info("No active Gran+ subscription found to restore.");
+        toast.info(t("plus.toastNoRestore"));
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Restore failed.";
@@ -159,7 +161,7 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            Gran+ for {elderName}
+            {t("plus.title", { name: elderName })}
           </DialogTitle>
         </DialogHeader>
 
@@ -170,17 +172,17 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
               <div className="text-3xl font-bold text-primary">
                 <Loader2 className="w-7 h-7 animate-spin mx-auto" />
               </div>
-              <div className="text-sm text-muted-foreground">per month</div>
+              <div className="text-sm text-muted-foreground">{t("plus.perMonth")}</div>
             </>
           ) : billingUnavailable ? null : (
             <>
               <div className="text-3xl font-bold text-primary">{priceString ?? "—"}</div>
-              <div className="text-sm text-muted-foreground">per month</div>
+              <div className="text-sm text-muted-foreground">{t("plus.perMonth")}</div>
             </>
           )}
           {onTrial && trialDays !== null && (
             <div className={`text-sm font-semibold text-primary ${loadingOffering || !billingUnavailable ? "mt-2" : ""}`}>
-              Included free for your first 4 months · {trialDays} day{trialDays === 1 ? "" : "s"} left
+              {t("plus.trialLine", { count: trialDays })}
             </div>
           )}
         </div>
@@ -190,19 +192,19 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
           <div className="flex items-center justify-center gap-2 mb-2">
             <div className="inline-flex items-center gap-2 bg-green-100 text-green-700 px-4 py-2 rounded-full text-sm font-semibold">
               <CheckCircle2 className="w-4 h-4" />
-              Gran+ is active
+              {t("plus.active")}
             </div>
           </div>
         )}
 
         {/* Features list */}
         <div className="mb-4">
-          <p className="text-sm font-semibold text-foreground mb-2">What you unlock:</p>
+          <p className="text-sm font-semibold text-foreground mb-2">{t("plus.whatYouUnlock")}</p>
           <ul className="space-y-1.5">
             {FEATURES.map((f) => (
               <li key={f} className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Star className="w-3.5 h-3.5 text-primary flex-shrink-0 mt-0.5 fill-primary" />
-                {f}
+                {t(f)}
               </li>
             ))}
           </ul>
@@ -217,16 +219,14 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
         <div className="space-y-3">
           {billingUnavailable && !actuallyPaid && (
             <p className="text-center text-sm text-muted-foreground bg-muted rounded-lg px-3 py-3">
-              {onTrial
-                ? "Everything is unlocked during your free 4 months — nothing to do for now. Subscribing in the app is coming soon; you can also subscribe any time at granwatch.app."
-                : "Subscribing in the app is coming soon. In the meantime you can subscribe at granwatch.app."}
+              {onTrial ? t("plus.billingUnavailableTrial") : t("plus.billingUnavailable")}
             </p>
           )}
           {!actuallyPaid && !billingUnavailable && (
             <>
               {onTrial && (
                 <p className="text-center text-xs text-muted-foreground">
-                  Subscribing now starts billing immediately and removes the trial countdown.
+                  {t("plus.trialSubscribeNote")}
                 </p>
               )}
               <Button
@@ -237,12 +237,12 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
               {purchasing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
+                  {t("plus.processing")}
                 </>
               ) : (
                 <>
                   <CreditCard className="w-4 h-4" />
-                  Subscribe{priceString ? ` — ${priceString}/mo` : ""}
+                  {priceString ? t("plus.subscribePrice", { price: priceString }) : t("plus.subscribe")}
                 </>
               )}
               </Button>
@@ -256,17 +256,14 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
               onClick={handleRestore}
               disabled={restoring}
             >
-              {restoring ? "Restoring..." : "Restore purchases"}
+              {restoring ? t("plus.restoring") : t("plus.restore")}
             </button>
           )}
 
           {/* Required subscription info (App Review 3.1.2c): title, length, price, legal links */}
           {!billingUnavailable && (
             <p className="text-center text-xs text-muted-foreground">
-              Gran+ Monthly is a 1-month auto-renewable subscription
-              {priceString ? ` at ${priceString}/month` : ""}. It renews automatically unless
-              cancelled at least 24 hours before the end of the period. Billed through your
-              app store account. Cancel anytime in your device settings.
+              {priceString ? t("plus.legalWithPrice", { price: priceString }) : t("plus.legalNoPrice")}
             </p>
           )}
           <p className="text-center text-xs">
@@ -275,7 +272,7 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
               className="text-muted-foreground underline underline-offset-2"
               onClick={() => window.open("https://granwatch.app/terms", "_blank")}
             >
-              Terms of Use
+              {t("plus.termsOfUse")}
             </button>
             <span className="text-muted-foreground mx-2">·</span>
             <button
@@ -283,7 +280,7 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
               className="text-muted-foreground underline underline-offset-2"
               onClick={() => window.open("https://granwatch.app/privacy", "_blank")}
             >
-              Privacy Policy
+              {t("landing.footPrivacy")}
             </button>
           </p>
         </div>

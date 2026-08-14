@@ -24,6 +24,8 @@ import {
   Pill, CheckCircle2, XCircle, Plus, Trash2,
   Stethoscope, CalendarCheck, Clock, Sparkles, Lock
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import i18next from "i18next";
 
 interface Props {
   elderId: number;
@@ -35,19 +37,20 @@ interface Props {
 }
 
 const FREQUENCY_LABELS: Record<string, string> = {
-  daily: "Daily",
-  twice_daily: "Twice daily",
-  weekly: "Weekly",
-  as_needed: "As needed",
+  daily: "care.freqDaily",
+  twice_daily: "care.freqTwiceDaily",
+  weekly: "care.freqWeekly",
+  as_needed: "care.freqAsNeeded",
 };
 
 const TIME_OF_DAY_LABELS: Record<string, string> = {
-  am: "Morning",
-  midday: "Midday",
-  pm: "Evening",
+  am: "care.todMorning",
+  midday: "care.todMidday",
+  pm: "care.todEvening",
 };
 
 export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }: Props) {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
 
   // On free (locked) elders the Care panel is shown so families understand the feature,
@@ -81,7 +84,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
   // ── Mutations ──────────────────────────────────────────────────────────────
   const addMed = trpc.care.medications.add.useMutation({
     onSuccess: () => {
-      toast.success("Routine added");
+      toast.success(t("care.toastRoutineAdded"));
       utils.care.medications.list.invalidate({ elderId });
       setAddMedOpen(false);
       setMedName(""); setMedNotes(""); setMedFrequency("daily"); setMedTimeOfDay("any");
@@ -91,7 +94,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
 
   const removeMed = trpc.care.medications.remove.useMutation({
     onSuccess: () => {
-      toast.success("Routine removed");
+      toast.success(t("care.toastRoutineRemoved"));
       utils.care.medications.list.invalidate({ elderId });
     },
     onError: (e) => toast.error(e.message),
@@ -104,7 +107,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
 
   const addAppt = trpc.care.appointments.add.useMutation({
     onSuccess: () => {
-      toast.success("Appointment added");
+      toast.success(t("care.toastApptAdded"));
       utils.care.appointments.list.invalidate({ elderId });
       setAddApptOpen(false);
       setApptTitle(""); setApptDoctor(""); setApptLocation("");
@@ -115,7 +118,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
 
   const completeAppt = trpc.care.appointments.complete.useMutation({
     onSuccess: () => {
-      toast.success("Appointment marked as done ✓");
+      toast.success(t("care.toastApptDone"));
       utils.care.appointments.list.invalidate({ elderId });
     },
     onError: (e) => toast.error(e.message),
@@ -123,7 +126,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
 
   const removeAppt = trpc.care.appointments.remove.useMutation({
     onSuccess: () => {
-      toast.success("Appointment removed");
+      toast.success(t("care.toastApptRemoved"));
       utils.care.appointments.list.invalidate({ elderId });
     },
     onError: (e) => toast.error(e.message),
@@ -134,10 +137,10 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
   const pastAppts = appointments.filter((a: any) => !!a.completedAt);
 
   const fmtDate = (d: string | Date) =>
-    new Date(d).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    new Date(d).toLocaleDateString(i18next.language, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
 
   const fmtTime = (d: string | Date) =>
-    new Date(d).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" });
+    new Date(d).toLocaleTimeString(i18next.language, { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="space-y-6">
@@ -151,9 +154,9 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
         >
           <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-foreground">Unlock Care with Gran+</p>
+            <p className="text-sm font-semibold text-foreground">{t("care.unlockTitle")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Track Gran's routines and appointments. Upgrade to <span className="font-semibold text-primary">Gran+</span> to start logging.
+              {t("care.unlockSub")}
             </p>
           </div>
           <Lock className="w-4 h-4 text-primary flex-shrink-0" aria-hidden="true" />
@@ -165,7 +168,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Pill className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold text-sm text-foreground">Routines</h3>
+            <h3 className="font-semibold text-sm text-foreground">{t("care.routines")}</h3>
           </div>
           {/* Any family member can add (field report 2026-08-10) */}
           <Button
@@ -175,23 +178,23 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
             className="text-primary h-8 px-2"
           >
             {locked ? <Lock className="w-3.5 h-3.5 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
-            Add
+            {t("common.add")}
           </Button>
         </div>
 
         {medsLoading ? (
-          <p className="text-sm text-muted-foreground text-center py-4">Loading…</p>
+          <p className="text-sm text-muted-foreground text-center py-4">{t("common.loading")}</p>
         ) : medications.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-xl">
             <Pill className="w-7 h-7 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No routines added yet.</p>
+            <p className="text-sm">{t("care.noRoutines")}</p>
             {locked ? (
               <Button variant="link" size="sm" onClick={handleLockedTap}>
-                Unlock with Gran+
+                {t("care.unlockCta")}
               </Button>
             ) : (
               <Button variant="link" size="sm" onClick={() => setAddMedOpen(true)}>
-                Add the first one
+                {t("care.addFirstRoutine")}
               </Button>
             )}
           </div>
@@ -207,8 +210,8 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                         <span className="text-xs text-muted-foreground">{med.dosage}</span>
                       )}
                       <Badge variant="secondary" className="text-xs">
-                        {FREQUENCY_LABELS[med.frequency]}
-                        {med.timeOfDay ? ` · ${TIME_OF_DAY_LABELS[med.timeOfDay]}` : ""}
+                        {t(FREQUENCY_LABELS[med.frequency])}
+                        {med.timeOfDay ? ` · ${t(TIME_OF_DAY_LABELS[med.timeOfDay])}` : ""}
                       </Badge>
                     </div>
                     {med.notes && (
@@ -242,17 +245,14 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                         }`}
                       />
                     ))}
-                    <span className="text-[10px] text-muted-foreground ml-1">7 days</span>
+                    <span className="text-[10px] text-muted-foreground ml-1">{t("care.last7")}</span>
                   </div>
                 )}
 
                 {/* Human-readable last entry — the "useful log" line */}
                 {med.lastLog && (
                   <p className="text-xs text-muted-foreground mt-2">
-                    Last: {med.lastLog.status === "taken" ? "✓ done" : "✗ missed"} by{" "}
-                    <span className="font-medium text-foreground">{med.lastLog.byName}</span>
-                    {" · "}
-                    {new Date(med.lastLog.at).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}
+                    {t("care.lastLog", { status: med.lastLog.status === "taken" ? t("care.statusDone") : t("care.statusMissed"), name: med.lastLog.byName, date: new Date(med.lastLog.at).toLocaleDateString(i18next.language, { weekday: "short", day: "numeric", month: "short" }) })}
                   </p>
                 )}
 
@@ -266,7 +266,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                     disabled={locked ? false : logMed.isPending}
                   >
                     {locked ? <Lock className="w-3.5 h-3.5 mr-1.5" /> : <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />}
-                    {med.todayStatus === "taken" ? "Done ✓" : "Done"}
+                    {med.todayStatus === "taken" ? t("care.doneChecked") : t("care.doneBtn")}
                   </Button>
                   <Button
                     size="sm"
@@ -290,7 +290,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Stethoscope className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold text-sm text-foreground">Appointments</h3>
+            <h3 className="font-semibold text-sm text-foreground">{t("care.appointments")}</h3>
           </div>
           {/* Any family member can add (field report 2026-08-10) */}
           <Button
@@ -300,23 +300,23 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
             className="text-primary h-8 px-2"
           >
             {locked ? <Lock className="w-3.5 h-3.5 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
-            Add
+            {t("common.add")}
           </Button>
         </div>
 
         {apptsLoading ? (
-          <p className="text-sm text-muted-foreground text-center py-4">Loading…</p>
+          <p className="text-sm text-muted-foreground text-center py-4">{t("common.loading")}</p>
         ) : upcomingAppts.length === 0 && pastAppts.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground border rounded-xl">
             <Stethoscope className="w-7 h-7 mx-auto mb-2 opacity-30" />
-            <p className="text-sm">No appointments added yet.</p>
+            <p className="text-sm">{t("care.noAppts")}</p>
             {locked ? (
               <Button variant="link" size="sm" onClick={handleLockedTap}>
-                Unlock with Gran+
+                {t("care.unlockCta")}
               </Button>
             ) : (
               <Button variant="link" size="sm" onClick={() => setAddApptOpen(true)}>
-                Add one
+                {t("care.addOne")}
               </Button>
             )}
           </div>
@@ -333,7 +333,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                     <div className="flex items-center gap-1 mt-1">
                       <Clock className="w-3 h-3 text-primary" />
                       <p className="text-xs text-primary font-medium">
-                        {fmtDate(appt.scheduledAt)} at {fmtTime(appt.scheduledAt)}
+                        {t("care.apptWhen", { date: fmtDate(appt.scheduledAt), time: fmtTime(appt.scheduledAt) })}
                       </p>
                     </div>
                     {appt.location && (
@@ -363,14 +363,14 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                   disabled={locked ? false : completeAppt.isPending}
                 >
                   {locked ? <Lock className="w-3.5 h-3.5 mr-1.5" /> : <CalendarCheck className="w-3.5 h-3.5 mr-1.5" />}
-                  Mark as attended
+                  {t("care.markAttended")}
                 </Button>
               </div>
             ))}
 
             {pastAppts.length > 0 && (
               <>
-                <p className="text-xs text-muted-foreground font-medium pt-2 pb-1">Past appointments</p>
+                <p className="text-xs text-muted-foreground font-medium pt-2 pb-1">{t("care.pastAppts")}</p>
                 {pastAppts.map((appt: any) => (
                   <div key={appt.id} className="bg-card border rounded-xl p-4 opacity-70">
                     <div className="flex items-center justify-between">
@@ -410,52 +410,52 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Pill className="w-4 h-4 text-primary" />
-              Add Routine
+              {t("care.addRoutineTitle")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-1">
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Routine name *</p>
+              <p className="text-xs font-medium text-foreground mb-1">{t("care.routineName")}</p>
               <Input
-                placeholder="e.g. Medication, Blood pressure check, Physio stretches"
+                placeholder={t("care.routinePlaceholder")}
                 value={medName}
                 onChange={e => setMedName(e.target.value)}
               />
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Frequency</p>
+              <p className="text-xs font-medium text-foreground mb-1">{t("care.frequency")}</p>
               <Select value={medFrequency} onValueChange={(v: any) => setMedFrequency(v)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="twice_daily">Twice daily</SelectItem>
-                  <SelectItem value="weekly">Weekly</SelectItem>
-                  <SelectItem value="as_needed">As needed</SelectItem>
+                  <SelectItem value="daily">{t("care.freqDaily")}</SelectItem>
+                  <SelectItem value="twice_daily">{t("care.freqTwiceDaily")}</SelectItem>
+                  <SelectItem value="weekly">{t("care.freqWeekly")}</SelectItem>
+                  <SelectItem value="as_needed">{t("care.freqAsNeeded")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {medFrequency === "daily" && (
               <div>
-                <p className="text-xs font-medium text-foreground mb-1">Time of day</p>
+                <p className="text-xs font-medium text-foreground mb-1">{t("care.timeOfDay")}</p>
                 <Select value={medTimeOfDay} onValueChange={(v: any) => setMedTimeOfDay(v)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="any">Any time</SelectItem>
-                    <SelectItem value="am">Morning (AM)</SelectItem>
-                    <SelectItem value="midday">Midday</SelectItem>
-                    <SelectItem value="pm">Evening (PM)</SelectItem>
+                    <SelectItem value="any">{t("care.anyTime")}</SelectItem>
+                    <SelectItem value="am">{t("care.morningAM")}</SelectItem>
+                    <SelectItem value="midday">{t("care.middayLabel")}</SelectItem>
+                    <SelectItem value="pm">{t("care.eveningPM")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Notes (optional)</p>
+              <p className="text-xs font-medium text-foreground mb-1">{t("care.notesOptional")}</p>
               <Textarea
-                placeholder="e.g. Take with food"
+                placeholder={t("care.routineNotesPlaceholder")}
                 value={medNotes}
                 onChange={e => setMedNotes(e.target.value)}
                 rows={2}
@@ -475,7 +475,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
               })}
               disabled={!medName.trim() || addMed.isPending}
             >
-              {addMed.isPending ? "Adding…" : "Add routine"}
+              {addMed.isPending ? t("care.adding") : t("care.addRoutineBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -487,21 +487,21 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Stethoscope className="w-4 h-4 text-primary" />
-              Add Appointment
+              {t("care.addApptTitle")}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3 py-1">
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Title *</p>
+              <p className="text-xs font-medium text-foreground mb-1">{t("care.titleReq")}</p>
               <Input
-                placeholder="e.g. Doctor's Appointment, Physio, Hairdresser"
+                placeholder={t("care.titlePlaceholder")}
                 value={apptTitle}
                 onChange={e => setApptTitle(e.target.value)}
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <p className="text-xs font-medium text-foreground mb-1">Date *</p>
+                <p className="text-xs font-medium text-foreground mb-1">{t("care.dateReq")}</p>
                 <Input
                   type="date"
                   value={apptDate}
@@ -509,7 +509,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
                 />
               </div>
               <div>
-                <p className="text-xs font-medium text-foreground mb-1">Time</p>
+                <p className="text-xs font-medium text-foreground mb-1">{t("care.time")}</p>
                 <Input
                   type="time"
                   value={apptTime}
@@ -518,25 +518,25 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
               </div>
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Name</p>
+              <p className="text-xs font-medium text-foreground mb-1">{t("care.nameLabel")}</p>
               <Input
-                placeholder="e.g. Dr Smith, physio, salon"
+                placeholder={t("care.apptNamePlaceholder")}
                 value={apptDoctor}
                 onChange={e => setApptDoctor(e.target.value)}
               />
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Location</p>
+              <p className="text-xs font-medium text-foreground mb-1">{t("care.location")}</p>
               <Input
-                placeholder="e.g. City Hospital, Room 4"
+                placeholder={t("care.locPlaceholder")}
                 value={apptLocation}
                 onChange={e => setApptLocation(e.target.value)}
               />
             </div>
             <div>
-              <p className="text-xs font-medium text-foreground mb-1">Notes</p>
+              <p className="text-xs font-medium text-foreground mb-1">{t("care.notes")}</p>
               <Textarea
-                placeholder="Bring ID and medical aid card…"
+                placeholder={t("care.apptNotesPlaceholder")}
                 value={apptNotes}
                 onChange={e => setApptNotes(e.target.value)}
                 rows={2}
@@ -548,7 +548,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
             <Button
               className="w-full"
               onClick={() => {
-                if (!apptDate) { toast.error("Please pick a date"); return; }
+                if (!apptDate) { toast.error(t("care.pickDate")); return; }
                 const dt = new Date(`${apptDate}T${apptTime || "09:00"}`);
                 addAppt.mutate({
                   elderId,
@@ -561,7 +561,7 @@ export function CareSchedulePanel({ elderId, isAdmin, locked = false, onUnlock }
               }}
               disabled={!apptTitle.trim() || !apptDate || addAppt.isPending}
             >
-              {addAppt.isPending ? "Adding…" : "Add appointment"}
+              {addAppt.isPending ? t("care.adding") : t("care.addApptBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>

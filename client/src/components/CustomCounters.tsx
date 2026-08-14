@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Plus, Trash2, Pencil, Lock, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import i18next from "i18next";
 
 interface Props {
   elderId: number;
@@ -32,10 +34,10 @@ interface Props {
 const EMOJI_PRESETS = ["💚", "📞", "💬", "🚗", "🌳", "☕", "🍰", "📸", "💐", "🎲", "🙏", "✈️"];
 
 const INTERVAL_PRESETS = [
-  { label: "Weekly", days: 7 },
-  { label: "Every 2 weeks", days: 14 },
-  { label: "Monthly", days: 30 },
-  { label: "Quarterly", days: 91 },
+  { key: "counters.weekly", days: 7 },
+  { key: "counters.twoWeeks", days: 14 },
+  { key: "counters.monthly", days: 30 },
+  { key: "counters.quarterly", days: 91 },
 ];
 
 /** Same banding as the status ring; grey until first log. */
@@ -48,6 +50,7 @@ function barColor(pct: number, neverLogged: boolean): string {
 }
 
 export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = false, currentUserId }: Props) {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [addOpen, setAddOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -73,7 +76,7 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
 
   const addCounter = trpc.counters.add.useMutation({
     onSuccess: () => {
-      toast.success("Counter added");
+      toast.success(t("counters.toastAdded"));
       invalidate();
       setAddOpen(false);
       setName(""); setEmoji("💚"); setIntervalDays(7); setUseCustom(false); setCustomDays(""); setScope("family");
@@ -83,7 +86,7 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
 
   const updateCounter = trpc.counters.update.useMutation({
     onSuccess: () => {
-      toast.success("Counter updated");
+      toast.success(t("counters.toastUpdated"));
       invalidate();
       setAddOpen(false);
       setEditingId(null);
@@ -93,7 +96,7 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
 
   const logCounter = trpc.counters.log.useMutation({
     onSuccess: () => {
-      toast.success("Logged 💚");
+      toast.success(t("counters.toastLogged"));
       invalidate();
       if (expandedId !== null) utils.counters.logs.invalidate();
     },
@@ -101,7 +104,7 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
   });
 
   const removeCounter = trpc.counters.remove.useMutation({
-    onSuccess: () => { toast.success("Counter removed"); setExpandedId(null); invalidate(); },
+    onSuccess: () => { toast.success(t("counters.toastRemoved")); setExpandedId(null); invalidate(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -113,7 +116,7 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
         className="w-full mb-6 rounded-xl border border-dashed border-muted-foreground/30 p-3 flex items-center justify-center gap-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
       >
         <Sparkles className="w-4 h-4 text-amber-500" />
-        Custom counters — a Gran+ feature
+        {t("counters.teaser")}
       </button>
     );
   }
@@ -128,8 +131,8 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
 
   const submitAdd = () => {
     const days = useCustom ? parseInt(customDays, 10) : intervalDays;
-    if (!name.trim()) { toast.error("Give your counter a name"); return; }
-    if (!days || days < 1 || days > 365) { toast.error("Interval must be 1–365 days"); return; }
+    if (!name.trim()) { toast.error(t("counters.errName")); return; }
+    if (!days || days < 1 || days > 365) { toast.error(t("counters.errInterval")); return; }
     if (editingId !== null) {
       updateCounter.mutate({ counterId: editingId, name: name.trim(), emoji, intervalDays: days });
     } else {
@@ -175,10 +178,10 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
                 </span>
                 <span className="block text-xs text-muted-foreground">
                   {neverLogged
-                    ? "Not logged yet"
+                    ? t("counters.notLogged")
                     : overdue
-                      ? `Overdue — ${c.daysSince} of ${c.intervalDays} days`
-                      : `${c.daysSince === 0 ? "Done today" : `${c.daysSince}d ago`} · every ${c.intervalDays}d`}
+                      ? t("counters.overdueOf", { days: c.daysSince, interval: c.intervalDays })
+                      : `${c.daysSince === 0 ? t("counters.doneToday") : t("counters.dAgo", { count: c.daysSince })} · ${t("counters.everyD", { count: c.intervalDays })}`}
                 </span>
               </button>
               <Button
@@ -188,7 +191,7 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
                 disabled={logCounter.isPending}
                 onClick={() => logCounter.mutate({ counterId: c.id })}
               >
-                Log it 💚
+                {t("counters.logIt")}
               </Button>
               <button
                 className="p-1 text-muted-foreground flex-shrink-0"
@@ -214,11 +217,11 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
             {expanded && (
               <div className="mt-3 pt-2 border-t space-y-1.5">
                 {history.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No history yet — tap “Log it 💚” the first time you do it.</p>
+                  <p className="text-xs text-muted-foreground">{t("counters.noHistory")}</p>
                 ) : (
                   history.map((h: any) => (
                     <p key={h.id} className="text-xs text-muted-foreground">
-                      ✓ {h.byName} · {new Date(h.loggedAt).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}
+                      ✓ {h.byName} · {new Date(h.loggedAt).toLocaleDateString(i18next.language, { weekday: "short", day: "numeric", month: "short" })}
                       {h.note ? ` — ${h.note}` : ""}
                     </p>
                   ))
@@ -229,13 +232,13 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
                       className="text-xs text-muted-foreground inline-flex items-center gap-1"
                       onClick={() => openEdit(c)}
                     >
-                      <Pencil className="w-3 h-3" /> Edit
+                      <Pencil className="w-3 h-3" /> {t("counters.edit")}
                     </button>
                     <button
                       className="text-xs text-destructive/80 inline-flex items-center gap-1"
                       onClick={() => removeCounter.mutate({ counterId: c.id })}
                     >
-                      <Trash2 className="w-3 h-3" /> Remove counter
+                      <Trash2 className="w-3 h-3" /> {t("counters.removeCounter")}
                     </button>
                   </div>
                 )}
@@ -257,7 +260,7 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
           className="w-full rounded-xl border border-dashed border-muted-foreground/30 p-2.5 flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          {counters.length === 0 ? "Add a custom counter — e.g. “Text Gran weekly”" : "Add another counter"}
+          {counters.length === 0 ? t("counters.addFirst") : t("counters.addAnother")}
         </button>
       )}
 
@@ -265,21 +268,21 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
       <Dialog open={addOpen} onOpenChange={(open) => { setAddOpen(open); if (!open) setEditingId(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>{editingId !== null ? "Edit counter" : "New custom counter"}</DialogTitle>
+            <DialogTitle>{editingId !== null ? t("counters.editTitle") : t("counters.newTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Name</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("counters.name")}</label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value.slice(0, 30))}
-                placeholder="e.g. Text Gran"
+                placeholder={t("counters.namePlaceholder")}
                 className="mt-1"
               />
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Emoji</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("counters.emoji")}</label>
               <div className="mt-1 grid grid-cols-6 gap-1.5">
                 {EMOJI_PRESETS.map((em) => (
                   <button
@@ -294,7 +297,7 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
             </div>
 
             <div>
-              <label className="text-xs font-medium text-muted-foreground">How often?</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("counters.howOften")}</label>
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {INTERVAL_PRESETS.map((p) => (
                   <button
@@ -302,14 +305,14 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
                     onClick={() => { setIntervalDays(p.days); setUseCustom(false); }}
                     className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${!useCustom && intervalDays === p.days ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted"}`}
                   >
-                    {p.label}
+                    {t(p.key)}
                   </button>
                 ))}
                 <button
                   onClick={() => setUseCustom(true)}
                   className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${useCustom ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted"}`}
                 >
-                  Custom…
+                  {t("counters.custom")}
                 </button>
               </div>
               {useCustom && (
@@ -321,10 +324,10 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
                     max={365}
                     value={customDays}
                     onChange={(e) => setCustomDays(e.target.value)}
-                    placeholder="days"
+                    placeholder={t("counters.daysPlaceholder")}
                     className="w-24"
                   />
-                  <span className="text-xs text-muted-foreground">days between reminders</span>
+                  <span className="text-xs text-muted-foreground">{t("counters.daysBetween")}</span>
                 </div>
               )}
             </div>
@@ -332,37 +335,37 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
             {/* Scope is fixed after creation (privacy of existing logs) — hidden when editing */}
             {editingId === null && (
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Who is this for?</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("counters.whoFor")}</label>
               <div className="mt-1 flex gap-1.5">
                 <button
                   onClick={() => setScope("family")}
                   disabled={!canAddFamily}
                   className={`flex-1 px-3 py-2 rounded-lg text-xs border transition-colors disabled:opacity-40 ${scope === "family" ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted"}`}
                 >
-                  👨‍👩‍👧 The whole family
-                  {!canAddFamily && <span className="block text-[10px] text-muted-foreground">limit reached</span>}
+                  {t("counters.wholeFamily")}
+                  {!canAddFamily && <span className="block text-[10px] text-muted-foreground">{t("counters.limitReached")}</span>}
                 </button>
                 <button
                   onClick={() => setScope("private")}
                   disabled={!canAddPrivate}
                   className={`flex-1 px-3 py-2 rounded-lg text-xs border transition-colors disabled:opacity-40 ${scope === "private" ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted"}`}
                 >
-                  🔒 Just me
-                  {!canAddPrivate && <span className="block text-[10px] text-muted-foreground">limit reached</span>}
+                  {t("counters.justMe")}
+                  {!canAddPrivate && <span className="block text-[10px] text-muted-foreground">{t("counters.limitReached")}</span>}
                 </button>
               </div>
               {scope === "private" && (
                 <p className="mt-1.5 text-[11px] text-muted-foreground">
-                  Only you will see this counter and its reminders. It never appears in the family feed.
+                  {t("counters.privateNote")}
                 </p>
               )}
             </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => { setAddOpen(false); setEditingId(null); }}>Cancel</Button>
+            <Button variant="outline" onClick={() => { setAddOpen(false); setEditingId(null); }}>{t("common.cancel")}</Button>
             <Button onClick={submitAdd} disabled={addCounter.isPending || updateCounter.isPending}>
-              {editingId !== null ? "Save changes" : "Add counter"}
+              {editingId !== null ? t("counters.saveChanges") : t("counters.addCounter")}
             </Button>
           </DialogFooter>
         </DialogContent>

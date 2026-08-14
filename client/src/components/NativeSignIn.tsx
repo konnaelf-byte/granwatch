@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { currentPlatform } from "@/utils/platform";
+import { useTranslation } from "react-i18next";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -81,6 +82,7 @@ function GoogleIcon() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function NativeSignIn({ returnPath }: { returnPath?: string | null }) {
+  const { t } = useTranslation();
   const clerk = useClerk();
   // Server-verified native Google exchange — see auth.nativeGoogle (2026-08-05).
   const nativeGoogle = trpc.auth.nativeGoogle.useMutation();
@@ -448,8 +450,8 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
   return (
     <div className="w-full max-w-sm mx-auto flex flex-col gap-4">
       <div className="text-center mb-2">
-        <h1 className="text-2xl font-bold text-foreground">Sign in to GranWatch</h1>
-        <p className="text-sm text-muted-foreground mt-1">Keep your family connected</p>
+        <h1 className="text-2xl font-bold text-foreground">{t("signin.title")}</h1>
+        <p className="text-sm text-muted-foreground mt-1">{t("signin.sub")}</p>
       </div>
 
       {/* Error banner */}
@@ -484,7 +486,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             ) : (
               <AppleLogo />
             )}
-            Continue with Apple
+            {t("signin.continueApple")}
           </button>
           )}
 
@@ -502,13 +504,13 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             ) : (
               <GoogleIcon />
             )}
-            Continue with Google
+            {t("signin.continueGoogle")}
           </Button>
 
           {/* Divider */}
           <div className="flex items-center gap-3 my-1">
             <div className="flex-1 border-t border-border" />
-            <span className="text-xs text-muted-foreground">or</span>
+            <span className="text-xs text-muted-foreground">{t("common.or")}</span>
             <div className="flex-1 border-t border-border" />
           </div>
 
@@ -521,7 +523,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             disabled={!isReady || loading !== null}
           >
             <Mail className="w-5 h-5" />
-            Continue with Email
+            {t("signin.continueEmail")}
           </Button>
         </div>
       )}
@@ -531,7 +533,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
         <form onSubmit={handleEmailSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="native-email" className="text-sm font-medium text-foreground">
-              Email address
+              {t("account.emailAddress")}
             </label>
             <Input
               id="native-email"
@@ -555,7 +557,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             disabled={!isReady || loading !== null || !email.trim()}
             aria-busy={loading === "email"}
           >
-            {loading === "email" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Send code"}
+            {loading === "email" ? <Loader2 className="w-5 h-5 animate-spin" /> : t("signin.sendCode")}
           </Button>
 
           <Button
@@ -566,7 +568,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             onClick={() => { clearError(); setScreen("email-password"); }}
             disabled={loading !== null}
           >
-            Sign in with a password instead
+            {t("signin.usePassword")}
           </Button>
 
           <Button
@@ -577,7 +579,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             onClick={() => { clearError(); setScreen("buttons"); setEmail(""); }}
             disabled={loading !== null}
           >
-            Back
+            {t("common.back")}
           </Button>
         </form>
       )}
@@ -587,7 +589,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
         <form onSubmit={handlePasswordSubmit} className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
             <label htmlFor="native-email-pw" className="text-sm font-medium text-foreground">
-              Email address
+              {t("account.emailAddress")}
             </label>
             <Input
               id="native-email-pw"
@@ -605,13 +607,13 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="native-password" className="text-sm font-medium text-foreground">
-              Password
+              {t("signin.password")}
             </label>
             <Input
               id="native-password"
               type="password"
               autoComplete="current-password"
-              placeholder="Your password"
+              placeholder={t("signin.passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading !== null}
@@ -627,7 +629,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             disabled={!isReady || loading !== null || !email.trim() || !password}
             aria-busy={loading === "password"}
           >
-            {loading === "password" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign in"}
+            {loading === "password" ? <Loader2 className="w-5 h-5 animate-spin" /> : t("common.signIn")}
           </Button>
 
           <Button
@@ -638,7 +640,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             onClick={() => { clearError(); setScreen("email-entry"); setPassword(""); }}
             disabled={loading !== null}
           >
-            Use a code instead
+            {t("signin.useCode")}
           </Button>
         </form>
       )}
@@ -647,12 +649,12 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
       {screen === "email-code" && (
         <form onSubmit={handleCodeSubmit} className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground text-center">
-            We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
+            {t("signin.codeSent", { email })}
           </p>
 
           <div className="flex flex-col gap-1.5">
             <label htmlFor="native-code" className="text-sm font-medium text-foreground">
-              Verification code
+              {t("signin.verificationCode")}
             </label>
             <Input
               id="native-code"
@@ -677,7 +679,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             disabled={!isReady || loading !== null || code.length < 6}
             aria-busy={loading === "code"}
           >
-            {loading === "code" ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify code"}
+            {loading === "code" ? <Loader2 className="w-5 h-5 animate-spin" /> : t("signin.verifyCode")}
           </Button>
 
           {/* Resend code (with 30s cooldown to avoid spamming) */}
@@ -693,9 +695,9 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             {loading === "resend" ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : resendCooldown > 0 ? (
-              `Resend code in ${resendCooldown}s`
+              t("signin.resendIn", { count: resendCooldown })
             ) : (
-              "Resend code"
+              t("signin.resend")
             )}
           </Button>
 
@@ -707,7 +709,7 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
             onClick={() => { clearError(); setResendCooldown(0); setScreen("email-entry"); setCode(""); }}
             disabled={loading !== null}
           >
-            Change email
+            {t("signin.changeEmail")}
           </Button>
         </form>
       )}

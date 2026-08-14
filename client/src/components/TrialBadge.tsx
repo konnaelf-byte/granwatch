@@ -1,4 +1,5 @@
 import { Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 /**
  * Small, ambient free-trial countdown. Shown wherever a Gran+ feature is
@@ -14,6 +15,7 @@ export function TrialBadge({
   daysLeft: number | null | undefined;
   className?: string;
 }) {
+  const { t } = useTranslation();
   if (!daysLeft || daysLeft <= 0) return null;
   const urgent = daysLeft <= 30;
   return (
@@ -23,7 +25,7 @@ export function TrialBadge({
       } ${className}`}
     >
       <Sparkles className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
-      Gran+ free trial · {daysLeft} day{daysLeft === 1 ? "" : "s"} left
+      {t("trial.badge", { count: daysLeft })}
     </p>
   );
 }

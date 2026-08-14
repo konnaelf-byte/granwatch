@@ -30,9 +30,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar as CalendarUI } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/components/ui/badge";
 
 export default function ElderProfile() {
+  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const elderId = parseInt(id ?? "0");
   const { isAuthenticated, user } = useAuth();
@@ -70,12 +72,12 @@ export default function ElderProfile() {
 
   // Fixed mood set — kept in sync with ALLOWED_MOOD_EMOJIS in server/routers.ts.
   const MOOD_OPTIONS = [
-    { emoji: "🤒", label: "Unwell", score: 1 },
-    { emoji: "😔", label: "Poor", score: 2 },
-    { emoji: "😕", label: "Low", score: 3 },
-    { emoji: "😊", label: "Okay", score: 4 },
-    { emoji: "😄", label: "Good", score: 5 },
-    { emoji: "🥰", label: "Great", score: 6 },
+    { emoji: "🤒", label: t("elder.mood1"), score: 1 },
+    { emoji: "😔", label: t("elder.mood2"), score: 2 },
+    { emoji: "😕", label: t("elder.mood3"), score: 3 },
+    { emoji: "😊", label: t("elder.mood4"), score: 4 },
+    { emoji: "😄", label: t("elder.mood5"), score: 5 },
+    { emoji: "🥰", label: t("elder.mood6"), score: 6 },
   ];
   const MOOD_SCORE: Record<string, number> = Object.fromEntries(MOOD_OPTIONS.map((m) => [m.emoji, m.score]));
 
@@ -113,7 +115,7 @@ export default function ElderProfile() {
 
   const logVisit = trpc.visits.log.useMutation({
     onSuccess: () => {
-      toast.success("Visit logged! Gran's clock has been reset 💚");
+      toast.success(t("elder.toastVisitLogged"));
       utils.elders.get.invalidate({ elderId });
       utils.visits.list.invalidate({ elderId });
       utils.elders.list.invalidate();
@@ -133,7 +135,7 @@ export default function ElderProfile() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("Please select an image file"); return; }
+    if (!file.type.startsWith("image/")) { toast.error(t("elder.selectImage")); return; }
     setVisitPhotoUploading(true);
     try {
       const bitmap = await createImageBitmap(file);
@@ -184,9 +186,7 @@ export default function ElderProfile() {
     if (!hasTime(start)) start.setHours(10, 0, 0, 0); // default 10:00 when no time chosen
     const url = `${window.location.origin}/api/calendar/visit.ics?gran=${encodeURIComponent(elderName)}&start=${encodeURIComponent(start.toISOString())}`;
     window.open(url, "_blank");
-    toast.success(isNativeApp
-      ? "Opening the event — tap Add to put it in your calendar."
-      : "Calendar event downloaded! Open it to add to your calendar.");
+    toast.success(isNativeApp ? t("elder.toastCalendarNative") : t("elder.toastCalendarWeb"));
   };
 
   const logGift = trpc.gifts.log.useMutation({
@@ -212,7 +212,7 @@ export default function ElderProfile() {
 
   const cancelPlanned = trpc.planned.cancel.useMutation({
     onSuccess: () => {
-      toast.success("Visit cancelled");
+      toast.success(t("elder.toastVisitCancelled"));
       utils.planned.list.invalidate({ elderId });
       setDeleteVisitId(null);
     },
@@ -221,7 +221,7 @@ export default function ElderProfile() {
 
   const transferAdmin = trpc.elders.transferAdmin.useMutation({
     onSuccess: () => {
-      toast.success(`Admin rights transferred! You are now a regular member.`);
+      toast.success(t("elder.toastAdminTransferred"));
       utils.elders.get.invalidate({ elderId });
       utils.elders.members.invalidate({ elderId });
       setTransferTarget(null);
@@ -231,7 +231,7 @@ export default function ElderProfile() {
 
   const removeMember = trpc.elders.removeMember.useMutation({
     onSuccess: () => {
-      toast.success("Member removed from the family.");
+      toast.success(t("elder.toastMemberRemoved"));
       utils.elders.members.invalidate({ elderId });
       setRemoveTarget(null);
     },
@@ -240,7 +240,7 @@ export default function ElderProfile() {
 
   const regenerateCode = trpc.elders.regenerateInviteCode.useMutation({
     onSuccess: () => {
-      toast.success("New invite code created — the old link no longer works.");
+      toast.success(t("elder.toastNewCode"));
       utils.elders.get.invalidate({ elderId });
       setRegenConfirmOpen(false);
     },
@@ -250,7 +250,7 @@ export default function ElderProfile() {
   const inviteUrl = elder ? `${window.location.origin}/api/og/invite/${elder.inviteCode}` : "";
   // Warm prefilled invite text — WhatsApp is the family channel (98% open rates).
   const inviteText = elder
-    ? `Join our family on GranWatch 💚 It shows when ${elder.name} was last visited — one tap to log a visit, and she doesn't need a phone. Takes a minute, it's free: ${inviteUrl}`
+    ? t("elder.inviteMsg", { name: elder.name, url: inviteUrl })
     : "";
 
   const handleShare = () => {
@@ -262,7 +262,7 @@ export default function ElderProfile() {
     }
     // Desktop fallback: copy the rich-preview link.
     navigator.clipboard.writeText(inviteUrl).then(() => {
-      toast.success("Invite link copied to clipboard!");
+      toast.success(t("elder.toastLinkCopied"));
     });
   };
 
@@ -274,7 +274,7 @@ export default function ElderProfile() {
   const handleCopy = () => {
     if (!elder) return;
     navigator.clipboard.writeText(inviteUrl).then(() => {
-      toast.success("Invite link copied to clipboard!");
+      toast.success(t("elder.toastLinkCopied"));
     });
   };
 
@@ -294,7 +294,7 @@ export default function ElderProfile() {
   if (!elder) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Gran not found.</p>
+        <p className="text-muted-foreground">{t("elder.granNotFound")}</p>
       </div>
     );
   }
@@ -356,8 +356,8 @@ export default function ElderProfile() {
           <div className="mt-4 text-center">
             <p className="text-sm text-muted-foreground">
               {elder.myLastVisitDate
-                ? `Your last visit: ${new Date(elder.myLastVisitDate).toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })} (${elder.myDaysSince === 0 ? "today" : `${elder.myDaysSince} days ago`})`
-                : "You haven't visited yet"}
+                ? t("elder.myLastVisit", { date: new Date(elder.myLastVisitDate).toLocaleDateString(i18n.language, { weekday: "short", day: "numeric", month: "short" }), ago: elder.myDaysSince === 0 ? t("elder.today") : t("elder.daysAgo", { count: elder.myDaysSince }) })
+                : t("elder.notVisitedYet")}
             </p>
           </div>
         </div>
@@ -376,9 +376,9 @@ export default function ElderProfile() {
         {elder.status === "red" && elder.daysSinceVisit < 999 && (
           <div className="mb-6 bg-destructive/10 border border-destructive/30 rounded-xl p-4 text-center">
             <p className="font-semibold text-destructive text-sm">
-              ⚠ {elder.name} hasn't had a visitor in {elder.daysSinceVisit} days!
+              {t("elder.alertBanner", { name: elder.name, count: elder.daysSinceVisit })}
             </p>
-            <p className="text-xs text-destructive/80 mt-1">Please book a visit as soon as possible.</p>
+            <p className="text-xs text-destructive/80 mt-1">{t("elder.alertBannerSub")}</p>
           </div>
         )}
 
@@ -397,10 +397,10 @@ export default function ElderProfile() {
               <Cake className={`w-5 h-5 flex-shrink-0 ${isToday ? "text-pink-500" : "text-amber-500"}`} />
               <div>
                 <p className={`font-semibold text-sm ${isToday ? "text-pink-700" : "text-amber-700"}`}>
-                  {isToday ? `🎂 Happy Birthday, ${elder.name}!` : `🎂 ${elder.name}'s birthday is in ${daysUntil} day${daysUntil !== 1 ? "s" : ""}!`}
+                  {isToday ? t("elder.bdayToday", { name: elder.name }) : t("elder.bdayIn", { name: elder.name, count: daysUntil })}
                 </p>
                 <p className={`text-xs mt-0.5 ${isToday ? "text-pink-600" : "text-amber-600"}`}>
-                  {isToday ? "Make it a special visit today." : "Plan a visit to make it memorable."}
+                  {isToday ? t("elder.bdayTodaySub") : t("elder.bdayPlanSub")}
                 </p>
               </div>
             </div>
@@ -415,7 +415,7 @@ export default function ElderProfile() {
             onClick={() => setLogVisitOpen(true)}
           >
             <CheckCircle2 className="w-5 h-5 mr-2" />
-            Log Visit
+            {t("elder.logVisit")}
           </Button>
           <Button
             size="lg"
@@ -424,7 +424,7 @@ export default function ElderProfile() {
             onClick={() => setBookVisitOpen(true)}
           >
             <Calendar className="w-5 h-5 mr-2" />
-            Book Visit
+            {t("elder.bookVisit")}
           </Button>
         </div>
 
@@ -434,7 +434,7 @@ export default function ElderProfile() {
         {(flowersOption || giftOption) && (
           <div className="mb-5">
             <p className="text-xs text-muted-foreground text-center mb-2.5 font-medium uppercase tracking-wide">
-              Show Gran some love 💌
+              {t("elder.showLove")}
             </p>
             <div className={`grid gap-3 ${flowersOption && giftOption ? "grid-cols-2" : "grid-cols-1"}`}>
               {flowersOption && (
@@ -445,7 +445,7 @@ export default function ElderProfile() {
                   onClick={handleSendFlowers}
                   disabled={logGift.isPending}
                 >
-                  🌸 Send Flowers
+                  {t("elder.sendFlowers")}
                 </Button>
               )}
               {giftOption && (
@@ -457,7 +457,7 @@ export default function ElderProfile() {
                   disabled={logGift.isPending}
                 >
                   <Gift className="w-4 h-4 mr-1.5" />
-                  Send a Gift
+                  {t("elder.sendGift")}
                 </Button>
               )}
             </div>
@@ -467,7 +467,7 @@ export default function ElderProfile() {
         {/* Invite code */}
         <div className="mb-6 bg-card border rounded-xl p-4 flex items-center justify-between">
           <div>
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Invite Code</p>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{t("elder.inviteCode")}</p>
             <p className="font-mono font-bold text-lg text-foreground tracking-widest">{elder.inviteCode}</p>
           </div>
           <div className="flex items-center gap-1">
@@ -477,7 +477,7 @@ export default function ElderProfile() {
             </Button>
             <Button variant="ghost" size="sm" onClick={handleCopy}>
               <Copy className="w-4 h-4 mr-1.5" />
-              Copy link
+              {t("elder.copyLink")}
             </Button>
             {/* Regenerate sits AFTER copy, behind a divider and extra gap —
                 it was directly beside Copy and got pressed by accident. */}
@@ -503,15 +503,15 @@ export default function ElderProfile() {
           <TabsList className="w-full mb-4">
             <TabsTrigger value="planned" className="flex-1">
               <Calendar className="w-4 h-4 mr-1" />
-              Visits
+              {t("elder.tabVisits")}
             </TabsTrigger>
             <TabsTrigger value="history" className="flex-1">
               <CheckCircle2 className="w-4 h-4 mr-1" />
-              History
+              {t("elder.tabHistory")}
             </TabsTrigger>
             <TabsTrigger value="members" className="flex-1">
               <Users className="w-4 h-4 mr-1" />
-              Family
+              {t("elder.tabFamily")}
             </TabsTrigger>
             <TabsTrigger
               value="care"
@@ -522,7 +522,7 @@ export default function ElderProfile() {
               ) : (
                 <Lock className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
               )}
-              Care
+              {t("elder.tabCare")}
             </TabsTrigger>
           </TabsList>
 
@@ -546,10 +546,10 @@ export default function ElderProfile() {
                     >
                       <div>
                         <p className="font-semibold text-sm text-foreground">
-                            {new Date(p.plannedDate).toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
+                            {new Date(p.plannedDate).toLocaleDateString(i18n.language, { weekday: "long", day: "numeric", month: "long" })}
                             {hasTime(new Date(p.plannedDate)) && (
                               <span className="text-muted-foreground font-normal">
-                                {" "}· {new Date(p.plannedDate).toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}
+                                {" "}· {new Date(p.plannedDate).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" })}
                               </span>
                             )}
                           </p>
@@ -574,9 +574,9 @@ export default function ElderProfile() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Calendar className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">No upcoming visits booked.</p>
+                <p className="text-sm">{t("elder.noUpcoming")}</p>
                 <Button variant="link" size="sm" onClick={() => setBookVisitOpen(true)}>
-                  Book the first one
+                  {t("elder.bookFirst")}
                 </Button>
               </div>
             )}
@@ -611,9 +611,9 @@ export default function ElderProfile() {
                 return (
                   <div className="text-center py-8 text-muted-foreground">
                     <CheckCircle2 className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                    <p className="text-sm">No activity yet.</p>
+                    <p className="text-sm">{t("elder.noActivity")}</p>
                     <Button variant="link" size="sm" onClick={() => setLogVisitOpen(true)}>
-                      Log the first visit
+                      {t("elder.logFirst")}
                     </Button>
                   </div>
                 );
@@ -622,7 +622,7 @@ export default function ElderProfile() {
               return (
                 <div className="space-y-2">
                   {timeline.map((item) => {
-                    const dateStr = item._date.toLocaleDateString("en-ZA", { day: "numeric", month: "short", year: "numeric" });
+                    const dateStr = item._date.toLocaleDateString(i18n.language, { day: "numeric", month: "short", year: "numeric" });
 
                     if (item._type === "visit") {
                       return (
@@ -630,13 +630,13 @@ export default function ElderProfile() {
                           <div className="flex items-center justify-between mb-1">
                             <p className="font-semibold text-sm text-foreground flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
-                              {item.visitorName} visited Gran
+                              {t("elder.visitedGran", { name: item.visitorName })}
                               {item.moodEmoji && <span className="text-base leading-none ml-0.5">{item.moodEmoji}</span>}
                             </p>
                             <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">{dateStr}</p>
                           </div>
                           {item.moodNote && (
-                            <p className="text-xs text-muted-foreground ml-5 mb-1">Mood: "{item.moodNote}"</p>
+                            <p className="text-xs text-muted-foreground ml-5 mb-1">{t("elder.moodNoteLine", { note: item.moodNote })}</p>
                           )}
                           {item.wellbeingScore && (
                             <div className="flex gap-0.5 mb-1 ml-5">
@@ -674,7 +674,7 @@ export default function ElderProfile() {
                         }`}
                       >
                         <p className={`font-semibold text-sm ${isFlowers ? "text-pink-800 dark:text-pink-300" : "text-amber-800 dark:text-amber-300"}`}>
-                          {isFlowers ? "🌸" : "🎁"} {item.senderName} sent Gran {isFlowers ? "flowers" : "a gift"}
+                          {isFlowers ? t("elder.sentFlowersHist", { name: item.senderName }) : t("elder.sentGiftHist", { name: item.senderName })}
                         </p>
                         <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">{dateStr}</p>
                       </div>
@@ -720,18 +720,18 @@ export default function ElderProfile() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-semibold text-sm text-foreground">
-                            {m.userName}{isCurrentUser ? " (you)" : ""}
+                            {m.userName}{isCurrentUser ? " " + t("elder.youSuffix") : ""}
                           </p>
                           {m.role === "admin" && (
-                            <Badge variant="secondary" className="text-xs">Admin</Badge>
+                            <Badge variant="secondary" className="text-xs">{t("elder.adminBadge")}</Badge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {m.lastVisitDate
-                            ? m.myDaysSince === 0 ? "Visited today 💚" :
-                              m.myDaysSince === 1 ? "Visited yesterday" :
-                              `Last visited ${m.myDaysSince} days ago`
-                            : "Not visited yet"}
+                            ? m.myDaysSince === 0 ? t("elder.visitedToday") :
+                              m.myDaysSince === 1 ? t("elder.visitedYesterday") :
+                              t("elder.lastVisitedDaysAgo", { count: m.myDaysSince })
+                            : t("elder.memberNotVisited")}
                         </p>
                       </div>
                       {/* Admin controls for non-admin members: promote or remove */}
@@ -744,7 +744,7 @@ export default function ElderProfile() {
                             onClick={() => setTransferTarget({ userId: m.userId, name: m.userName })}
                           >
                             <ShieldCheck className="w-3.5 h-3.5 mr-1" />
-                            Make Admin
+                            {t("elder.makeAdmin")}
                           </Button>
                           <Button
                             variant="ghost"
@@ -764,12 +764,12 @@ export default function ElderProfile() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">No family members yet.</p>
+                <p className="text-sm">{t("elder.noMembers")}</p>
               </div>
             )}
             <Button variant="outline" className="w-full mt-3" onClick={handleShare}>
               <Share2 className="w-4 h-4 mr-2" />
-              Invite family members
+              {t("elder.inviteMembers")}
             </Button>
           </TabsContent>
         </Tabs>
@@ -785,7 +785,7 @@ export default function ElderProfile() {
             <div className="mt-6 bg-card border rounded-xl p-4">
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide mb-3 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
-                Mood trend
+                {t("elder.moodTrend")}
               </p>
               <TrialBadge daysLeft={elder.trialDaysLeft} className="mb-2" />
               <div className="flex items-end justify-between gap-1.5 h-20">
@@ -800,14 +800,14 @@ export default function ElderProfile() {
                       <div
                         className="w-full rounded-t-md"
                         style={{ height: `${heightPct}%`, background: color, minHeight: 6 }}
-                        title={new Date(v.visitedAt).toLocaleDateString("en-ZA", { day: "numeric", month: "short" })}
+                        title={new Date(v.visitedAt).toLocaleDateString(i18n.language, { day: "numeric", month: "short" })}
                       />
                     </div>
                   );
                 })}
               </div>
               <p className="text-[11px] text-muted-foreground mt-2 text-center">
-                Last {moodVisits.length} visit{moodVisits.length !== 1 ? "s" : ""} with a mood logged
+                {t("elder.moodTrendCount", { count: moodVisits.length })}
               </p>
             </div>
           );
@@ -819,9 +819,9 @@ export default function ElderProfile() {
           >
             <Sparkles className="w-5 h-5 text-primary flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-foreground">See Gran's mood trend</p>
+              <p className="text-sm font-semibold text-foreground">{t("elder.moodTeaserTitle")}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Track how Gran's been feeling over time with <span className="font-semibold text-primary">Gran+</span>
+                {t("elder.moodTeaserSub")}
               </p>
             </div>
           </button>
@@ -850,12 +850,12 @@ export default function ElderProfile() {
       <Dialog open={logVisitOpen} onOpenChange={setLogVisitOpen}>
         <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
-            <DialogTitle>Log a visit to {elder.name}</DialogTitle>
+            <DialogTitle>{t("elder.logVisitTitle", { name: elder.name })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             {/* Mood — emoji is free for everyone; selecting one is optional. Feeds the mood trend chart. */}
             <div>
-              <p className="text-sm font-medium text-foreground mb-2">How was Gran feeling?</p>
+              <p className="text-sm font-medium text-foreground mb-2">{t("elder.moodQ")}</p>
               <div className="flex gap-2 justify-center">
                 {MOOD_OPTIONS.map(({ emoji, label }) => (
                   <button
@@ -875,9 +875,9 @@ export default function ElderProfile() {
             </div>
 
             <div>
-              <p className="text-sm font-medium text-foreground mb-2">Notes (optional)</p>
+              <p className="text-sm font-medium text-foreground mb-2">{t("elder.notesOptional")}</p>
               <Textarea
-                placeholder="How was the visit? Any updates to share with the family..."
+                placeholder={t("elder.notesPlaceholder")}
                 value={visitNotes}
                 onChange={e => setVisitNotes(e.target.value)}
                 onFocus={e => setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "center" }), 300)}
@@ -889,7 +889,7 @@ export default function ElderProfile() {
             {/* Visit photo — Gran+ feature. Free elders see a locked upsell. */}
             {elder.isPaid ? (
               <div>
-                <p className="text-sm font-medium text-foreground mb-1">Photo (optional)</p>
+                <p className="text-sm font-medium text-foreground mb-1">{t("elder.photoOptional")}</p>
                 <TrialBadge daysLeft={elder.trialDaysLeft} className="mb-2" />
                 {visitPhotoUrl ? (
                   <div className="relative inline-block">
@@ -906,8 +906,8 @@ export default function ElderProfile() {
                 ) : (
                   <label className="flex items-center gap-2 border border-dashed rounded-xl px-4 py-3 cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
                     {visitPhotoUploading
-                      ? <><Loader2 className="w-4 h-4 animate-spin" /> Uploading…</>
-                      : <><ImagePlus className="w-4 h-4 text-primary" /> Add a photo from the visit</>}
+                      ? <><Loader2 className="w-4 h-4 animate-spin" /> {t("elder.uploading")}</>
+                      : <><ImagePlus className="w-4 h-4 text-primary" /> {t("elder.addPhoto")}</>}
                     <input type="file" accept="image/*" className="hidden" onChange={handleVisitPhotoSelect} disabled={visitPhotoUploading} />
                   </label>
                 )}
@@ -920,7 +920,7 @@ export default function ElderProfile() {
               >
                 <Lock className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                 <span className="text-sm text-muted-foreground">
-                  Add a photo from the visit with <span className="font-semibold text-primary">Gran+</span>
+                  {t("elder.photoTeaser")}
                 </span>
               </button>
             )}
@@ -938,7 +938,7 @@ export default function ElderProfile() {
               })}
               disabled={logVisit.isPending || visitPhotoUploading}
             >
-              {logVisit.isPending ? "Logging..." : "✓ Log Visit"}
+              {logVisit.isPending ? t("elder.logging") : t("elder.logVisitBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -948,17 +948,17 @@ export default function ElderProfile() {
       {bookedDate && elder && (
         <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 bg-card border border-green-200 shadow-lg rounded-2xl px-5 py-4 flex items-center gap-4 max-w-sm w-[calc(100%-2rem)]">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm text-foreground">Visit booked! 📅</p>
+            <p className="font-semibold text-sm text-foreground">{t("elder.visitBooked")}</p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {bookedDate.toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long" })}
-              {hasTime(bookedDate) && ` · ${bookedDate.toLocaleTimeString("en-ZA", { hour: "2-digit", minute: "2-digit" })}`}
+              {bookedDate.toLocaleDateString(i18n.language, { weekday: "long", day: "numeric", month: "long" })}
+              {hasTime(bookedDate) && ` · ${bookedDate.toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit" })}`}
             </p>
           </div>
           <button
             className="text-xs font-semibold text-primary underline underline-offset-2 whitespace-nowrap"
             onClick={() => addToCalendar(bookedDate, elder.name)}
           >
-            Add to calendar
+            {t("elder.addToCalendar")}
           </button>
           <button
             className="text-muted-foreground hover:text-foreground ml-1"
@@ -974,7 +974,7 @@ export default function ElderProfile() {
       <Dialog open={bookVisitOpen} onOpenChange={setBookVisitOpen}>
         <DialogContent className="max-w-sm mx-auto">
           <DialogHeader>
-            <DialogTitle>Book a visit to {elder.name}</DialogTitle>
+            <DialogTitle>{t("elder.bookVisitTitle", { name: elder.name })}</DialogTitle>
           </DialogHeader>
           <div className="py-2 flex flex-col items-center gap-3">
             <CalendarUI
@@ -985,13 +985,13 @@ export default function ElderProfile() {
               className="rounded-xl border"
             />
             <div className="w-full">
-              <p className="text-xs font-medium text-foreground mb-1">Time (optional)</p>
+              <p className="text-xs font-medium text-foreground mb-1">{t("elder.timeOptional")}</p>
               <Select value={selectedTime || "none"} onValueChange={(v) => setSelectedTime(v === "none" ? "" : v)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="No specific time" />
+                  <SelectValue placeholder={t("elder.noSpecificTime")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No specific time</SelectItem>
+                  <SelectItem value="none">{t("elder.noSpecificTime")}</SelectItem>
                   {Array.from({ length: 14 }, (_, i) => i + 7).map((h) => {
                     const t = `${String(h).padStart(2, "0")}:00`;
                     return <SelectItem key={t} value={t}>{t}</SelectItem>;
@@ -1019,9 +1019,9 @@ export default function ElderProfile() {
                 });
               }}
             >
-              {bookVisit.isPending ? "Booking..." : selectedDate
-                ? `Book ${selectedDate.toLocaleDateString("en-ZA", { weekday: "short", day: "numeric", month: "short" })}${selectedTime ? ` · ${selectedTime}` : ""}`
-                : "Select a date"}
+              {bookVisit.isPending ? t("elder.booking") : selectedDate
+                ? t("elder.bookDate", { date: selectedDate.toLocaleDateString(i18n.language, { weekday: "short", day: "numeric", month: "short" }) + (selectedTime ? ` · ${selectedTime}` : "") })
+                : t("elder.selectDate")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1032,19 +1032,19 @@ export default function ElderProfile() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-primary" />
-              Make {transferTarget?.name} an admin?
+              {t("elder.makeAdminTitle", { name: transferTarget?.name })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {transferTarget?.name} will be promoted to admin. You'll keep your admin rights too — multiple admins are allowed.
+              {t("elder.makeAdminDesc", { name: transferTarget?.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => transferTarget && transferAdmin.mutate({ elderId, newAdminUserId: transferTarget.userId })}
               disabled={transferAdmin.isPending}
             >
-              {transferAdmin.isPending ? "Promoting..." : "Yes, make them admin"}
+              {transferAdmin.isPending ? t("elder.promoting") : t("elder.yesMakeAdmin")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1056,20 +1056,20 @@ export default function ElderProfile() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <UserMinus className="w-5 h-5 text-destructive" />
-              Remove {removeTarget?.name} from the family?
+              {t("elder.removeTitle", { name: removeTarget?.name })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              They will lose access to {elder?.name}'s profile immediately. Their past visits stay in the history. They could rejoin only with a valid invite code.
+              {t("elder.removeDesc", { elderName: elder?.name })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => removeTarget && removeMember.mutate({ elderId, targetUserId: removeTarget.userId })}
               disabled={removeMember.isPending}
             >
-              {removeMember.isPending ? "Removing..." : "Yes, remove them"}
+              {removeMember.isPending ? t("elder.removing") : t("elder.yesRemove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1081,19 +1081,19 @@ export default function ElderProfile() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <RefreshCw className="w-5 h-5 text-primary" />
-              Create a new invite code?
+              {t("elder.regenTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              The current code and any shared invite links will stop working immediately. Family members who already joined are not affected.
+              {t("elder.regenDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => regenerateCode.mutate({ elderId })}
               disabled={regenerateCode.isPending}
             >
-              {regenerateCode.isPending ? "Creating..." : "Yes, new code"}
+              {regenerateCode.isPending ? t("elder.creating") : t("elder.yesNewCode")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1105,20 +1105,20 @@ export default function ElderProfile() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Trash2 className="w-5 h-5 text-destructive" />
-              Cancel this visit?
+              {t("elder.cancelVisitTitle")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove your booked visit from the schedule. The family will no longer see it as a covered slot.
+              {t("elder.cancelVisitDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogCancel>{t("elder.keepIt")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={() => deleteVisitId !== null && cancelPlanned.mutate({ plannedVisitId: deleteVisitId })}
               disabled={cancelPlanned.isPending}
             >
-              {cancelPlanned.isPending ? "Cancelling..." : "Yes, cancel visit"}
+              {cancelPlanned.isPending ? t("elder.cancelling") : t("elder.yesCancelVisit")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

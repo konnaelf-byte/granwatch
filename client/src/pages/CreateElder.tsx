@@ -12,8 +12,10 @@ import StatusRing from "@/components/StatusRing";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { BirthdayPicker } from "@/components/BirthdayPicker";
 import { COUNTRIES } from "@/lib/countries";
+import { useTranslation } from "react-i18next";
 
 export default function CreateElder() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
 
@@ -26,7 +28,7 @@ export default function CreateElder() {
 
   const createElder = trpc.elders.create.useMutation({
     onSuccess: (elder) => {
-      toast.success(`${elder?.name}'s profile created! 💚`);
+      toast.success(t("create.toastCreated", { name: elder?.name }));
       navigate(`/elder/${elder?.id}`);
     },
     onError: (e) => toast.error(e.message),
@@ -34,7 +36,7 @@ export default function CreateElder() {
 
   const handleSubmit = () => {
     if (!name.trim()) {
-      toast.error("Please enter a name");
+      toast.error(t("create.errName"));
       return;
     }
     // <input type="date"> already yields "YYYY-MM-DD" — exactly what the server
@@ -57,7 +59,7 @@ export default function CreateElder() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
           <ArrowLeft className="w-5 h-5" aria-hidden="true" />
         </Button>
-        <h1 className="font-bold text-foreground">Add a Gran</h1>
+        <h1 className="font-bold text-foreground">{t("dashboard.addGran")}</h1>
         <div className="w-10" />
       </header>
 
@@ -66,7 +68,7 @@ export default function CreateElder() {
         <div className="flex justify-center mb-8">
           <StatusRing
             photoUrl={photoUrl || null}
-            name={name || "Gran"}
+            name={name || t("create.defaultGran")}
             daysSinceVisit={0}
             status="green"
             size={140}
@@ -78,7 +80,7 @@ export default function CreateElder() {
           <div className="flex justify-center">
             <PhotoUpload
               currentPhotoUrl={photoUrl || null}
-              name={name || "Gran"}
+              name={name || t("create.defaultGran")}
               onUpload={(url) => setPhotoUrl(url)}
               size={100}
             />
@@ -86,10 +88,10 @@ export default function CreateElder() {
 
           {/* Name */}
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-semibold">Gran's name</Label>
+            <Label htmlFor="name" className="text-sm font-semibold">{t("create.granName")}</Label>
             <Input
               id="name"
-              placeholder="e.g. Dorothy, Nana, Ouma..."
+              placeholder={t("create.namePlaceholder")}
               value={name}
               onChange={e => setName(e.target.value)}
               className="h-12 text-base"
@@ -104,42 +106,42 @@ export default function CreateElder() {
           <div className="space-y-2">
             <Label className="text-sm font-semibold flex items-center gap-2">
               <Cake className="w-4 h-4 text-primary" />
-              Gran's birthday <span className="font-normal text-muted-foreground">(optional)</span>
+              {t("create.granBirthday")} <span className="font-normal text-muted-foreground">{t("common.optional")}</span>
             </Label>
             <BirthdayPicker value={birthdayInput} onChange={setBirthdayInput} />
-            <p className="text-xs text-muted-foreground">The whole family gets a reminder 3 days before their birthday.</p>
+            <p className="text-xs text-muted-foreground">{t("create.bdayHelp")}</p>
           </div>
 
           {/* Location — for gift/flower delivery partners */}
           <div className="space-y-2">
             <Label className="text-sm font-semibold flex items-center gap-2">
               <MapPin className="w-4 h-4 text-primary" />
-              Where does Gran live? <span className="font-normal text-muted-foreground">(optional)</span>
+              {t("create.whereLive")} <span className="font-normal text-muted-foreground">{t("common.optional")}</span>
             </Label>
             <select
               value={country}
               onChange={e => setCountry(e.target.value)}
               className="h-12 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
-              <option value="">Select country…</option>
+              <option value="">{t("create.selectCountry")}</option>
               {COUNTRIES.map(c => (
                 <option key={c.code} value={c.code}>{c.name}</option>
               ))}
             </select>
             <Input
-              placeholder="City or town (optional)"
+              placeholder={t("create.cityPlaceholder")}
               value={city}
               onChange={e => setCity(e.target.value)}
               className="h-12"
             />
-            <p className="text-xs text-muted-foreground">Used only to find gift &amp; flower delivery services near Gran.</p>
+            <p className="text-xs text-muted-foreground">{t("create.locationHelp")}</p>
           </div>
 
           {/* Alert threshold */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Alert after</Label>
-              <span className="text-primary font-bold text-sm">{threshold} days</span>
+              <Label className="text-sm font-semibold">{t("create.alertAfter")}</Label>
+              <span className="text-primary font-bold text-sm">{t("create.daysValue", { count: threshold })}</span>
             </div>
             <Slider
               min={7}
@@ -150,11 +152,11 @@ export default function CreateElder() {
               className="w-full"
             />
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>7 days</span>
-              <span>60 days</span>
+              <span>{t("create.days7")}</span>
+              <span>{t("create.days60")}</span>
             </div>
             <p className="text-xs text-muted-foreground">
-              The whole family gets an alert if {name || "Gran"} goes {threshold} days without a visitor.
+              {t("create.alertHelp", { name: name || t("create.defaultGran"), count: threshold })}
             </p>
           </div>
 
@@ -165,11 +167,11 @@ export default function CreateElder() {
             disabled={createElder.isPending || !name.trim()}
           >
             <Heart className="w-5 h-5 mr-2 fill-current" />
-            {createElder.isPending ? "Creating..." : `Create ${name || "Gran"}'s Profile`}
+            {createElder.isPending ? t("create.creating") : t("create.createProfile", { name: name || t("create.defaultGran") })}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
-            You'll get an invite code to share with the family after creating the profile.
+            {t("create.inviteAfter")}
           </p>
         </div>
       </main>

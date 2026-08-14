@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { PhotoCrop } from "./PhotoCrop";
+import { useTranslation } from "react-i18next";
 
 interface PhotoUploadProps {
   currentPhotoUrl?: string | null;
@@ -13,6 +14,7 @@ interface PhotoUploadProps {
 }
 
 export function PhotoUpload({ currentPhotoUrl, name, onUpload, size = 120 }: PhotoUploadProps) {
+  const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
@@ -84,7 +86,7 @@ export function PhotoUpload({ currentPhotoUrl, name, onUpload, size = 120 }: Pho
     const file = e.target.files?.[0];
     if (fileInputRef.current) fileInputRef.current.value = "";
     if (!file) return;
-    if (file.type && !file.type.startsWith("image/")) { toast.error("Please select an image file"); return; }
+    if (file.type && !file.type.startsWith("image/")) { toast.error(t("elder.selectImage")); return; }
     if (file.size > 30 * 1024 * 1024) { toast.error("Photo must be under 30MB"); return; }
     setPreparing(true);
     try {
@@ -116,7 +118,7 @@ export function PhotoUpload({ currentPhotoUrl, name, onUpload, size = 120 }: Pho
       }
       const { url } = await uploadRes.json();
       onUpload(url);
-      toast.success("Photo saved!");
+      toast.success(t("photo.toastSaved"));
     } catch (err: any) {
       toast.error(err.message ?? "Upload failed");
       setPreview(null);
@@ -155,7 +157,7 @@ export function PhotoUpload({ currentPhotoUrl, name, onUpload, size = 120 }: Pho
 
       <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => fileInputRef.current?.click()} disabled={uploading || preparing}>
         {uploading || preparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-        {preparing ? "Opening photo..." : uploading ? "Uploading..." : displayUrl ? "Change photo" : "Upload photo"}
+        {preparing ? t("photo.opening") : uploading ? t("photo.uploading") : displayUrl ? t("photo.changePhoto") : t("photo.uploadPhoto")}
       </Button>
 
       <p className="text-xs text-muted-foreground text-center">Tap to choose from your camera roll or take a photo</p>
@@ -164,7 +166,7 @@ export function PhotoUpload({ currentPhotoUrl, name, onUpload, size = 120 }: Pho
 
       <Dialog open={cropOpen} onOpenChange={(open) => { if (!open) handleCropCancel(); }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Position photo</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("photo.positionPhoto")}</DialogTitle></DialogHeader>
           {rawImageUrl && <PhotoCrop imageUrl={rawImageUrl} onConfirm={handleCropConfirm} onCancel={handleCropCancel} />}
         </DialogContent>
       </Dialog>
