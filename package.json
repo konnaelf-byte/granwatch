@@ -65,8 +65,6 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "cookie": "^1.0.2",
-    "cordova-annotated-plugin-android": "^1.0.4",
-    "cordova-plugin-purchases": "^8.0.0",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.2",
     "drizzle-orm": "^0.45.2",
