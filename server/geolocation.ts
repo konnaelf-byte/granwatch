@@ -9,14 +9,9 @@
  * app stays functional while Konna creates the variants in the LS dashboard.
  *
  * Tier map:
- *   ZAR  — South Africa                  R79/mo
- *   GBP  — UK, Ireland                   £3.99/mo
- *   EUR  — Eurozone + wider Europe        €4.49/mo
- *   BRL  — Brazil                         R$14.99/mo
- *   INR  — India                          ₹149/mo
- *   LOW  — SE Asia, Sub-Saharan Africa,   $2.99/mo
- *           Central America, South Asia
- *   USD  — Everything else                $4.99/mo
+ *   PRICING SETTLED (Konna 2026-08-13): $2.99/mo flat worldwide, store parity.
+ *   The tier machinery below is retained for future differential pricing;
+ *   all tiers currently resolve to $2.99 USD and the default LS variant.
  */
 
 import { ENV } from "./_core/env";
@@ -41,13 +36,16 @@ export interface PricingInfo {
 // ─── Pricing tier → display info ─────────────────────────────────────────────
 
 const TIER_INFO: Record<PricingTier, Omit<PricingInfo, "tier" | "variantId">> = {
-  ZAR: { priceDisplay: "R79",      currencySymbol: "R",  priceAmount: "79",    currency: "ZAR" },
-  GBP: { priceDisplay: "£3.99",    currencySymbol: "£",  priceAmount: "3.99",  currency: "GBP" },
-  EUR: { priceDisplay: "€4.49",    currencySymbol: "€",  priceAmount: "4.49",  currency: "EUR" },
-  BRL: { priceDisplay: "R$14.99",  currencySymbol: "R$", priceAmount: "14.99", currency: "BRL" },
-  INR: { priceDisplay: "₹149",     currencySymbol: "₹",  priceAmount: "149",   currency: "INR" },
-  LOW: { priceDisplay: "$2.99",    currencySymbol: "$",  priceAmount: "2.99",  currency: "USD" },
-  USD: { priceDisplay: "$4.99",    currencySymbol: "$",  priceAmount: "4.99",  currency: "USD" },
+  // PRICING SETTLED (Konna, 2026-08-13): $2.99 flat worldwide — parity with
+  // the app stores. Tier plumbing kept for the day differential pricing
+  // returns; every tier currently resolves to the same price and variant.
+  ZAR: { priceDisplay: "$2.99", currencySymbol: "$", priceAmount: "2.99", currency: "USD" },
+  GBP: { priceDisplay: "$2.99", currencySymbol: "$", priceAmount: "2.99", currency: "USD" },
+  EUR: { priceDisplay: "$2.99", currencySymbol: "$", priceAmount: "2.99", currency: "USD" },
+  BRL: { priceDisplay: "$2.99", currencySymbol: "$", priceAmount: "2.99", currency: "USD" },
+  INR: { priceDisplay: "$2.99", currencySymbol: "$", priceAmount: "2.99", currency: "USD" },
+  LOW: { priceDisplay: "$2.99", currencySymbol: "$", priceAmount: "2.99", currency: "USD" },
+  USD: { priceDisplay: "$2.99", currencySymbol: "$", priceAmount: "2.99", currency: "USD" },
 };
 
 // ─── Country → tier ───────────────────────────────────────────────────────────

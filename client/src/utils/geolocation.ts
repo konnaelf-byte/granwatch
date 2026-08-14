@@ -17,13 +17,13 @@ export interface LocalizedPricing {
   currency: string;       // ISO 4217, e.g. "ZAR"
 }
 
-/** The single global price. LS converts to local currency at checkout. */
+/** The single global price ($2.99 flat worldwide — Konna, 2026-08-13). */
 export const DEFAULT_PRICING: LocalizedPricing = {
-  tier: "ZAR",
-  priceDisplay: "R79",
-  currencySymbol: "R",
-  priceAmount: "79",
-  currency: "ZAR",
+  tier: "USD",
+  priceDisplay: "$2.99",
+  currencySymbol: "$",
+  priceAmount: "2.99",
+  currency: "USD",
 };
 
 /**

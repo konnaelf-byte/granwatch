@@ -219,7 +219,7 @@ const FAQS: Array<{ q: string; a: string }> = [
   { q: "What is the status ring?",
     a: "A colour-coded ring around Gran's photo that the whole family sees at once. Green means someone visited recently, yellow means it's been a while, red means nobody has been. Any family member logs a visit with one tap and the ring resets to green for everyone." },
   { q: "Is GranWatch free?",
-    a: "The core is free forever: the status ring, logging visits, inviting the whole family, and alerts. Gran+ is an optional upgrade (R79/month on the web, $2.99/month on the App Store) that adds care routines like medication tracking, appointments, custom counters, visit photos and mood tracking. One subscription covers the entire family." },
+    a: "The core is free forever: the status ring, logging visits, inviting the whole family, and alerts. Gran+ is an optional upgrade ($2.99/month) that adds care routines like medication tracking, appointments, custom counters, visit photos and mood tracking. One subscription covers the entire family." },
   { q: "Is this surveillance of my grandmother?",
     a: "The opposite. Nothing tracks Gran — no camera, no wearable, no location. The only thing recorded is that a family member chose to visit. GranWatch watches the family, and only the thing families are proudest to have on record." },
   { q: "We already have a family WhatsApp group. Why would we need this?",

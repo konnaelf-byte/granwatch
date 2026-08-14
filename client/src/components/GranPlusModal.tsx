@@ -76,7 +76,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
     createCheckout.mutate({ elderId });
   };
 
-  // Localised pricing — falls back to ZAR R79 while loading
+  // Localised pricing — falls back to $2.99 while loading
   // One volunteer family member pays the full amount. The old "split the bill"
   // UI was removed 2026-07-31: it only divided the DISPLAYED price — checkout
   // always charged the full amount — so it promised a split that never happened.
