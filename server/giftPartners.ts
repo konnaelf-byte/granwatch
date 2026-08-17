@@ -61,18 +61,29 @@ export const GIFT_PARTNERS: GiftPartner[] = [
   },
 
   // ── Global fallbacks (priority < 100) ─────────────────────────────────────
-  // Slots reserved: activate once affiliate approvals land (see
-  // GIFT-AFFILIATE-PLAYBOOK.md). Examples ready to fill in:
-  // {
-  //   id: "floraqueen-global",
-  //   name: "FloraQueen",
-  //   category: "flowers",
-  //   countries: "global", // 100+ countries
-  //   url: "<affiliate deep link with {SUBID}>",
-  //   priority: 50,
-  //   active: false,
-  //   note: "Apply via their affiliate program post-launch.",
-  // },
+  // TEST-PHASE plain links (same approach as Petal & Post): full UX now,
+  // swap `url` for the CJ Affiliate tracking link (with {SUBID}) once the
+  // FloraQueen affiliate approval lands (see GIFT-AFFILIATE-PLAYBOOK.md).
+  {
+    id: "floraqueen-il",
+    name: "FloraQueen",
+    category: "flowers",
+    countries: ["IL"],
+    url: "https://www.floraqueen.com/collections/flowers-israel",
+    priority: 60,
+    active: true,
+    note: "Country-specific landing page for Israel (Nadav demo). Plain link, no commission yet.",
+  },
+  {
+    id: "floraqueen-global",
+    name: "FloraQueen",
+    category: "flowers",
+    countries: "global", // 100+ countries via local florists
+    url: "https://www.floraqueen.com/collections/flowers-abroad",
+    priority: 50,
+    active: true,
+    note: "Plain link test-phase. Apply via CJ Affiliate -> replace url with tracking deep link + {SUBID}.",
+  },
 ];
 
 /**
