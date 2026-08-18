@@ -254,8 +254,14 @@ async function runNightlyNotifications() {
       if (!hasCoveringVisit) {
         const redDay = elder.alertThresholdDays;
         const nudgeDay = nudgeDaysFor(redDay);
-        const isRed = daysSinceVisit >= redDay;
-        const isNudge = !isRed && daysSinceVisit >= nudgeDay;
+        // No visit ever logged = brand-new/unused profile. Stay SILENT until the
+        // family logs their first visit — same "grey until first log" rule as
+        // custom counters. Without this guard the 999 "never visited" sentinel
+        // instantly satisfies isRed and the first nightly cron after creating a
+        // gran blasts the whole family with "It's been 999 days" (bug, Aug 18).
+        const hasAnyVisit = !!lastVisit;
+        const isRed = hasAnyVisit && daysSinceVisit >= redDay;
+        const isNudge = hasAnyVisit && !isRed && daysSinceVisit >= nudgeDay;
 
         // Sentinels newer than the last visit = this crossing already handled.
         const lastVisitCutoff = lastVisitDate ?? new Date(0);
