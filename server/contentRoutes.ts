@@ -345,7 +345,7 @@ ${CTA}`,
 </ul>
 
 <h2>What else it does</h2>
-<p>Beyond the ring: gentle reminders to the family member who hasn't been in longest (never to Gran), planned visits the whole family can see (so Sunday isn't triple-booked and Tuesday isn't empty), birthday reminders, a visit history that settles "I thought YOU went last week" before it starts, and — with Gran+ — care routines, medications and appointments kept where everyone looks, plus custom counters for anything your family wants to keep on top of (flowers delivered, garden checked, hair done).</p>
+<p>Beyond the ring: gentle reminders to the family member who hasn't been in longest (never to Gran), planned visits the whole family can see (so Sunday isn't triple-booked and Tuesday isn't empty), birthday reminders, and a visit history that settles "I thought YOU went last week" before it starts. Upgrading to <strong>Gran+</strong> adds the care layer: routines, medications and appointments kept where everyone looks, plus custom counters for anything your family wants to keep on top of (flowers delivered, garden checked, hair done).</p>
 
 <h2>What it costs</h2>
 <p>The heart of GranWatch is <strong>free for the whole family</strong>: the ring, visit logging, alerts, planned visits. <strong>Gran+</strong> adds the care layer for <strong>$2.99/month — one subscription covers the entire family</strong>, and every new profile starts with a <strong>4-month free trial</strong>, no card needed.</p>
@@ -358,10 +358,10 @@ ${CTA}`,
 <a class="btn" href="https://apps.apple.com/app/granwatch/id6782076368">Download for iPhone →</a>&nbsp;&nbsp;
 <a class="btn" href="https://play.google.com/store/apps/details?id=app.granwatch" style="background:#1D140D">Download for Android →</a>
 </p>
-<p style="color:var(--muted);font-size:15px">Or start in any browser at <a href="${APP_URL}">granwatch.app</a> — the web app is the full experience too.</p>
+<p style="color:var(--muted);font-size:15px">You can also use GranWatch in any browser at <a href="${APP_URL}">granwatch.app</a> — the apps add push notifications and the home-screen widget.</p>
 
 <h2>For organisations and communities</h2>
-<p>If you care for older people at any scale — a retirement community, care organisation, church group, or a neighbourhood — GranWatch can be set up for the families you serve, including <strong>gifted Gran+ subscriptions</strong> so it costs those families nothing. Write to <a href="mailto:hello@granwatch.app">hello@granwatch.app</a> and we'll set you up personally.</p>
+<p>If you care for older people at any scale — a retirement community, care organisation, church group, or a neighbourhood — GranWatch can help the families you serve stay visibly close to their loved ones. Write to <a href="mailto:hello@granwatch.app">hello@granwatch.app</a> and we'll set you up personally.</p>
 
 <h2>Want to read more?</h2>
 <p>Our <a href="/guides">guides</a> cover the honest questions — how often to visit, dealing with the guilt of distance, coordinating siblings — and the <a href="/faq">FAQ</a> answers everything else.</p>
