@@ -36,7 +36,7 @@ async function seed() {
   // Create demo elder
   const [elderResult] = await db.insert(elders).values({
     name: "Dorothy",
-    photoUrl: "/og-gran.png", // self-hosted; was a Manus CloudFront URL
+    photoUrl: "/icon-512.png", // self-hosted; was a Manus CloudFront URL
     alertThresholdDays: 21,
     wellbeingEnabled: true,
     inviteCode: "DEMO1234",

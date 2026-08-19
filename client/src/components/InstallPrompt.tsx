@@ -149,7 +149,7 @@ export function InstallPrompt() {
       >
         {/* App icon */}
         <img
-          src="/og-gran.png"
+          src="/icon-512.png"
           alt="GranWatch"
           className="w-12 h-12 rounded-xl flex-shrink-0 object-cover"
         />

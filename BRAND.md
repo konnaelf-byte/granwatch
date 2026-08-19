@@ -8,7 +8,7 @@
 **GranWatch** in **Inter ExtraBold/Bold, single ink colour**, set beside the logo. Never split-coloured, never serif.
 
 ## Mascot
-The illustrated granny in the green ring (`client/public/og-gran.png` / app icon). She is the face of the brand on any image asset. Never replace her with abstract symbols (the old checkmark card is retired).
+**THE ONLY GRAN is the final gran character** — the granny with the red heart on her blue cardigan inside the green watch-dial ring (`client/public/icon-512.png`). She is the face of the brand on any image asset. Never replace her with abstract symbols (the old checkmark card is retired). **⚠️ The old Manus-era gran (`og-gran.png`, hands-on-chest, heart-patterned cardigan, NO red heart) is RETIRED and DELETED from the repo (2026-08-19, Konna's call) — never reuse her from caches, old exports, or old share cards. If an asset shows a gran without the red heart on her sweater, it's the wrong gran.**
 
 ## Colours
 | Role | Hex | Source |
