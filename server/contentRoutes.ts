@@ -78,7 +78,7 @@ ${schemaTag}
 <header><a href="${APP_URL}"><img src="/icon-192.png" alt="">GranWatch</a></header>
 <main>${opts.bodyHtml}</main>
 <footer>
-  <a href="${APP_URL}">Home</a><a href="/guides">Guides</a><a href="/faq">FAQ</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>
+  <a href="${APP_URL}">Home</a><a href="/learn">All you should know</a><a href="/guides">Guides</a><a href="/faq">FAQ</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>
   <div style="margin-top:8px">GranWatch — Keep Gran in the green. She doesn't need a phone.</div>
 </footer>
 </body>
@@ -315,10 +315,71 @@ ${CTA}`,
     }));
   });
 
+  // ─── /learn — the one-page pitch: teaches and sells to anyone ──────────────
+  // Deliberately NOT audience-fenced (Konna's rule: never limit who GranWatch
+  // is "for"). This is the link every poster QR, business card, and rep
+  // message points to. Keep it self-contained: someone who has never heard of
+  // GranWatch should finish this page knowing what it is, what it costs, and
+  // how to start — without Konna in the room.
+  app.get("/learn", (_req, res) => {
+    res.send(layout({
+      title: "GranWatch — all you should know | See when Gran was last visited",
+      description: "Everything about GranWatch on one page: how the visit ring works, what it costs, why Gran needs no phone, and how to get started today — iPhone and Android.",
+      path: "/learn",
+      bodyHtml: `
+<h1>All you should know about GranWatch</h1>
+<p class="sub">One page, everything explained. Five minutes from now you'll know exactly what GranWatch does, what it costs, and whether it's for your family.</p>
+
+<h2>The problem it solves</h2>
+<p>Every family with an older loved one carries the same quiet question: <em>when did someone last actually visit her?</em> Group chats don't answer it — silence in a chat looks the same whether Gran had three visitors this week or none. Distance makes it worse: the family members furthest away worry most and can see least.</p>
+
+<h2>What GranWatch is</h2>
+<p>A simple app for the family. Gran gets a profile with her photo, and around that photo lives a <strong>colour ring</strong> everyone shares: <span class="ring g"></span><strong>green</strong> when someone has visited recently, <span class="ring y"></span><strong>amber</strong> when a visit is due, <span class="ring r"></span><strong>red</strong> when nobody has been in too long. When it turns red, the whole family knows — kindly, automatically, without anyone having to be the nag.</p>
+<p><strong>Gran herself needs nothing.</strong> No phone, no device, no app, no button to press. She just receives visits — the family does the logging, in one tap, on their way out the door.</p>
+
+<h2>How it works — three steps</h2>
+<ul>
+<li><strong>1. Create Gran's profile</strong> — add her photo, choose how often she should be visited (you decide: weekly, fortnightly — every family is different).</li>
+<li><strong>2. Invite the family</strong> — one invite link in the family group chat; everyone joins in seconds, anywhere in the world.</li>
+<li><strong>3. Visit and tap</strong> — whoever visits taps "Log a visit". The ring resets to green for everyone, from Cape Town to London to Sydney.</li>
+</ul>
+
+<h2>What else it does</h2>
+<p>Beyond the ring: gentle reminders to the family member who hasn't been in longest (never to Gran), planned visits the whole family can see (so Sunday isn't triple-booked and Tuesday isn't empty), birthday reminders, a visit history that settles "I thought YOU went last week" before it starts, and — with Gran+ — care routines, medications and appointments kept where everyone looks, plus custom counters for anything your family wants to keep on top of (flowers delivered, garden checked, hair done).</p>
+
+<h2>What it costs</h2>
+<p>The heart of GranWatch is <strong>free for the whole family</strong>: the ring, visit logging, alerts, planned visits. <strong>Gran+</strong> adds the care layer for <strong>$2.99/month — one subscription covers the entire family</strong>, and every new profile starts with a <strong>4-month free trial</strong>, no card needed.</p>
+
+<h2>Privacy, plainly</h2>
+<p>GranWatch tracks visits, not people. There is nothing on Gran to track — no wearable, no camera, no sensor in her home. Only invited family members see your family's information, and it is never sold or shared. The app speaks 8 languages, and works anywhere in the world.</p>
+
+<h2>Get the app</h2>
+<p>
+<a class="btn" href="https://apps.apple.com/app/granwatch/id6782076368">Download for iPhone →</a>&nbsp;&nbsp;
+<a class="btn" href="https://play.google.com/store/apps/details?id=app.granwatch" style="background:#1D140D">Download for Android →</a>
+</p>
+<p style="color:var(--muted);font-size:15px">Or start in any browser at <a href="${APP_URL}">granwatch.app</a> — the web app is the full experience too.</p>
+
+<h2>For organisations and communities</h2>
+<p>If you care for older people at any scale — a retirement community, care organisation, church group, or a neighbourhood — GranWatch can be set up for the families you serve, including <strong>gifted Gran+ subscriptions</strong> so it costs those families nothing. Write to <a href="mailto:hello@granwatch.app">hello@granwatch.app</a> and we'll set you up personally.</p>
+
+<h2>Want to read more?</h2>
+<p>Our <a href="/guides">guides</a> cover the honest questions — how often to visit, dealing with the guilt of distance, coordinating siblings — and the <a href="/faq">FAQ</a> answers everything else.</p>
+${CTA}`,
+      schema: {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        name: "All you should know about GranWatch",
+        description: "Everything about GranWatch on one page: how the visit ring works, what it costs, why Gran needs no phone, and how to get started.",
+        mainEntityOfPage: `${APP_URL}/learn`,
+      },
+    }));
+  });
+
   // Dynamic sitemap (shadows the static file; includes content pages)
   app.get("/sitemap.xml", (_req, res) => {
     const urls = [
-      "/", "/privacy", "/terms", "/guides", "/faq", "/compare/family-group-chat",
+      "/", "/learn", "/privacy", "/terms", "/guides", "/faq", "/compare/family-group-chat",
       ...Object.keys(ARTICLES).map(s => `/guides/${s}`),
     ];
     res.type("application/xml").send(
