@@ -9,6 +9,7 @@ import type { VisitStatus } from "@/components/StatusRing";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEffect } from "react";
 import { useWidgetSync } from "@/hooks/useWidgetSync";
+import { usePurchaseHealer } from "@/hooks/usePurchaseHealer";
 import { getPushToken } from "@/utils/push";
 import { useTranslation } from "react-i18next";
 
@@ -16,6 +17,8 @@ export default function Dashboard() {
   const { t, i18n } = useTranslation();
   // Sync elder data to iOS home-screen widget whenever the list changes
   useWidgetSync();
+  // Heal any Gran+ purchase orphaned by a mid-payment app restart (native only)
+  usePurchaseHealer();
   const { user, isAuthenticated, loading, logout } = useAuth();
   const [, navigate] = useLocation();
 

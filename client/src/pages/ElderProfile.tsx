@@ -9,7 +9,7 @@ import { CareSchedulePanel } from "@/components/CareSchedulePanel";
 import { CustomCounters } from "@/components/CustomCounters";
 import { TrialBadge } from "@/components/TrialBadge";
 import { isNativeApp } from "@/utils/platform";
-import { initRevenueCat } from "@/utils/iap";
+import { usePurchaseHealer } from "@/hooks/usePurchaseHealer";
 import StatusRing from "@/components/StatusRing";
 import type { VisitStatus } from "@/components/StatusRing";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -81,12 +81,9 @@ export default function ElderProfile() {
   ];
   const MOOD_SCORE: Record<string, number> = Object.fromEntries(MOOD_OPTIONS.map((m) => [m.emoji, m.score]));
 
-  // Configure RevenueCat once on native, keyed to the Clerk user id (openId).
-  // No-op on web and after the first successful configure.
-  useEffect(() => {
-    if (!isNativeApp || !user?.openId) return;
-    void initRevenueCat(user.openId);
-  }, [user?.openId]);
+  // Configure RevenueCat on native (keyed to the Clerk user id) and finish any
+  // Gran+ purchase orphaned by a mid-payment app restart. No-op on web.
+  usePurchaseHealer();
 
   const { data: elder, isLoading } = trpc.elders.get.useQuery(
     { elderId },

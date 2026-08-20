@@ -1,4 +1,5 @@
-import { SignIn, AuthenticateWithRedirectCallback } from "@clerk/react";
+import { SignIn, AuthenticateWithRedirectCallback, useAuth as useClerkAuth } from "@clerk/react";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
@@ -41,6 +42,19 @@ function SignInPage() {
   const [, navigate] = useLocation();
   const isNative = Capacitor.isNativePlatform();
   const redirectUrl = getSafeRedirectParam();
+  const { isLoaded, isSignedIn } = useClerkAuth();
+
+  // Already signed in? Skip the sign-in screen entirely. Without this, an app
+  // relaunch that lands here (e.g. Android recreating the activity after the
+  // Google Play payment sheet, 2026-08-20) dead-ends the user: every sign-in
+  // attempt fails with Clerk's "Session already exists".
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      navigate(redirectUrl ?? "/dashboard", { replace: true });
+    }
+  }, [isLoaded, isSignedIn, redirectUrl, navigate]);
+
+  if (isLoaded && isSignedIn) return null;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

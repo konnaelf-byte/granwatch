@@ -27,6 +27,40 @@ import { currentPlatform, isNativeApp } from "./platform";
 const ENTITLEMENT_ID = "gran_plus";
 const PRODUCT_ID = "gran_plus_monthly";
 
+/**
+ * Local flag persisted across app restarts: a purchase was started for this
+ * elder but the server may not have been told yet. Android can kill and
+ * recreate the whole activity while Google's payment sheet is up, which
+ * destroys the JS that was waiting to call activateNative — the store charges
+ * the user, the server never hears about it (bug found live 2026-08-20).
+ * syncPendingPurchase() heals this on the next app open.
+ */
+const PENDING_KEY = "gw-pending-purchase";
+
+interface PendingPurchase {
+  elderId: number;
+  ts: number;
+}
+
+function readPendingPurchase(): PendingPurchase | null {
+  try {
+    const raw = localStorage.getItem(PENDING_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PendingPurchase;
+    return typeof parsed?.elderId === "number" && parsed.elderId > 0 ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearPendingPurchase(): void {
+  try {
+    localStorage.removeItem(PENDING_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 const IOS_KEY = import.meta.env.VITE_REVENUECAT_IOS_KEY as string | undefined;
 const ANDROID_KEY = import.meta.env.VITE_REVENUECAT_ANDROID_KEY as string | undefined;
 
@@ -104,12 +138,15 @@ export async function purchaseGranPlus(
 
   // Tag the subscriber so the webhook can route lifecycle events to the
   // correct elder/user even when no client session is present.
+  // NOTE: keys must NOT start with "$" — RevenueCat reserves the $ prefix and
+  // silently rejects unknown $-keys, which left webhooks with no elder id
+  // (found live 2026-08-20). Plain keys sync fine.
   const { customerInfo } = await Purchases.getCustomerInfo();
   const revenueCatUserId = customerInfo.originalAppUserId;
 
   await Purchases.setAttributes({
-    $elderId: String(elderId),
-    $userId: revenueCatUserId,
+    elder_id: String(elderId),
+    gw_user_id: revenueCatUserId,
   });
 
   const offering = await getGranPlusOffering();
@@ -118,9 +155,25 @@ export async function purchaseGranPlus(
   const pkg = findGranPlusPackage(offering);
   if (!pkg) throw new Error("Gran+ subscription package not found.");
 
-  const { customerInfo: postPurchase } = await Purchases.purchasePackage({
-    aPackage: pkg,
-  });
+  // Persist the intent BEFORE the store sheet opens: if Android recreates the
+  // activity during payment, this flag survives and syncPendingPurchase()
+  // finishes the server activation on next launch.
+  try {
+    localStorage.setItem(PENDING_KEY, JSON.stringify({ elderId, ts: Date.now() } satisfies PendingPurchase));
+  } catch {
+    /* storage unavailable — proceed; the happy path still works */
+  }
+
+  let postPurchase;
+  try {
+    ({ customerInfo: postPurchase } = await Purchases.purchasePackage({
+      aPackage: pkg,
+    }));
+  } catch (err) {
+    // Sheet dismissed / payment failed — no purchase happened, drop the flag.
+    clearPendingPurchase();
+    throw err;
+  }
 
   const isActive = postPurchase.entitlements.active[ENTITLEMENT_ID] !== undefined;
   if (!isActive) {
@@ -129,6 +182,44 @@ export async function purchaseGranPlus(
 
   // Verify + persist server-side (RevenueCat REST verification on the backend).
   await activate({ elderId, revenueCatUserId });
+  clearPendingPurchase();
+}
+
+/**
+ * Heal a purchase that was orphaned by an app restart mid-payment: if a
+ * pending-purchase flag exists and RevenueCat says the entitlement is active,
+ * activate it server-side now. Call once on app start (after initRevenueCat).
+ *
+ * @returns true if an orphaned purchase was found and activated.
+ */
+export async function syncPendingPurchase(
+  activate: (input: { elderId: number; revenueCatUserId: string }) => Promise<void>
+): Promise<boolean> {
+  if (!isNativeApp || !configured) return false;
+
+  const pending = readPendingPurchase();
+  if (!pending) return false;
+
+  try {
+    const { customerInfo } = await Purchases.getCustomerInfo();
+    const isActive = customerInfo.entitlements.active[ENTITLEMENT_ID] !== undefined;
+
+    if (!isActive) {
+      // No entitlement — either the purchase never completed or the store is
+      // still settling. Keep retrying for 24h, then drop the stale flag.
+      if (Date.now() - pending.ts > 24 * 60 * 60 * 1000) clearPendingPurchase();
+      return false;
+    }
+
+    await activate({ elderId: pending.elderId, revenueCatUserId: customerInfo.originalAppUserId });
+    clearPendingPurchase();
+    console.log(`[RevenueCat] Healed orphaned purchase for elder ${pending.elderId}`);
+    return true;
+  } catch (err) {
+    // Transient (network/server) — keep the flag, retry on next launch.
+    console.error("[RevenueCat] pending-purchase sync failed (will retry):", err);
+    return false;
+  }
 }
 
 /**

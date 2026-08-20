@@ -162,6 +162,19 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
     );
   }
 
+  /**
+   * Clerk refuses to start a sign-in while a session is already active
+   * ("Session already exists", code session_exists). That means the user IS
+   * signed in — treat it as success and continue, never show it as an error.
+   * (Hit live 2026-08-20 after Android recreated the activity mid-purchase.)
+   */
+  function isSessionExists(err: unknown): boolean {
+    const e = err as { errors?: Array<{ code?: string; message?: string }>; message?: string };
+    if (e?.errors?.some((ce) => ce.code === "session_exists")) return true;
+    const msg = (e?.errors?.[0]?.message ?? e?.message ?? "").toLowerCase();
+    return msg.includes("session already exists");
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function getSignIn(): any {
     const si = clerk.client?.signIn;
@@ -262,7 +275,9 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
 
       throw new Error("Google sign-in completed but session could not be established.");
     } catch (err: unknown) {
-      if (isUserCancellation(err)) {
+      if (isSessionExists(err)) {
+        navigate(postAuthPath);
+      } else if (isUserCancellation(err)) {
         // User dismissed the chooser — not an error. Return to the sign-in options
         // with no error banner and no stuck spinner (cleared in finally).
         setScreen("buttons");
@@ -297,6 +312,10 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
       }
       throw new Error(`Unexpected sign-in status: ${res.status}`);
     } catch (err: unknown) {
+      if (isSessionExists(err)) {
+        navigate(postAuthPath);
+        return;
+      }
       const e = err as { errors?: Array<{ code?: string; message?: string }>; message?: string };
       // Check if Clerk says no user found → try sign-up
       const clerkErrors = e?.errors ?? [];
@@ -380,6 +399,10 @@ export default function NativeSignIn({ returnPath }: { returnPath?: string | nul
       }
       throw new Error(`Unexpected sign-in status: ${res.status}`);
     } catch (err: unknown) {
+      if (isSessionExists(err)) {
+        navigate(postAuthPath);
+        return;
+      }
       const e2 = err as { errors?: Array<{ message?: string }>; message?: string };
       const msg = e2?.errors?.[0]?.message ?? e2?.message ?? "Sign-in failed. Check your email and password.";
       setError(msg);

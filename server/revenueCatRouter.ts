@@ -245,9 +245,18 @@ export async function webhookHandler(req: Request, res: Response): Promise<void>
   }
 
   const attrs = event.subscriber_attributes ?? {};
-  const elderId = parseInt(attrs["$elderId"]?.value ?? "0");
-  // $userId carries the RevenueCat app user id (the Clerk id); resolve to our DB user.
-  const clerkUserId = attrs["$userId"]?.value ?? event.original_app_user_id ?? event.app_user_id ?? "";
+  // Current client sets plain keys (elder_id / gw_user_id) — the original
+  // $-prefixed keys were silently rejected by RevenueCat ($ is a reserved
+  // prefix; found live 2026-08-20). Keep the $ fallbacks for any events
+  // originating from older client bundles.
+  const elderId = parseInt(attrs["elder_id"]?.value ?? attrs["$elderId"]?.value ?? "0");
+  // gw_user_id carries the RevenueCat app user id (the Clerk id); resolve to our DB user.
+  const clerkUserId =
+    attrs["gw_user_id"]?.value ??
+    attrs["$userId"]?.value ??
+    event.original_app_user_id ??
+    event.app_user_id ??
+    "";
 
   console.log(`[RevenueCat Webhook] Event: ${event.type}, elder: ${elderId}, rcUser: ${clerkUserId}`);
 

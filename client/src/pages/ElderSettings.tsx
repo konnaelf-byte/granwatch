@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { isNativeApp } from "@/utils/platform";
-import { initRevenueCat } from "@/utils/iap";
+import { usePurchaseHealer } from "@/hooks/usePurchaseHealer";
 import { COUNTRIES } from "@/lib/countries";
 import { useTranslation } from "react-i18next";
 import {
@@ -94,12 +94,9 @@ export default function ElderSettings() {
   const [nativeGranPlusOpen, setNativeGranPlusOpen] = useState(false);
   // Open the correct Gran+ upgrade UI: RevenueCat IAP on native, Lemon Squeezy on web.
   const openGranPlus = () => (isNativeApp ? setNativeGranPlusOpen(true) : setGranPlusOpen(true));
-  // Configure RevenueCat once on native so the upgrade modal can load pricing/purchase.
-  // No-op on web and after the first successful configure (idempotent in iap.ts).
-  useEffect(() => {
-    if (!isNativeApp || !user?.openId) return;
-    void initRevenueCat(user.openId);
-  }, [user?.openId]);
+  // Configure RevenueCat on native so the upgrade modal can load pricing/purchase,
+  // and finish any Gran+ purchase orphaned by a mid-payment app restart.
+  usePurchaseHealer();
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [name, setName] = useState("");
