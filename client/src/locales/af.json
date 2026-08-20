@@ -195,7 +195,8 @@
     "toastCalendarNative": "Maak die gebeurtenis oop — tik Voeg by om dit in jou kalender te sit.",
     "toastCalendarWeb": "Kalendergebeurtenis afgelaai! Maak dit oop om by jou kalender te voeg.",
     "selectImage": "Kies asseblief 'n fotolêer",
-    "inviteMsg": "Sluit aan by ons familie op GranWatch 💚 Dit wys wanneer {{name}} laas besoek is — een tik om 'n besoek aan te teken, en sy het nie 'n foon nodig nie. Dit vat 'n minuut en is gratis: {{url}}"
+    "inviteMsg": "Sluit aan by ons familie op GranWatch 💚 Dit wys wanneer {{name}} laas besoek is — een tik om 'n besoek aan te teken, en sy het nie 'n foon nodig nie. Dit vat 'n minuut en is gratis: {{url}}",
+    "birthdayTip": "Wenk: tik op die jaartal boaan die kalender om direk na die regte jaar te spring."
   },
   "counters": {
     "teaser": "Persoonlike tellers — 'n Gran+-funksie",

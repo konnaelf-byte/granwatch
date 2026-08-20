@@ -195,7 +195,8 @@
     "toastCalendarNative": "Agenda-item wordt geopend — tik op Voeg toe om het in je agenda te zetten.",
     "toastCalendarWeb": "Agenda-item gedownload! Open het om het aan je agenda toe te voegen.",
     "selectImage": "Kies een afbeeldingsbestand",
-    "inviteMsg": "Word lid van onze familie op GranWatch 💚 Je ziet wanneer {{name}} voor het laatst bezoek kreeg — één tik om een bezoek vast te leggen, en zij heeft geen telefoon nodig. Duurt een minuutje en is gratis: {{url}}"
+    "inviteMsg": "Word lid van onze familie op GranWatch 💚 Je ziet wanneer {{name}} voor het laatst bezoek kreeg — één tik om een bezoek vast te leggen, en zij heeft geen telefoon nodig. Duurt een minuutje en is gratis: {{url}}",
+    "birthdayTip": "Tip: tik op het jaartal bovenaan de kalender om direct naar het juiste jaar te springen."
   },
   "counters": {
     "teaser": "Eigen tellers — een Gran+-functie",

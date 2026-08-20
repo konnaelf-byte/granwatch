@@ -195,7 +195,8 @@
     "toastCalendarNative": "Ouverture de l'événement — touchez Ajouter pour le mettre dans votre calendrier.",
     "toastCalendarWeb": "Événement téléchargé ! Ouvrez-le pour l'ajouter à votre calendrier.",
     "selectImage": "Veuillez choisir un fichier image",
-    "inviteMsg": "Rejoins notre famille sur GranWatch 💚 On y voit quand {{name}} a reçu sa dernière visite — un geste pour noter une visite, et elle n'a pas besoin de téléphone. Une minute suffit, c'est gratuit : {{url}}"
+    "inviteMsg": "Rejoins notre famille sur GranWatch 💚 On y voit quand {{name}} a reçu sa dernière visite — un geste pour noter une visite, et elle n'a pas besoin de téléphone. Une minute suffit, c'est gratuit : {{url}}",
+    "birthdayTip": "Astuce : touchez l'année en haut du calendrier pour aller directement à la bonne année."
   },
   "counters": {
     "teaser": "Compteurs personnalisés — une fonction Gran+",
