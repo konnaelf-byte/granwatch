@@ -30,6 +30,17 @@ const IS_IOS =
   (/iP(hone|ad|od)/.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
 
+/**
+ * Android showed the EXACT same Radix Select failure in the Play-store app
+ * (scroll the list, tap a value, it snaps shut selecting nothing — Konna,
+ * 2026-08-20). Same cure as iOS: the OS-native Material date dialog via
+ * <input type="date">, which the WebView renders outside the page entirely.
+ */
+const IS_ANDROID = typeof navigator !== "undefined" && /Android/i.test(navigator.userAgent);
+
+/** Touch platforms get the OS date picker; desktop keeps the dropdowns. */
+const USE_NATIVE_DATE_INPUT = IS_IOS || IS_ANDROID;
+
 function daysInMonth(year: number | null, month: number | null): number {
   if (!month) return 31;
   // Use a leap-safe year when the year isn't chosen yet
@@ -47,9 +58,9 @@ function daysInMonth(year: number | null, month: number | null): number {
  * native app (Care schedule panel uses it).
  */
 export function BirthdayPicker({ value, onChange }: BirthdayPickerProps) {
-  // iOS: use the OS-native date wheel — see IS_IOS note above. The dropdown
-  // row below is for Android + desktop, where it's tested and working.
-  if (IS_IOS) {
+  // iOS + Android: use the OS-native date picker — see notes above. The
+  // dropdown row below stays for desktop, where it's tested and working.
+  if (USE_NATIVE_DATE_INPUT) {
     const today = new Date();
     const max = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
     return (
