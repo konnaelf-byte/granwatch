@@ -7,7 +7,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Sparkles, Lock, Bell, BellOff, LogOut, AlertTriangle, CheckCircle2, Cake, Trash2 } from "lucide-react";
+import { ArrowLeft, Sparkles, Lock, Bell, BellOff, LogOut, AlertTriangle, CheckCircle2, Cake, Trash2, RefreshCw } from "lucide-react";
 import { PhotoUpload } from "@/components/PhotoUpload";
 import { BirthdayPicker } from "@/components/BirthdayPicker";
 import { useState, useEffect } from "react";
@@ -99,6 +99,7 @@ export default function ElderSettings() {
   usePurchaseHealer();
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [regenConfirmOpen, setRegenConfirmOpen] = useState(false);
   const [name, setName] = useState("");
   const [threshold, setThreshold] = useState(21);
   const [wellbeingEnabled, setWellbeingEnabled] = useState(false);
@@ -199,6 +200,19 @@ export default function ElderSettings() {
       toast.success(t("settings.toastDeleted"));
       utils.elders.list.invalidate();
       navigate("/dashboard");
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // Invite-code regeneration lives HERE, not on the profile page: as a third
+  // control in the invite-card row it overflowed the layout on phones, making
+  // the whole profile page horizontally pannable for admins — which also
+  // mis-centered every dialog on Android (Konna, 2026-08-21).
+  const regenerateCode = trpc.elders.regenerateInviteCode.useMutation({
+    onSuccess: () => {
+      toast.success(t("elder.toastNewCode"));
+      utils.elders.get.invalidate({ elderId });
+      setRegenConfirmOpen(false);
     },
     onError: (e) => toast.error(e.message),
   });
@@ -414,6 +428,28 @@ export default function ElderSettings() {
           <GranPlusSettingsCard elderId={elderId} elderName={elder.name} onManage={openGranPlus} />
         )}
 
+        {/* Invite code — admin only: view + regenerate (moved here from the
+            profile page, 2026-08-21 — see regenerateCode comment above) */}
+        {isAdmin && (
+          <div className="rounded-xl border p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-4 h-4 text-muted-foreground" />
+              <Label className="text-sm font-semibold">{t("elder.inviteCode")}</Label>
+            </div>
+            <p className="font-mono font-bold text-lg text-foreground tracking-widest">{elder.inviteCode}</p>
+            <p className="text-xs text-muted-foreground">{t("elder.regenDesc")}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => setRegenConfirmOpen(true)}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {t("elder.regenTitle")}
+            </Button>
+          </div>
+        )}
+
         {/* Test notifications — admin only */}
         {isAdmin && (
           <div className="rounded-xl border border-dashed p-4 space-y-2">
@@ -545,6 +581,30 @@ export default function ElderSettings() {
           isAdmin={isAdmin}
         />
       )}
+
+      {/* Regenerate invite code confirmation dialog */}
+      <AlertDialog open={regenConfirmOpen} onOpenChange={setRegenConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-primary" />
+              {t("elder.regenTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("elder.regenDesc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => regenerateCode.mutate({ elderId })}
+              disabled={regenerateCode.isPending}
+            >
+              {regenerateCode.isPending ? t("elder.creating") : t("elder.yesNewCode")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Leave family confirmation dialog */}
       <AlertDialog open={leaveDialogOpen} onOpenChange={setLeaveDialogOpen}>

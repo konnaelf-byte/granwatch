@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2, UserMinus, RefreshCw, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2, UserMinus, MessageCircle } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
@@ -55,7 +55,6 @@ export default function ElderProfile() {
   const [bookedDate, setBookedDate] = useState<Date | null>(null);
   const [transferTarget, setTransferTarget] = useState<{ userId: number; name: string } | null>(null);
   const [removeTarget, setRemoveTarget] = useState<{ userId: number; name: string } | null>(null);
-  const [regenConfirmOpen, setRegenConfirmOpen] = useState(false);
   const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
@@ -235,14 +234,7 @@ export default function ElderProfile() {
     onError: (e) => toast.error(e.message),
   });
 
-  const regenerateCode = trpc.elders.regenerateInviteCode.useMutation({
-    onSuccess: () => {
-      toast.success(t("elder.toastNewCode"));
-      utils.elders.get.invalidate({ elderId });
-      setRegenConfirmOpen(false);
-    },
-    onError: (e) => toast.error(e.message),
-  });
+  // (regenerateInviteCode mutation + confirm dialog moved to ElderSettings, 2026-08-21)
 
   const inviteUrl = elder ? `${window.location.origin}/api/og/invite/${elder.inviteCode}` : "";
   // Warm prefilled invite text — WhatsApp is the family channel (98% open rates).
@@ -304,7 +296,10 @@ export default function ElderProfile() {
   }[elder.status as VisitStatus];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    // overflow-x-hidden: belt-and-braces — a single overflowing element used to
+    // make the whole page horizontally pannable on phones, which also
+    // mis-centered dialogs on Android (Konna, 2026-08-21).
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {/* Header */}
       <header className="flex items-center justify-between px-5 py-4 border-b bg-card sticky top-0 z-10">
         <Button variant="ghost" size="icon" onClick={() => navigate("/dashboard")} aria-label="Back to dashboard">
@@ -476,22 +471,11 @@ export default function ElderProfile() {
               <Copy className="w-4 h-4 mr-1.5" />
               {t("elder.copyLink")}
             </Button>
-            {/* Regenerate sits AFTER copy, behind a divider and extra gap —
-                it was directly beside Copy and got pressed by accident. */}
-            {elder.memberRole === "admin" && (
-              <>
-                <div className="h-5 w-px bg-border mx-1.5" aria-hidden="true" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground/60 hover:text-muted-foreground"
-                  onClick={() => setRegenConfirmOpen(true)}
-                  aria-label="Generate a new invite code"
-                >
-                  <RefreshCw className="w-4 h-4" aria-hidden="true" />
-                </Button>
-              </>
-            )}
+            {/* Regenerate-code control moved to ElderSettings (2026-08-21,
+                Konna): as a third control it overflowed the row on phones,
+                making the whole page horizontally pannable for admins — which
+                also mis-centered every dialog on Android (dialogs center on
+                the layout viewport, not the visual one). */}
           </div>
         </div>
 
@@ -1072,29 +1056,7 @@ export default function ElderProfile() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Regenerate invite code confirmation dialog */}
-      <AlertDialog open={regenConfirmOpen} onOpenChange={setRegenConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <RefreshCw className="w-5 h-5 text-primary" />
-              {t("elder.regenTitle")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("elder.regenDesc")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => regenerateCode.mutate({ elderId })}
-              disabled={regenerateCode.isPending}
-            >
-              {regenerateCode.isPending ? t("elder.creating") : t("elder.yesNewCode")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Regenerate invite code confirmation dialog: moved to ElderSettings (2026-08-21) */}
 
       {/* Delete planned visit confirmation dialog */}
       <AlertDialog open={deleteVisitId !== null} onOpenChange={(o) => { if (!o) setDeleteVisitId(null); }}>
