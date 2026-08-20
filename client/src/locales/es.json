@@ -49,7 +49,13 @@
     "footPrivacy": "Privacidad",
     "footTerms": "Términos",
     "footContact": "Contacto",
-    "footMade": "© 2026 GranWatch — hecho con amor, para todas las abuelas."
+    "footMade": "© 2026 GranWatch — hecho con amor, para todas las abuelas.",
+    "footLearn": "Todo lo que debes saber",
+    "getAppTitle": "Descarga la app de GranWatch",
+    "getAppSub": "La app añade notificaciones y el widget de pantalla de inicio — o simplemente continúa en tu navegador.",
+    "storeIos": "Descargar en el App Store",
+    "storeAndroid": "Consíguela en Google Play",
+    "storeWeb": "Continuar en el navegador"
   },
   "join": {
     "headerTitle": "Unirse a una familia",

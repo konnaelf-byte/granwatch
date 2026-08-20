@@ -49,7 +49,13 @@
     "footPrivacy": "Privacy",
     "footTerms": "Mga Tuntunin",
     "footContact": "Contact",
-    "footMade": "© 2026 GranWatch — gawa nang may pagmamahal, para sa bawat lola."
+    "footMade": "© 2026 GranWatch — gawa nang may pagmamahal, para sa bawat lola.",
+    "footLearn": "Lahat ng dapat mong malaman",
+    "getAppTitle": "Kunin ang GranWatch app",
+    "getAppSub": "May push alerts at home-screen widget ang app — o magpatuloy lang sa iyong browser.",
+    "storeIos": "I-download sa App Store",
+    "storeAndroid": "Kunin sa Google Play",
+    "storeWeb": "Magpatuloy sa browser"
   },
   "join": {
     "headerTitle": "Sumali sa isang pamilya",

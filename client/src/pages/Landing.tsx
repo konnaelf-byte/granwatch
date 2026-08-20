@@ -1,18 +1,37 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getSignInUrl } from "@/const";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useLocation } from "wouter";
-import { Heart, Bell, Calendar, Users, Camera, CheckCircle } from "lucide-react";
+import { Heart, Bell, Calendar, Users, Camera, CheckCircle, Apple, Play, Globe } from "lucide-react";
 import { isNativeApp } from "@/utils/platform";
 import HeroLogoRing from "@/components/HeroLogoRing";
 import { LanguageButton } from "@/components/LanguagePicker";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+
+const APP_STORE_URL = "https://apps.apple.com/app/granwatch/id6782076368";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=app.granwatch";
 
 export default function Landing() {
   const { isAuthenticated, loading } = useAuth();
   const [, navigate] = useLocation();
   const { t } = useTranslation();
+
+  // "Get started" on a phone browser (not the native app): offer the stores
+  // first — the app adds push + widget — with "continue in browser" as the
+  // honest third option (Konna, 2026-08-20). Desktop and native app keep the
+  // direct sign-in link. Store order matches the visitor's platform.
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const isIosBrowser = /iPhone|iPad|iPod/i.test(ua);
+  const isMobileBrowser = !isNativeApp && (isIosBrowser || /Android/i.test(ua));
+  const [getAppOpen, setGetAppOpen] = useState(false);
+  const handleGetStarted = (e: React.MouseEvent) => {
+    if (isMobileBrowser) {
+      e.preventDefault();
+      setGetAppOpen(true);
+    }
+  };
 
   // Persist referral code from ?ref= param so we can attribute the signup
   useEffect(() => {
@@ -88,7 +107,7 @@ export default function Landing() {
           </p>
 
           <Button asChild size="lg" className="w-full max-w-xs text-base h-12">
-            <a href={getSignInUrl()}>{t("landing.ctaGetStarted")}</a>
+            <a href={getSignInUrl()} onClick={handleGetStarted}>{t("landing.ctaGetStarted")}</a>
           </Button>
 
           <p className="text-sm text-muted-foreground mt-4">
@@ -160,14 +179,51 @@ export default function Landing() {
         {/* Final CTA */}
         <div className="mt-12 text-center">
           <Button asChild size="lg" className="w-full max-w-xs text-base h-12">
-            <a href={getSignInUrl()}>{t("landing.ctaStart")}</a>
+            <a href={getSignInUrl()} onClick={handleGetStarted}>{t("landing.ctaStart")}</a>
           </Button>
           <p className="text-xs text-muted-foreground mt-3">{t("landing.noCard")}</p>
         </div>
       </main>
 
+      {/* Get-the-app chooser — phone browsers only */}
+      <Dialog open={getAppOpen} onOpenChange={setGetAppOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("landing.getAppTitle")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{t("landing.getAppSub")}</p>
+          <div className="flex flex-col gap-3 mt-1">
+            {(isIosBrowser
+              ? [
+                  { href: APP_STORE_URL, icon: <Apple className="w-5 h-5" />, label: t("landing.storeIos") },
+                  { href: PLAY_STORE_URL, icon: <Play className="w-5 h-5" />, label: t("landing.storeAndroid") },
+                ]
+              : [
+                  { href: PLAY_STORE_URL, icon: <Play className="w-5 h-5" />, label: t("landing.storeAndroid") },
+                  { href: APP_STORE_URL, icon: <Apple className="w-5 h-5" />, label: t("landing.storeIos") },
+                ]
+            ).map((s) => (
+              <Button key={s.href} asChild size="lg" className="w-full h-12 gap-2.5 font-semibold">
+                <a href={s.href} target="_blank" rel="noopener noreferrer">
+                  {s.icon}
+                  {s.label}
+                </a>
+              </Button>
+            ))}
+            <Button asChild variant="outline" size="lg" className="w-full h-12 gap-2.5">
+              <a href={getSignInUrl()}>
+                <Globe className="w-5 h-5" />
+                {t("landing.storeWeb")}
+              </a>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <footer className="text-center py-6 text-xs text-muted-foreground border-t space-y-2">
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-4 flex-wrap px-4">
+          <a href="/learn" className="hover:text-foreground transition-colors font-medium">{t("landing.footLearn")}</a>
+          <span>·</span>
           <a href="/guides" className="hover:text-foreground transition-colors">{t("landing.footGuides")}</a>
           <span>·</span>
           <a href="/faq" className="hover:text-foreground transition-colors">{t("landing.footFaq")}</a>

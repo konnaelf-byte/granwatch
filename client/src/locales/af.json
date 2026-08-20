@@ -49,7 +49,13 @@
     "footPrivacy": "Privaatheid",
     "footTerms": "Diensbepalings",
     "footContact": "Kontak",
-    "footMade": "© 2026 GranWatch — met liefde gemaak, vir elke ouma."
+    "footMade": "© 2026 GranWatch — met liefde gemaak, vir elke ouma.",
+    "footLearn": "Alles wat jy moet weet",
+    "getAppTitle": "Kry die GranWatch-app",
+    "getAppSub": "Die app voeg kennisgewings en die tuisskerm-widget by — of gaan eenvoudig voort in jou blaaier.",
+    "storeIos": "Laai af op die App Store",
+    "storeAndroid": "Kry dit op Google Play",
+    "storeWeb": "Gaan voort in blaaier"
   },
   "join": {
     "headerTitle": "Sluit by 'n familie aan",
