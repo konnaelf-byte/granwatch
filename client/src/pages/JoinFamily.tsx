@@ -30,6 +30,13 @@ export default function JoinFamily() {
   const joinFamily = trpc.elders.join.useMutation({
     onSuccess: (elder) => {
       clearStashedReturnPath();
+      // Just-joined = peak motivation to get the real app. This one-shot flag
+      // lets InstallPrompt show the store banner even if it was dismissed
+      // long ago in this browser (Konna's ask, 2026-08-21).
+      try {
+        window.sessionStorage.setItem("gw-just-joined", "1"); // survives a reload
+        window.dispatchEvent(new CustomEvent("gw-just-joined")); // reaches the already-mounted InstallPrompt now
+      } catch {}
       toast.success(t("join.welcomeToast", { name: elder?.name }));
       navigate(`/elder/${elder?.id}`);
     },

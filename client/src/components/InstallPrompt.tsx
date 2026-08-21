@@ -53,22 +53,48 @@ export function InstallPrompt() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    // Don't show if already dismissed
-    if (localStorage.getItem("installPromptDismissed")) return;
+    // One-shot override: the user JUST joined a family via an invite link —
+    // peak motivation to install the real app, so an old dismissal doesn't
+    // silence the store banner. Flag is set by JoinFamily on success and
+    // cleared here so it fires exactly once.
+    let justJoined = false;
+    try {
+      justJoined = sessionStorage.getItem("gw-just-joined") === "1";
+      if (justJoined) sessionStorage.removeItem("gw-just-joined");
+    } catch {}
 
     const detected = detectPlatform();
 
     // Don't show if already in the app
     if (detected === "standalone") return;
 
+    // The join can also complete AFTER this component mounted (auto-join is
+    // async) — listen for the live event so the banner appears right away.
+    const showStoreBannerSoon = () => {
+      if (detected === "store-ios" || detected === "store-android") {
+        setPlatform(detected);
+        setDismissed(false);
+        setTimeout(() => setShowBanner(true), 1500); // let the welcome toast land first
+      }
+    };
+    window.addEventListener("gw-just-joined", showStoreBannerSoon);
+    const cleanupJoinListener = () =>
+      window.removeEventListener("gw-just-joined", showStoreBannerSoon);
+
+    // Don't show if already dismissed (unless they just joined a family)
+    if (!justJoined && localStorage.getItem("installPromptDismissed")) return cleanupJoinListener;
+
     // Only show to signed-in users — visitors get the landing page's own store chooser
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) return cleanupJoinListener;
 
     setPlatform(detected);
 
     if (detected === "store-ios" || detected === "store-android") {
       const t = setTimeout(() => setShowBanner(true), 2500);
-      return () => clearTimeout(t);
+      return () => {
+        clearTimeout(t);
+        cleanupJoinListener();
+      };
     }
 
     // Desktop: capture the native PWA install prompt
@@ -79,7 +105,10 @@ export function InstallPrompt() {
     };
 
     window.addEventListener("beforeinstallprompt", handler);
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      cleanupJoinListener();
+    };
   }, [isAuthenticated]);
 
   const handleInstall = async () => {
