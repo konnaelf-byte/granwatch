@@ -1,10 +1,13 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
     "target": {
       "namespace": "android_app",
       "package_name": "app.granwatch",
       "sha256_cert_fingerprints": [
+        "E9:C2:07:06:63:C5:CD:00:6E:DE:D4:8B:5F:6A:45:69:73:E7:EF:D4:FF:AE:60:FB:B2:24:10:12:E1:F8:53:65",
         "07:C9:AE:59:93:69:04:6E:56:A2:A6:87:C6:25:B9:30:AC:E1:85:6A:3F:CF:95:99:25:23:99:7E:13:2C:C6:1F",
         "4F:90:01:35:40:01:F9:3D:F2:49:E1:04:C0:B2:7A:D6:19:56:A9:90:6B:1E:94:D1:D7:A6:EC:91:8E:D3:38:48"
       ]
