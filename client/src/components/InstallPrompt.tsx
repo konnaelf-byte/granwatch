@@ -1,7 +1,16 @@
 import { useState, useEffect } from "react";
-import { X, ExternalLink } from "lucide-react";
+import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/_core/hooks/useAuth";
+
+// Since the native apps launched (iOS Aug 11 2026, Android Aug 20 2026), phone
+// browsers get pointed at the REAL store apps — never the PWA. The PWA install
+// prompt survives only on desktop Chrome/Edge, where no store app exists.
+// (History: the old PWA prompt installed a duplicate "web app" alongside the
+// Play-installed app on Android — field-caught by Konstand, 2026-08-21.)
+
+const APP_STORE_URL = "https://apps.apple.com/app/granwatch/id6782076368";
+const PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=app.granwatch";
 
 // BeforeInstallPromptEvent is not in standard TypeScript types
 interface BeforeInstallPromptEvent extends Event {
@@ -12,56 +21,28 @@ interface BeforeInstallPromptEvent extends Event {
 function detectPlatform() {
   const ua = navigator.userAgent;
 
-  // Native app (Capacitor WKWebView) — never show the web "Add to Home Screen"
-  // prompt; the user is already in the installed native app.
+  // Native app (Capacitor WebView) — user is already in the installed app.
   if ((window as any).Capacitor?.isNativePlatform?.()) {
     return "standalone";
   }
 
-  // Already installed as standalone PWA
+  // Already installed as standalone PWA (legacy installs from before the stores)
   if (window.matchMedia("(display-mode: standalone)").matches) {
     return "standalone";
   }
 
-  // Detect in-app browsers (WhatsApp, Facebook, Instagram, Messenger, Gmail, Snapchat, TikTok, LinkedIn)
-  const inAppBrowserPatterns = [
-    /FBAN|FBAV/i,        // Facebook
-    /Instagram/i,        // Instagram
-    /WhatsApp/i,         // WhatsApp
-    /Snapchat/i,         // Snapchat
-    /TikTok/i,           // TikTok
-    /LinkedInApp/i,      // LinkedIn
-    /GSA/i,              // Gmail (Google Search App)
-    /YahooMobile/i,      // Yahoo Mail
-    /Outlook/i,          // Outlook
-    /MicroMessenger/i,   // WeChat
-  ];
-
-  const isInAppBrowser = inAppBrowserPatterns.some((pattern) => pattern.test(ua));
-  if (isInAppBrowser) {
-    // Determine which native browser to recommend
-    const isAndroid = /android/i.test(ua);
-    return isAndroid ? "inapp-android" : "inapp-ios";
+  // Any iOS browser (Safari, Chrome-on-iOS, in-app browsers) → App Store
+  if (/iphone|ipad|ipod/i.test(ua) && !(window as any).MSStream) {
+    return "store-ios";
   }
 
-  // Samsung Internet browser — older versions don't support SameSite=None cookies well
-  // and don't support PWA install prompts reliably. Recommend Chrome.
-  const isSamsungInternet = /SamsungBrowser\/(\d+)/.test(ua);
-  const samsungVersionMatch = ua.match(/SamsungBrowser\/(\d+)/);
-  const samsungVersion = samsungVersionMatch ? parseInt(samsungVersionMatch[1], 10) : 99;
-  if (isSamsungInternet && samsungVersion < 17) {
-    return "samsung-old";
+  // Any Android browser (Chrome, Samsung Internet, in-app browsers) → Play Store
+  if (/android/i.test(ua)) {
+    return "store-android";
   }
 
-  // iOS Safari (not in-app)
-  const isIOS =
-    /iphone|ipad|ipod/i.test(ua) &&
-    !(window as any).MSStream &&
-    !(navigator as any).standalone;
-  if (isIOS) return "ios";
-
-  // Android / Desktop Chrome (will receive beforeinstallprompt)
-  return "android";
+  // Desktop Chrome/Edge — the only place the PWA still makes sense
+  return "desktop";
 }
 
 export function InstallPrompt() {
@@ -77,34 +58,20 @@ export function InstallPrompt() {
 
     const detected = detectPlatform();
 
-    // Don't show if already installed
+    // Don't show if already in the app
     if (detected === "standalone") return;
 
-    // Show Samsung browser warning BEFORE sign-in — it blocks the login flow
-    if (detected === "samsung-old") {
-      const t = setTimeout(() => setShowBanner(true), 1000);
-      setPlatform(detected);
-      return () => clearTimeout(t);
-    }
-
-    // For all other prompts, only show to signed-in users
+    // Only show to signed-in users — visitors get the landing page's own store chooser
     if (!isAuthenticated) return;
 
     setPlatform(detected);
 
-    if (detected === "ios") {
-      // iOS Safari: show manual instructions after a short delay
-      const t = setTimeout(() => setShowBanner(true), 3000);
+    if (detected === "store-ios" || detected === "store-android") {
+      const t = setTimeout(() => setShowBanner(true), 2500);
       return () => clearTimeout(t);
     }
 
-    if (detected === "inapp-ios" || detected === "inapp-android") {
-      // In-app browser: show "open in real browser" message after a short delay
-      const t = setTimeout(() => setShowBanner(true), 2000);
-      return () => clearTimeout(t);
-    }
-
-    // Android/Chrome: capture the native install prompt
+    // Desktop: capture the native PWA install prompt
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -127,12 +94,6 @@ export function InstallPrompt() {
     }
   };
 
-  const handleOpenInBrowser = () => {
-    // Copy current URL to clipboard so user can paste in real browser
-    navigator.clipboard?.writeText(window.location.href).catch(() => {});
-    handleDismiss();
-  };
-
   const handleDismiss = () => {
     setShowBanner(false);
     setDismissed(true);
@@ -140,6 +101,9 @@ export function InstallPrompt() {
   };
 
   if (!showBanner || dismissed) return null;
+
+  const storeUrl = platform === "store-ios" ? APP_STORE_URL : PLAY_STORE_URL;
+  const storeName = platform === "store-ios" ? "App Store" : "Google Play";
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
@@ -155,99 +119,30 @@ export function InstallPrompt() {
         />
 
         <div className="flex-1 min-w-0">
-          {/* In-app browser on iOS */}
-          {platform === "inapp-ios" && (
+          {/* Phone browsers → the real app in the store */}
+          {(platform === "store-ios" || platform === "store-android") && (
             <>
-              <p className="font-semibold text-sm text-foreground">Open in Safari for the best experience</p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Tap the <strong>···</strong> or share menu and choose <strong>"Open in Safari"</strong> to install GranWatch to your home screen and enable notifications.
+              <p className="font-semibold text-sm text-foreground">Get the GranWatch app</p>
+              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                Push notifications and the smoothest experience live in the app — free on {storeName}.
               </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2 h-8 text-xs gap-1"
-                onClick={handleOpenInBrowser}
-              >
-                <ExternalLink className="w-3 h-3" />
-                Copy link to open in Safari
+              <Button asChild size="sm" className="mt-2 h-9 text-sm">
+                <a href={storeUrl} target="_blank" rel="noopener noreferrer">
+                  Get it on {storeName}
+                </a>
               </Button>
             </>
           )}
 
-          {/* Old Samsung Internet — recommend Chrome */}
-          {platform === "samsung-old" && (
+          {/* Desktop Chrome/Edge — PWA install */}
+          {platform === "desktop" && (
             <>
-              <p className="font-semibold text-sm text-foreground">For the best experience, open in Chrome</p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Your Samsung Internet browser may have trouble signing in. Tap the <strong>⋮</strong> menu and choose <strong>"Open in Chrome"</strong> for a smoother experience.
+              <p className="font-semibold text-sm text-foreground">Install GranWatch on this computer</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Quick access from your dock or taskbar — no download needed.
               </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2 h-8 text-xs gap-1"
-                onClick={handleOpenInBrowser}
-              >
-                <ExternalLink className="w-3 h-3" />
-                Copy link to open in Chrome
-              </Button>
-            </>
-          )}
-
-          {/* In-app browser on Android */}
-          {platform === "inapp-android" && (
-            <>
-              <p className="font-semibold text-sm text-foreground">Open in Chrome for the best experience</p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Tap the <strong>⋮</strong> menu and choose <strong>"Open in Chrome"</strong> to install GranWatch and enable notifications.
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2 h-8 text-xs gap-1"
-                onClick={handleOpenInBrowser}
-              >
-                <ExternalLink className="w-3 h-3" />
-                Copy link to open in Chrome
-              </Button>
-            </>
-          )}
-
-          {/* iOS Safari */}
-          {platform === "ios" && (
-            <>
-              <p className="font-semibold text-sm text-foreground">Add GranWatch to your home screen</p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Tap the{" "}
-                <span className="inline-flex items-center gap-0.5 font-semibold text-foreground">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline", verticalAlign: "middle" }}>
-                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-                    <polyline points="16 6 12 2 8 6" />
-                    <line x1="12" y1="2" x2="12" y2="15" />
-                  </svg>
-                  {" "}Share
-                </span>{" "}
-                button at the <strong>bottom</strong> of Safari, then choose{" "}
-                <strong>"Add to Home Screen"</strong>.
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                This enables push notifications and a native app feel.
-              </p>
-            </>
-          )}
-
-          {/* Android / Chrome */}
-          {platform === "android" && (
-            <>
-              <p className="font-semibold text-sm text-foreground">Add GranWatch to your home screen</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Install for quick access and notifications — no App Store needed.
-              </p>
-              <Button
-                size="sm"
-                className="mt-2 h-8 text-xs"
-                onClick={handleInstall}
-              >
-                Install App
+              <Button size="sm" className="mt-2 h-9 text-sm" onClick={handleInstall}>
+                Install
               </Button>
             </>
           )}
@@ -255,10 +150,10 @@ export function InstallPrompt() {
 
         <button
           onClick={handleDismiss}
-          className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5"
+          className="text-muted-foreground hover:text-foreground flex-shrink-0 mt-0.5 p-1"
           aria-label="Dismiss"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       </div>
     </div>
