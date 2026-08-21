@@ -466,7 +466,7 @@ export const appRouter = router({
           myDaysSince,
           memberRole: membership.role,
           notificationsEnabled: membership.notificationsEnabled,
-          socialNotificationsEnabled: membership.socialNotificationsEnabled ?? false,
+          socialNotificationsEnabled: membership.socialNotificationsEnabled ?? true,
         };
       }),
 

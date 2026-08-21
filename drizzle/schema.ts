@@ -65,8 +65,10 @@ export const elderMembers = mysqlTable("elderMembers", {
   joinedAt: timestamp("joinedAt").defaultNow().notNull(),
   // Notification preferences — user can opt out per elder profile
   notificationsEnabled: boolean("notificationsEnabled").default(true).notNull(),
-  // Opt-IN social pushes ("Barry just visited Gran Nanna") — off by default
-  socialNotificationsEnabled: boolean("socialNotificationsEnabled").default(false).notNull(),
+  // Social pushes ("Barry just visited Gran Nanna") — ON by default since
+  // 2026-08-21 (Konna: most people never find the toggle; better to let the
+  // few who mind switch it off than have everyone miss the app's core signal)
+  socialNotificationsEnabled: boolean("socialNotificationsEnabled").default(true).notNull(),
 }, (table) => ({
   elderIdIdx: index("elderMembers_elderId_idx").on(table.elderId),
   userIdIdx: index("elderMembers_userId_idx").on(table.userId),

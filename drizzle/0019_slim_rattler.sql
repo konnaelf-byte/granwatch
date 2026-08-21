@@ -1,0 +1,1 @@
+ALTER TABLE `elderMembers` MODIFY COLUMN `socialNotificationsEnabled` boolean NOT NULL DEFAULT true;

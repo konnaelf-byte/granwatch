@@ -105,7 +105,7 @@ export default function ElderSettings() {
   const [wellbeingEnabled, setWellbeingEnabled] = useState(false);
   const [careNotes, setCareNotes] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [socialNotificationsEnabled, setSocialNotificationsEnabled] = useState(false);
+  const [socialNotificationsEnabled, setSocialNotificationsEnabled] = useState(true);
   const [birthdayInput, setBirthdayInput] = useState(""); // "YYYY-MM-DD" for the input element
   const [country, setCountry] = useState(""); // ISO alpha-2 — for gift-delivery partners
   const [city, setCity] = useState("");
@@ -125,7 +125,7 @@ export default function ElderSettings() {
       setWellbeingEnabled(elder.wellbeingEnabled);
       setCareNotes(elder.careNotes ?? "");
       setNotificationsEnabled(elder.notificationsEnabled ?? true);
-      setSocialNotificationsEnabled(elder.socialNotificationsEnabled ?? false);
+      setSocialNotificationsEnabled(elder.socialNotificationsEnabled ?? true);
       // birthday stored as "YYYY-MM-DD"; legacy records may be "MM-DD" — clear those so the user re-enters with year
       setBirthdayInput(elder.birthday && elder.birthday.length === 10 ? elder.birthday : "");
       setCountry(elder.country ?? "");
@@ -246,7 +246,7 @@ export default function ElderSettings() {
     // Save notification preferences (all members)
     if (
       notificationsEnabled !== (elder.notificationsEnabled ?? true) ||
-      socialNotificationsEnabled !== (elder.socialNotificationsEnabled ?? false)
+      socialNotificationsEnabled !== (elder.socialNotificationsEnabled ?? true)
     ) {
       updateNotifPrefs.mutate({ elderId, notificationsEnabled, socialNotificationsEnabled });
     }
