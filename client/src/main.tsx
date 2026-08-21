@@ -101,11 +101,24 @@ if (Capacitor.isNativePlatform()) {
   // module state — so an in-memory "already handled" flag is useless. The
   // launch URL from getLaunchUrl() persists for the whole app session, so
   // after the reload it fired again → navigate → reload → forever.
-  // The only guard that survives reloads is comparing against where we
-  // already ARE: if the current location matches the link target, do nothing.
-  const handleDeepLink = (url: string | undefined | null) => {
+  // Guard 1 — "already there": if the current location matches the link
+  // target, do nothing.
+  // Guard 2 (field report 2026-08-21, sign-in infinite loop): the launch URL
+  // must only ever be acted on ONCE per app session. Without this, a signed-
+  // OUT user opening an invite link cold got stuck: /join/CODE → in-app nav
+  // to /sign-in (a reload) → main.tsx re-runs → getLaunchUrl() STILL returns
+  // the invite → yanked back to /join before Clerk even finished loading
+  // (buttons greyed) → /sign-in → forever. sessionStorage survives WebView
+  // reloads within one app session but is cleared on a fresh cold start, so
+  // a genuinely new link tap still navigates.
+  const LAUNCH_HANDLED_KEY = "gw-launch-url-handled";
+  const handleDeepLink = (url: string | undefined | null, isLaunchUrl = false) => {
     if (!url) return;
     try {
+      if (isLaunchUrl) {
+        if (window.sessionStorage.getItem(LAUNCH_HANDLED_KEY) === url) return; // already replayed
+        window.sessionStorage.setItem(LAUNCH_HANDLED_KEY, url);
+      }
       const u = new URL(url);
       let path = u.pathname + u.search;
       const ogInvite = u.pathname.match(/^\/api\/og\/invite\/([A-Za-z0-9_-]+)/);
@@ -121,12 +134,14 @@ if (Capacitor.isNativePlatform()) {
 
   import("@capacitor/app")
     .then(({ App: CapacitorApp }) => {
-      // Warm start / app already running: link tap fires appUrlOpen.
+      // Warm start / app already running: link tap fires appUrlOpen. Always
+      // navigate — every event is a real, fresh user tap.
       CapacitorApp.addListener("appUrlOpen", ({ url }) => handleDeepLink(url));
       // COLD start: the app is LAUNCHED by the link — appUrlOpen may never
-      // fire because the event happened before this listener existed.
+      // fire because the event happened before this listener existed. This
+      // path replays on every in-session reload, hence the once-only guard.
       CapacitorApp.getLaunchUrl()
-        .then((launch) => handleDeepLink(launch?.url))
+        .then((launch) => handleDeepLink(launch?.url, true))
         .catch(() => {});
     })
     .catch((err) => console.warn("[DeepLink] @capacitor/app unavailable on this build:", err));
