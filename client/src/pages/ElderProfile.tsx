@@ -873,11 +873,17 @@ export default function ElderProfile() {
                 </button>
               </div>
               {visitDay === "other" && (
-                <div className="mt-2">
+                <div className="mt-2 w-full min-w-0">
+                  {/* iOS WebKit gives date inputs an intrinsic width that overflows
+                      containers (poked out of the dialog on iPhone; on Android the
+                      same overflow widened the layout viewport and shifted the whole
+                      dialog off-center — same class of bug as the invite-icon one).
+                      appearance-none + min-w-0 + max-w-full pins it inside. */}
                   <input
                     type="date"
                     aria-label={t("elder.visitWhenQ")}
-                    className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="block h-11 w-full min-w-0 max-w-full appearance-none rounded-xl border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    style={{ WebkitAppearance: "none" }}
                     value={visitDate}
                     min={(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}
                     max={new Date().toISOString().slice(0, 10)}
