@@ -196,7 +196,11 @@
     "toastCalendarWeb": "Calendar event downloaded! Open it to add to your calendar.",
     "selectImage": "Please select an image file",
     "inviteMsg": "Join our family on GranWatch 💚 It shows when {{name}} was last visited — one tap to log a visit, and she doesn't need a phone. Takes a minute, it's free: {{url}}",
-    "birthdayTip": "Tip: tap the year at the top of the calendar to jump straight to the right year."
+    "birthdayTip": "Tip: tap the year at the top of the calendar to jump straight to the right year.",
+    "visitWhenQ": "When was the visit?",
+    "visitToday": "Today",
+    "visitOtherDay": "Other day",
+    "visitBackdateHint": "You can log visits up to 3 months back."
   },
   "counters": {
     "teaser": "Custom counters — a Gran+ feature",

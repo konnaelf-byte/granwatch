@@ -196,7 +196,11 @@
     "toastCalendarWeb": "Na-download ang calendar event! Buksan ito para maidagdag sa kalendaryo mo.",
     "selectImage": "Pumili ng image file",
     "inviteMsg": "Sali ka sa pamilya namin sa GranWatch 💚 Makikita kung kailan huling nabisita si {{name}} — isang tap lang para mag-log ng bisita, at hindi niya kailangan ng phone. Isang minuto lang, libre pa: {{url}}",
-    "birthdayTip": "Tip: i-tap ang taon sa itaas ng kalendaryo para direktang tumalon sa tamang taon."
+    "birthdayTip": "Tip: i-tap ang taon sa itaas ng kalendaryo para direktang tumalon sa tamang taon.",
+    "visitWhenQ": "Kailan ang dalaw?",
+    "visitToday": "Ngayon",
+    "visitOtherDay": "Ibang araw",
+    "visitBackdateHint": "Maaari kang mag-log ng dalaw hanggang 3 buwan pabalik."
   },
   "counters": {
     "teaser": "Mga custom counter — feature ng Gran+",

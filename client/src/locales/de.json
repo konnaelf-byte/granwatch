@@ -196,7 +196,11 @@
     "toastCalendarWeb": "Kalendertermin heruntergeladen! Öffne ihn, um ihn deinem Kalender hinzuzufügen.",
     "selectImage": "Bitte wähle eine Bilddatei",
     "inviteMsg": "Komm in unsere Familie bei GranWatch 💚 Man sieht, wann {{name}} zuletzt besucht wurde — ein Tipp genügt, um einen Besuch einzutragen, und sie braucht kein Handy. Dauert eine Minute und ist kostenlos: {{url}}",
-    "birthdayTip": "Tipp: Tippen Sie oben im Kalender auf die Jahreszahl, um direkt zum richtigen Jahr zu springen."
+    "birthdayTip": "Tipp: Tippen Sie oben im Kalender auf die Jahreszahl, um direkt zum richtigen Jahr zu springen.",
+    "visitWhenQ": "Wann war der Besuch?",
+    "visitToday": "Heute",
+    "visitOtherDay": "Anderer Tag",
+    "visitBackdateHint": "Besuche können bis zu 3 Monate rückwirkend eingetragen werden."
   },
   "counters": {
     "teaser": "Eigene Zähler — eine Gran+-Funktion",

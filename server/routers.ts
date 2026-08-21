@@ -912,6 +912,13 @@ export const appRouter = router({
         if (visitDate > new Date()) {
           throw new Error("Visit date cannot be in the future");
         }
+        // Backdating is capped at 3 months (product decision, 2026-08-21) —
+        // older entries can't meaningfully affect the ring and invite abuse.
+        const backdateFloor = new Date();
+        backdateFloor.setMonth(backdateFloor.getMonth() - 3);
+        if (visitDate < backdateFloor) {
+          throw new Error("Visits can only be logged up to 3 months back");
+        }
 
         // Gran+ gate for the mood note and visit photo: only paid elders may
         // attach them. Match the rest of the codebase — silently drop for free
@@ -968,11 +975,20 @@ export const appRouter = router({
               .where(inArray(pushTokens.userId, targetIds));
             const tokens = rows.map((r) => r.token);
             if (tokens.length === 0) return;
-            await sendPush(tokens, {
-              title: `💚 ${visitor?.name ?? "Someone"} just visited ${elder.name}`,
-              body: `The ring is green again.`,
-              data: { path: `/elder/${input.elderId}` },
-            });
+            // Backdated visits (>24h ago) get honest wording — "just visited /
+            // ring is green again" would be false if the visit was last week.
+            const isBackdated = Date.now() - visitDate.getTime() > 24 * 60 * 60 * 1000;
+            await sendPush(tokens, isBackdated
+              ? {
+                  title: `💚 ${visitor?.name ?? "Someone"} visited ${elder.name}`,
+                  body: `Visit added for ${visitDate.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}.`,
+                  data: { path: `/elder/${input.elderId}` },
+                }
+              : {
+                  title: `💚 ${visitor?.name ?? "Someone"} just visited ${elder.name}`,
+                  body: `The ring is green again.`,
+                  data: { path: `/elder/${input.elderId}` },
+                });
           } catch (e) {
             console.error("[SocialPush] failed:", e);
           }

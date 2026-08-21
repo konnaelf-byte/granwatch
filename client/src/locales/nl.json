@@ -196,7 +196,11 @@
     "toastCalendarWeb": "Agenda-item gedownload! Open het om het aan je agenda toe te voegen.",
     "selectImage": "Kies een afbeeldingsbestand",
     "inviteMsg": "Word lid van onze familie op GranWatch 💚 Je ziet wanneer {{name}} voor het laatst bezoek kreeg — één tik om een bezoek vast te leggen, en zij heeft geen telefoon nodig. Duurt een minuutje en is gratis: {{url}}",
-    "birthdayTip": "Tip: tik op het jaartal bovenaan de kalender om direct naar het juiste jaar te springen."
+    "birthdayTip": "Tip: tik op het jaartal bovenaan de kalender om direct naar het juiste jaar te springen.",
+    "visitWhenQ": "Wanneer was het bezoek?",
+    "visitToday": "Vandaag",
+    "visitOtherDay": "Andere dag",
+    "visitBackdateHint": "Je kunt bezoeken tot 3 maanden terug loggen."
   },
   "counters": {
     "teaser": "Eigen tellers — een Gran+-functie",

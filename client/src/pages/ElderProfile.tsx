@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2, UserMinus, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, Check, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2, UserMinus, MessageCircle } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
@@ -50,6 +50,11 @@ export default function ElderProfile() {
   const [moodNote, setMoodNote] = useState("");
   const [visitPhotoUrl, setVisitPhotoUrl] = useState<string | null>(null);
   const [visitPhotoUploading, setVisitPhotoUploading] = useState(false);
+  // Backdated visit logging (Konna, 2026-08-21: "they visit impromptu, then
+  // forget to log"). Default "today" needs no extra tap; "other" reveals a
+  // NATIVE date input (standing lesson: no Radix Select) capped at 3 months back.
+  const [visitDay, setVisitDay] = useState<"today" | "other">("today");
+  const [visitDate, setVisitDate] = useState(""); // YYYY-MM-DD when visitDay === "other"
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>(""); // "" = no specific time; else "HH:00"
   const [bookedDate, setBookedDate] = useState<Date | null>(null);
@@ -121,6 +126,8 @@ export default function ElderProfile() {
       setMoodEmoji(null);
       setMoodNote("");
       setVisitPhotoUrl(null);
+      setVisitDay("today");
+      setVisitDate("");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -834,6 +841,53 @@ export default function ElderProfile() {
             <DialogTitle>{t("elder.logVisitTitle", { name: elder.name })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
+            {/* When was the visit? "Today" preselected (zero extra taps for the
+                normal case); "Other day" reveals a native date input, ≤3 months back. */}
+            <div>
+              <p className="text-sm font-medium text-foreground mb-2">{t("elder.visitWhenQ")}</p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setVisitDay("today"); setVisitDate(""); }}
+                  className={`flex items-center justify-center gap-1.5 h-11 rounded-xl border text-sm font-medium transition-all ${
+                    visitDay === "today"
+                      ? "border-green-600 bg-green-600/10 text-foreground ring-1 ring-green-600"
+                      : "border-input text-muted-foreground hover:bg-muted"
+                  }`}
+                  aria-pressed={visitDay === "today"}
+                >
+                  {visitDay === "today" && <Check className="w-4 h-4 text-green-600" />}
+                  {t("elder.visitToday")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisitDay("other")}
+                  className={`flex items-center justify-center gap-1.5 h-11 rounded-xl border text-sm font-medium transition-all ${
+                    visitDay === "other"
+                      ? "border-primary bg-primary/10 text-foreground ring-1 ring-primary"
+                      : "border-input text-muted-foreground hover:bg-muted"
+                  }`}
+                  aria-pressed={visitDay === "other"}
+                >
+                  {t("elder.visitOtherDay")}
+                </button>
+              </div>
+              {visitDay === "other" && (
+                <div className="mt-2">
+                  <input
+                    type="date"
+                    aria-label={t("elder.visitWhenQ")}
+                    className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    value={visitDate}
+                    min={(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}
+                    max={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) => setVisitDate(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{t("elder.visitBackdateHint")}</p>
+                </div>
+              )}
+            </div>
+
             {/* Mood — emoji is free for everyone; selecting one is optional. Feeds the mood trend chart. */}
             <div>
               <p className="text-sm font-medium text-foreground mb-2">{t("elder.moodQ")}</p>
@@ -911,13 +965,18 @@ export default function ElderProfile() {
               className="w-full h-12 text-base"
               onClick={() => logVisit.mutate({
                 elderId,
+                // Backdated day → send noon LOCAL time so no timezone can shift
+                // it onto a neighbouring day. "Today" omits visitedAt (server = now).
+                visitedAt: visitDay === "other" && visitDate
+                  ? new Date(`${visitDate}T12:00:00`).toISOString()
+                  : undefined,
                 notes: visitNotes || undefined,
                 wellbeingScore: wellbeingScore ?? undefined,
                 moodEmoji: (moodEmoji as any) ?? undefined,
                 moodNote: elder.isPaid && moodNote ? moodNote : undefined,
                 photoUrl: elder.isPaid && visitPhotoUrl ? visitPhotoUrl : undefined,
               })}
-              disabled={logVisit.isPending || visitPhotoUploading}
+              disabled={logVisit.isPending || visitPhotoUploading || (visitDay === "other" && !visitDate)}
             >
               {logVisit.isPending ? t("elder.logging") : t("elder.logVisitBtn")}
             </Button>
