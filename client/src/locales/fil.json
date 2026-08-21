@@ -200,7 +200,8 @@
     "visitWhenQ": "Kailan ang dalaw?",
     "visitToday": "Ngayon",
     "visitOtherDay": "Ibang araw",
-    "visitBackdateHint": "Maaari kang mag-log ng dalaw hanggang 3 buwan pabalik."
+    "visitBackdateHint": "Maaari kang mag-log ng dalaw hanggang 3 buwan pabalik.",
+    "visitSelectDate": "Pumili ng petsa"
   },
   "counters": {
     "teaser": "Mga custom counter — feature ng Gran+",

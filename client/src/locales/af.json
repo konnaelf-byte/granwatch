@@ -200,7 +200,8 @@
     "visitWhenQ": "Wanneer was die besoek?",
     "visitToday": "Vandag",
     "visitOtherDay": "Ander dag",
-    "visitBackdateHint": "Jy kan besoeke tot 3 maande terug aanteken."
+    "visitBackdateHint": "Jy kan besoeke tot 3 maande terug aanteken.",
+    "visitSelectDate": "Kies datum"
   },
   "counters": {
     "teaser": "Persoonlike tellers — 'n Gran+-funksie",

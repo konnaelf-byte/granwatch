@@ -874,21 +874,31 @@ export default function ElderProfile() {
               </div>
               {visitDay === "other" && (
                 <div className="mt-2 w-full min-w-0">
-                  {/* iOS WebKit gives date inputs an intrinsic width that overflows
-                      containers (poked out of the dialog on iPhone; on Android the
-                      same overflow widened the layout viewport and shifted the whole
-                      dialog off-center — same class of bug as the invite-icon one).
-                      appearance-none + min-w-0 + max-w-full pins it inside. */}
-                  <input
-                    type="date"
-                    aria-label={t("elder.visitWhenQ")}
-                    className="block h-11 w-full min-w-0 max-w-full appearance-none rounded-xl border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                    style={{ WebkitAppearance: "none" }}
-                    value={visitDate}
-                    min={(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}
-                    max={new Date().toISOString().slice(0, 10)}
-                    onChange={(e) => setVisitDate(e.target.value)}
-                  />
+                  <div className="relative">
+                    {/* iOS WebKit gives date inputs an intrinsic width that overflows
+                        containers (poked out of the dialog on iPhone; on Android the
+                        same overflow widened the layout viewport and shifted the whole
+                        dialog off-center — same class of bug as the invite-icon one).
+                        appearance-none + min-w-0 + max-w-full pins it inside. */}
+                    <input
+                      type="date"
+                      aria-label={t("elder.visitWhenQ")}
+                      className="block h-11 w-full min-w-0 max-w-full appearance-none rounded-xl border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      style={{ WebkitAppearance: "none" }}
+                      value={visitDate}
+                      min={(() => { const d = new Date(); d.setMonth(d.getMonth() - 3); return d.toISOString().slice(0, 10); })()}
+                      max={new Date().toISOString().slice(0, 10)}
+                      onChange={(e) => setVisitDate(e.target.value)}
+                    />
+                    {/* iOS only: appearance-none leaves an empty date input looking like
+                        a blank box — overlay a label until a date is picked. Android
+                        shows its own dd/mm/yyyy hint, so no overlay there. */}
+                    {!visitDate && /iphone|ipad|ipod/i.test(navigator.userAgent) && (
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
+                        {t("elder.visitSelectDate")}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-1">{t("elder.visitBackdateHint")}</p>
                 </div>
               )}

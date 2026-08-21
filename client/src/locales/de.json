@@ -200,7 +200,8 @@
     "visitWhenQ": "Wann war der Besuch?",
     "visitToday": "Heute",
     "visitOtherDay": "Anderer Tag",
-    "visitBackdateHint": "Besuche können bis zu 3 Monate rückwirkend eingetragen werden."
+    "visitBackdateHint": "Besuche können bis zu 3 Monate rückwirkend eingetragen werden.",
+    "visitSelectDate": "Datum wählen"
   },
   "counters": {
     "teaser": "Eigene Zähler — eine Gran+-Funktion",

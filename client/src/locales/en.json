@@ -200,7 +200,8 @@
     "visitWhenQ": "When was the visit?",
     "visitToday": "Today",
     "visitOtherDay": "Other day",
-    "visitBackdateHint": "You can log visits up to 3 months back."
+    "visitBackdateHint": "You can log visits up to 3 months back.",
+    "visitSelectDate": "Select date"
   },
   "counters": {
     "teaser": "Custom counters — a Gran+ feature",

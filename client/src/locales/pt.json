@@ -200,7 +200,8 @@
     "visitWhenQ": "Quando foi a visita?",
     "visitToday": "Hoje",
     "visitOtherDay": "Outro dia",
-    "visitBackdateHint": "Você pode registrar visitas de até 3 meses atrás."
+    "visitBackdateHint": "Você pode registrar visitas de até 3 meses atrás.",
+    "visitSelectDate": "Escolher data"
   },
   "counters": {
     "teaser": "Contadores personalizados — um recurso do Gran+",

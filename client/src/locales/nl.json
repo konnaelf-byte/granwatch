@@ -200,7 +200,8 @@
     "visitWhenQ": "Wanneer was het bezoek?",
     "visitToday": "Vandaag",
     "visitOtherDay": "Andere dag",
-    "visitBackdateHint": "Je kunt bezoeken tot 3 maanden terug loggen."
+    "visitBackdateHint": "Je kunt bezoeken tot 3 maanden terug loggen.",
+    "visitSelectDate": "Kies datum"
   },
   "counters": {
     "teaser": "Eigen tellers — een Gran+-functie",
