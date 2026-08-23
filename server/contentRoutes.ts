@@ -121,6 +121,7 @@ const ARTICLES: Record<string, Article> = {
 
 <h2>Why it matters more than most families realise</h2>
 <p>This isn't sentimentality; it's epidemiology. The <strong>WHO declared loneliness a global health concern, linking it to an estimated 100 deaths every hour</strong> worldwide (WHO Commission on Social Connection, 2025). The <strong>US Surgeon General's advisory found that chronic loneliness and social isolation increase dementia risk in older adults by approximately 50%</strong>, and that lacking social connection can be as deadly as smoking up to 15 cigarettes a day. Among lonely older people in the UK, <strong>41% told Age UK their television or pet is their main form of company.</strong></p>
+<p>And the problem is compounding from both directions. <strong>The world's population aged 60 and older will double from about 1 billion to 2.1 billion by 2050</strong> (WHO, Ageing and Health) — every year there are more grans, and families more scattered around them. Meanwhile <strong>mental health has overtaken cancer as the world's most-cited health concern: 45% of people across 31 countries now name it their top worry, up from 27% in 2018</strong> (Ipsos Health Service Report, 2024). Loneliness in old age sits exactly at the intersection of those two curves.</p>
 <p>A visit is not a nicety. For an isolated elder, it is preventive medicine that no pill replicates.</p>
 
 <h2>The real problem is not how often. It's <em>who's counting.</em></h2>
