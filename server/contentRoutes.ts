@@ -136,9 +136,9 @@ const ARTICLES: Record<string, Article> = {
 
 <h2>What helps (from families who've solved it)</h2>
 <ul>
-<li><strong>Make visits visible to everyone.</strong> A shared record — even a paper calendar on Mom's fridge — ends the assumption problem. (This is exactly why we built <a href="${APP_URL}">GranWatch</a>: a colour ring on Gran's photo the whole family sees — green when someone's visited recently, red when nobody has. One tap logs a visit; Gran herself needs no phone. Families tell us the arguing stops before the visiting even increases.)</li>
+<li><strong>Make visits visible to everyone.</strong> A shared record — even a paper calendar on Mom's fridge — ends the assumption problem. (This is exactly why we built <a href="${APP_URL}">GranWatch</a>: a colour ring on Gran's photo the whole family sees — green when someone's visited recently, red when nobody has. One tap logs a visit; Gran herself needs no phone. The first thing that changes is usually the arguing — once everyone can see when Gran was last visited, there's nothing left to argue about.)</li>
 <li><strong>Anchor visits to fixtures, not intentions.</strong> "Every Saturday after the shops" survives; "more often" doesn't.</li>
-<li><strong>Rotate fairly among siblings — including the overseas ones.</strong> Distance changes your <em>role</em>, not your relevance: the distant sibling can own the calls, the admin, or covering the family's tools, while local siblings own presence.</li>
+<li><strong>Rotate fairly among siblings — including the overseas ones.</strong> Distance changes your <em>role</em>, not your relevance: the distant sibling can own the calls, the admin, or the bills, while local siblings own presence.</li>
 <li><strong>Count what counts.</strong> A 20-minute cup of tea where you actually sit down is a visit. Dropping groceries at the door is love, but it isn't company.</li>
 </ul>
 
@@ -171,8 +171,8 @@ ${CTA}`,
 <ul>
 <li><strong>One small visit, this week, unannounced ambition.</strong> Twenty minutes and a rusk. The visit that breaks the avoidance loop is deliberately modest — its job is to reset the counter, not to atone.</li>
 <li><strong>A fixture, not a frequency.</strong> Tie the visit to something that already happens: after the Saturday shop, before church, the first Sunday of the month. Fixtures survive busy seasons; intentions don't.</li>
-<li><strong>Shared visibility instead of private bookkeeping.</strong> Most family guilt is actually <em>uncertainty</em> — nobody knows who went last, so everyone assumes the worst about themselves. A shared record the whole family can see (this is what <a href="${APP_URL}">GranWatch</a> does with a simple green/red ring on Gran's photo — no phone needed for her) replaces the fog with a fact. Families consistently tell us the relief comes <em>before</em> the visiting even increases: the ring is green, someone went, you can stop wondering.</li>
-<li><strong>Let the distant members carry a different weight.</strong> If you're overseas or far away, your guilt needs a different outlet: own the weekly call, the doctor's-appointment admin, or cover the family's tools. Presence has understudies; absence of any role doesn't.</li>
+<li><strong>Shared visibility instead of private bookkeeping.</strong> Most family guilt is actually <em>uncertainty</em> — nobody knows who went last, so everyone assumes the worst about themselves. A shared record the whole family can see (this is what <a href="${APP_URL}">GranWatch</a> does with a simple green/red ring on Gran's photo — no phone needed for her) replaces the fog with a fact. The relief comes <em>before</em> the visiting even increases: the ring is green, someone went, you can stop wondering.</li>
+<li><strong>Let the distant members carry a different weight.</strong> If you're overseas or far away, your guilt needs a different outlet: own the weekly call, the doctor's-appointment admin, or the bills. Presence has understudies; absence of any role doesn't.</li>
 </ul>
 
 <h2>The reframe that sticks</h2>
