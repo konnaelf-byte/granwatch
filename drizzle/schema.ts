@@ -333,6 +333,10 @@ export const elderCounters = mysqlTable("elderCounters", {
   emoji: varchar("emoji", { length: 16 }).notNull().default("💚"),
   /** Target interval in days: 7 = weekly, 91 = quarterly, 1–365 allowed */
   intervalDays: int("intervalDays").notNull(),
+  /** Calendar-anchored counters (user ask 2026-08-22: "pay the pharmacy bill
+   *  on the 7th"): when set (1–31), the counter is due on this day of every
+   *  month (clamped to the month's last day) instead of every intervalDays. */
+  monthlyDay: int("monthlyDay"),
   scope: mysqlEnum("scope", ["private", "family"]).notNull().default("family"),
   /** For scope "private": the only user who sees/logs this counter */
   ownerUserId: int("ownerUserId"),

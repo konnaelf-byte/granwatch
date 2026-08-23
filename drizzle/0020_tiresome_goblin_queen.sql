@@ -1,0 +1,1 @@
+ALTER TABLE `elderCounters` ADD `monthlyDay` int;

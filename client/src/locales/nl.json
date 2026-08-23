@@ -241,7 +241,13 @@
     "toastLogged": "Vastgelegd 💚",
     "toastRemoved": "Teller verwijderd",
     "errName": "Geef je teller een naam",
-    "errInterval": "Interval moet 1–365 dagen zijn"
+    "errInterval": "Interval moet 1–365 dagen zijn",
+    "dayOfMonth": "Dag van de maand",
+    "ofEachMonth": "van elke maand (1–31)",
+    "monthlyDue": "Gepland op dag {{day}} · maandelijks",
+    "monthlyDone": "Gedaan ✓ · volgende op dag {{day}}",
+    "monthlyOverdue": "Achterstallig — was dag {{day}}",
+    "errDay": "Kies een dag tussen 1 en 31"
   },
   "care": {
     "unlockTitle": "Ontgrendel Zorg met Gran+",

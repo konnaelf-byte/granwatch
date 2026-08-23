@@ -241,7 +241,13 @@
     "toastLogged": "Na-log 💚",
     "toastRemoved": "Naalis ang counter",
     "errName": "Bigyan ng pangalan ang counter mo",
-    "errInterval": "Dapat 1–365 araw ang pagitan"
+    "errInterval": "Dapat 1–365 araw ang pagitan",
+    "dayOfMonth": "Araw ng buwan",
+    "ofEachMonth": "ng bawat buwan (1–31)",
+    "monthlyDue": "Takda sa araw {{day}} · buwanan",
+    "monthlyDone": "Tapos ✓ · susunod sa araw {{day}}",
+    "monthlyOverdue": "Lampas na — takda noong araw {{day}}",
+    "errDay": "Pumili ng araw sa pagitan ng 1 at 31"
   },
   "care": {
     "unlockTitle": "I-unlock ang Alaga gamit ang Gran+",

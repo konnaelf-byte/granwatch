@@ -505,6 +505,35 @@ async function runNightlyNotifications() {
             .orderBy(desc(counterLogs.loggedAt))
             .limit(1);
 
+          // Calendar-anchored counter ("on the 7th of each month"): due from
+          // 00:00 on the clamped Nth; push once per month-crossing.
+          if (counter.monthlyDay) {
+            const nowD = new Date();
+            const lastDom = new Date(nowD.getFullYear(), nowD.getMonth() + 1, 0).getDate();
+            const dueThis = new Date(nowD.getFullYear(), nowD.getMonth(), Math.min(counter.monthlyDay, lastDom));
+            if (nowD < dueThis) continue;                                   // not due yet this month
+            if (lastLog && lastLog.loggedAt >= dueThis) continue;           // handled this month
+            if (counter.lastNotifiedAt && counter.lastNotifiedAt >= dueThis) continue; // already pushed
+            const mTargets = counter.scope === "private"
+              ? (counter.ownerUserId ? [counter.ownerUserId] : [])
+              : notifyableMembers.map((m) => m.userId);
+            if (mTargets.length === 0) continue;
+            const mPushed = await pushToUsers(db, mTargets, {
+              title: `${counter.emoji} ${counter.name} — due today`,
+              body: counter.scope === "private"
+                ? `Your monthly task (day ${counter.monthlyDay}) for ${elder.name} is due. Tap to log it.`
+                : `The family's monthly task (day ${counter.monthlyDay}) for ${elder.name} is due. Tap to log it.`,
+              data: { path: `/elder/${elder.id}` },
+            });
+            await db
+              .update(elderCounters)
+              .set({ lastNotifiedAt: new Date() })
+              .where(eq(elderCounters.id, counter.id));
+            totalPushSent += mPushed;
+            console.log(`[Cron] Elder ${elder.id} — counter "${counter.name}" (monthly day ${counter.monthlyDay}): ${mPushed} push`);
+            continue;
+          }
+
           const anchor = lastLog ? lastLog.loggedAt : counter.createdAt;
           const overdueDays = daysSince(anchor);
           if (overdueDays < counter.intervalDays) continue;

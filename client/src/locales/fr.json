@@ -241,7 +241,13 @@
     "toastLogged": "Noté 💚",
     "toastRemoved": "Compteur supprimé",
     "errName": "Donnez un nom à votre compteur",
-    "errInterval": "L'intervalle doit être de 1 à 365 jours"
+    "errInterval": "L'intervalle doit être de 1 à 365 jours",
+    "dayOfMonth": "Jour du mois",
+    "ofEachMonth": "de chaque mois (1–31)",
+    "monthlyDue": "Prévu le jour {{day}} · mensuel",
+    "monthlyDone": "Fait ✓ · prochain le jour {{day}}",
+    "monthlyOverdue": "En retard — prévu le jour {{day}}",
+    "errDay": "Choisissez un jour entre 1 et 31"
   },
   "care": {
     "unlockTitle": "Débloquez Soins avec Gran+",

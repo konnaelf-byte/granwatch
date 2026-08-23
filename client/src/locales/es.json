@@ -241,7 +241,13 @@
     "toastLogged": "Registrado 💚",
     "toastRemoved": "Contador eliminado",
     "errName": "Dale un nombre a tu contador",
-    "errInterval": "El intervalo debe ser de 1 a 365 días"
+    "errInterval": "El intervalo debe ser de 1 a 365 días",
+    "dayOfMonth": "Día del mes",
+    "ofEachMonth": "de cada mes (1–31)",
+    "monthlyDue": "Vence el día {{day}} · mensual",
+    "monthlyDone": "Hecho ✓ · próximo el día {{day}}",
+    "monthlyOverdue": "Atrasado — vencía el día {{day}}",
+    "errDay": "Elige un día entre 1 y 31"
   },
   "care": {
     "unlockTitle": "Desbloquea Cuidados con Gran+",

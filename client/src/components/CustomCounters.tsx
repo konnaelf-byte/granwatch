@@ -31,7 +31,7 @@ interface Props {
   currentUserId?: number;
 }
 
-const EMOJI_PRESETS = ["💚", "📞", "💬", "🚗", "🌳", "☕", "🍰", "📸", "💐", "🎲", "🙏", "✈️"];
+const EMOJI_PRESETS = ["💚", "📞", "💬", "🚗", "🌳", "☕", "🍰", "📸", "💐", "🎲", "🙏", "✈️", "🧾"];
 
 const INTERVAL_PRESETS = [
   { key: "counters.weekly", days: 7 },
@@ -62,6 +62,9 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
   const [intervalDays, setIntervalDays] = useState(7);
   const [customDays, setCustomDays] = useState("");
   const [useCustom, setUseCustom] = useState(false);
+  // Calendar-anchored mode: "on day N of each month" (e.g. pharmacy bill on the 7th)
+  const [monthlyMode, setMonthlyMode] = useState(false);
+  const [monthDay, setMonthDay] = useState("7");
   const [scope, setScope] = useState<"family" | "private">("family");
 
   const { data: counters = [], isLoading } =
@@ -130,13 +133,20 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
   const canAdd = canAddFamily || canAddPrivate;
 
   const submitAdd = () => {
-    const days = useCustom ? parseInt(customDays, 10) : intervalDays;
     if (!name.trim()) { toast.error(t("counters.errName")); return; }
-    if (!days || days < 1 || days > 365) { toast.error(t("counters.errInterval")); return; }
-    if (editingId !== null) {
-      updateCounter.mutate({ counterId: editingId, name: name.trim(), emoji, intervalDays: days });
+    let days = 30;                       // display fallback for monthly counters
+    let mDay: number | null = null;
+    if (monthlyMode) {
+      mDay = parseInt(monthDay, 10);
+      if (!mDay || mDay < 1 || mDay > 31) { toast.error(t("counters.errDay")); return; }
     } else {
-      addCounter.mutate({ elderId, name: name.trim(), emoji, intervalDays: days, scope });
+      days = useCustom ? parseInt(customDays, 10) : intervalDays;
+      if (!days || days < 1 || days > 365) { toast.error(t("counters.errInterval")); return; }
+    }
+    if (editingId !== null) {
+      updateCounter.mutate({ counterId: editingId, name: name.trim(), emoji, intervalDays: days, monthlyDay: mDay });
+    } else {
+      addCounter.mutate({ elderId, name: name.trim(), emoji, intervalDays: days, scope, monthlyDay: mDay });
     }
   };
 
@@ -149,6 +159,8 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
     const preset = INTERVAL_PRESETS.find(p => p.days === c.intervalDays);
     if (preset) { setIntervalDays(c.intervalDays); setUseCustom(false); setCustomDays(""); }
     else { setUseCustom(true); setCustomDays(String(c.intervalDays)); }
+    setMonthlyMode(!!c.monthlyDay);
+    setMonthDay(c.monthlyDay ? String(c.monthlyDay) : "7");
     setAddOpen(true);
   };
 
@@ -156,10 +168,28 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
     <div className="mb-6 space-y-2">
       {counters.map((c: any) => {
         const neverLogged = !c.lastLog;
-        const pct = c.daysSince / c.intervalDays;
+        let pct = c.daysSince / c.intervalDays;
+        let overdue = !neverLogged && pct >= 1;
+        let monthlyStatus: string | null = null;
+        if (c.monthlyDay) {
+          const now = new Date();
+          const clamp = (y: number, m: number) => Math.min(c.monthlyDay, new Date(y, m + 1, 0).getDate());
+          const dueThis = new Date(now.getFullYear(), now.getMonth(), clamp(now.getFullYear(), now.getMonth()));
+          const last = c.lastLog ? new Date(c.lastLog.loggedAt) : null;
+          const duePassed = now.getTime() >= dueThis.getTime();
+          overdue = !neverLogged && duePassed && (!last || last.getTime() < dueThis.getTime());
+          let next = dueThis;
+          if (duePassed && !overdue) next = new Date(now.getFullYear(), now.getMonth() + 1, clamp(now.getFullYear(), now.getMonth() + 1));
+          const prev = new Date(next.getFullYear(), next.getMonth() - 1, clamp(next.getFullYear(), next.getMonth() - 1));
+          pct = overdue ? 1 : Math.min(1, Math.max(0, (now.getTime() - prev.getTime()) / (next.getTime() - prev.getTime())));
+          monthlyStatus = overdue
+            ? t("counters.monthlyOverdue", { day: c.monthlyDay })
+            : (last && last.getTime() >= prev.getTime())
+              ? t("counters.monthlyDone", { day: c.monthlyDay })
+              : t("counters.monthlyDue", { day: c.monthlyDay });
+        }
         const remaining = Math.max(0, 1 - pct);
         const color = barColor(pct, neverLogged);
-        const overdue = !neverLogged && pct >= 1;
         const expanded = expandedId === c.id;
         const canRemove = c.scope === "private"
           ? c.ownerUserId === currentUserId
@@ -179,9 +209,11 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
                 <span className="block text-xs text-muted-foreground">
                   {neverLogged
                     ? t("counters.notLogged")
-                    : overdue
-                      ? t("counters.overdueOf", { days: c.daysSince, interval: c.intervalDays })
-                      : `${c.daysSince === 0 ? t("counters.doneToday") : t("counters.dAgo", { count: c.daysSince })} · ${t("counters.everyD", { count: c.intervalDays })}`}
+                    : monthlyStatus !== null
+                      ? monthlyStatus
+                      : overdue
+                        ? t("counters.overdueOf", { days: c.daysSince, interval: c.intervalDays })
+                        : `${c.daysSince === 0 ? t("counters.doneToday") : t("counters.dAgo", { count: c.daysSince })} · ${t("counters.everyD", { count: c.intervalDays })}`}
                 </span>
               </button>
               <Button
@@ -302,19 +334,39 @@ export function CustomCounters({ elderId, locked = false, onUnlock, isAdmin = fa
                 {INTERVAL_PRESETS.map((p) => (
                   <button
                     key={p.days}
-                    onClick={() => { setIntervalDays(p.days); setUseCustom(false); }}
-                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${!useCustom && intervalDays === p.days ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted"}`}
+                    onClick={() => { setIntervalDays(p.days); setUseCustom(false); setMonthlyMode(false); }}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${!useCustom && !monthlyMode && intervalDays === p.days ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted"}`}
                   >
                     {t(p.key)}
                   </button>
                 ))}
                 <button
-                  onClick={() => setUseCustom(true)}
-                  className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${useCustom ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted"}`}
+                  onClick={() => { setUseCustom(true); setMonthlyMode(false); }}
+                  className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${useCustom && !monthlyMode ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted"}`}
                 >
                   {t("counters.custom")}
                 </button>
+                <button
+                  onClick={() => { setMonthlyMode(true); setUseCustom(false); }}
+                  className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${monthlyMode ? "border-primary bg-primary/10 font-medium" : "border-border hover:bg-muted"}`}
+                >
+                  {t("counters.dayOfMonth")}
+                </button>
               </div>
+              {monthlyMode && (
+                <div className="mt-2 flex items-center gap-2">
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={31}
+                    value={monthDay}
+                    onChange={(e) => setMonthDay(e.target.value)}
+                    className="w-20"
+                  />
+                  <span className="text-xs text-muted-foreground">{t("counters.ofEachMonth")}</span>
+                </div>
+              )}
               {useCustom && (
                 <div className="mt-2 flex items-center gap-2">
                   <Input

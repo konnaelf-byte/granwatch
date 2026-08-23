@@ -241,7 +241,13 @@
     "toastLogged": "Logged 💚",
     "toastRemoved": "Counter removed",
     "errName": "Give your counter a name",
-    "errInterval": "Interval must be 1–365 days"
+    "errInterval": "Interval must be 1–365 days",
+    "dayOfMonth": "Day of month",
+    "ofEachMonth": "of each month (1–31)",
+    "monthlyDue": "Due on day {{day}} · monthly",
+    "monthlyDone": "Done ✓ · next on day {{day}}",
+    "monthlyOverdue": "Overdue — was due on day {{day}}",
+    "errDay": "Choose a day between 1 and 31"
   },
   "care": {
     "unlockTitle": "Unlock Care with Gran+",

@@ -241,7 +241,13 @@
     "toastLogged": "Aangeteken 💚",
     "toastRemoved": "Teller verwyder",
     "errName": "Gee jou teller 'n naam",
-    "errInterval": "Interval moet 1–365 dae wees"
+    "errInterval": "Interval moet 1–365 dae wees",
+    "dayOfMonth": "Dag van die maand",
+    "ofEachMonth": "van elke maand (1–31)",
+    "monthlyDue": "Betaalbaar op dag {{day}} · maandeliks",
+    "monthlyDone": "Gedoen ✓ · volgende op dag {{day}}",
+    "monthlyOverdue": "Agterstallig — was dag {{day}}",
+    "errDay": "Kies 'n dag tussen 1 en 31"
   },
   "care": {
     "unlockTitle": "Ontsluit Sorg met Gran+",

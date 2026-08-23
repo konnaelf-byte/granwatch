@@ -158,6 +158,7 @@ export const counterRouter = router({
       name: z.string().trim().min(1).max(30),
       emoji: z.string().trim().min(1).max(16).default("💚"),
       intervalDays: z.number().int().min(1).max(365),
+      monthlyDay: z.number().int().min(1).max(31).nullable().optional(),
       scope: z.enum(["private", "family"]).default("family"),
     }))
     .mutation(async ({ input, ctx }) => {
@@ -190,6 +191,7 @@ export const counterRouter = router({
         name: input.name,
         emoji: input.emoji,
         intervalDays: input.intervalDays,
+        monthlyDay: input.monthlyDay ?? null,
         scope: input.scope,
         ownerUserId: input.scope === "private" ? ctx.user.id : null,
         createdByUserId: ctx.user.id,
@@ -229,6 +231,7 @@ export const counterRouter = router({
       name: z.string().trim().min(1).max(30),
       emoji: z.string().trim().min(1).max(16),
       intervalDays: z.number().int().min(1).max(365),
+      monthlyDay: z.number().int().min(1).max(31).nullable().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -242,7 +245,7 @@ export const counterRouter = router({
 
       await db
         .update(elderCounters)
-        .set({ name: input.name, emoji: input.emoji, intervalDays: input.intervalDays })
+        .set({ name: input.name, emoji: input.emoji, intervalDays: input.intervalDays, monthlyDay: input.monthlyDay ?? null })
         .where(eq(elderCounters.id, input.counterId));
       return { ok: true };
     }),
