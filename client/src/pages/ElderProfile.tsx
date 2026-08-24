@@ -200,17 +200,20 @@ export default function ElderProfile() {
     onError: (e) => toast.error("Couldn't log gift: " + e.message),
   });
 
-  const handleSendFlowers = async () => {
+  const handleSendFlowers = () => {
     if (!flowersOption) return;
-    // Log first (best-effort, with partner attribution), then open URL regardless
-    try { await logGift.mutateAsync({ elderId, giftType: "flowers", partnerName: flowersOption.id }); } catch { /* already toasted */ }
+    // window.open must run synchronously inside the tap gesture — awaiting the
+    // log mutation first let Safari's popup blocker silently kill it on some
+    // iOS versions (Inke's iPhone, iOS 18.7.8, 2026-08-24). Open first, log after.
     window.open(flowersOption.url, "_blank", "noopener,noreferrer");
+    logGift.mutate({ elderId, giftType: "flowers", partnerName: flowersOption.id });
   };
 
-  const handleSendGift = async () => {
+  const handleSendGift = () => {
     if (!giftOption) return;
-    try { await logGift.mutateAsync({ elderId, giftType: "gift", partnerName: giftOption.id }); } catch { /* already toasted */ }
+    // Same synchronous-open rule as handleSendFlowers above.
     window.open(giftOption.url, "_blank", "noopener,noreferrer");
+    logGift.mutate({ elderId, giftType: "gift", partnerName: giftOption.id });
   };
 
   const cancelPlanned = trpc.planned.cancel.useMutation({
