@@ -145,6 +145,30 @@ if (Capacitor.isNativePlatform()) {
         .catch(() => {});
     })
     .catch((err) => console.warn("[DeepLink] @capacitor/app unavailable on this build:", err));
+
+  // ── Android launcher badge fix (field report 2026-08-25) ──────────────────
+  // iOS app-icon badges are cleared by the server's silent badge-sync
+  // (server/push.ts sendBadgeSync → APNs badge:0). Android launcher dots and
+  // counters (esp. Samsung) are tied to the notifications sitting in the
+  // TRAY — they only clear when those notifications are removed. If the user
+  // opens the app from its icon (not by tapping the notification), nothing
+  // ever removed them, so the red badge stuck forever. Fix: clear delivered
+  // notifications on every launch and every return to foreground.
+  if (Capacitor.getPlatform() === "android" && Capacitor.isPluginAvailable("FirebaseMessaging")) {
+    const clearTray = () => {
+      import("@capacitor-firebase/messaging")
+        .then(({ FirebaseMessaging }) => FirebaseMessaging.removeAllDeliveredNotifications())
+        .catch(() => {});
+    };
+    clearTray(); // cold/warm launch
+    import("@capacitor/app")
+      .then(({ App: CapacitorApp }) => {
+        CapacitorApp.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) clearTray(); // resume from background
+        });
+      })
+      .catch(() => {});
+  }
 }
 
 // ─── Service Worker Registration ─────────────────────────────────────────────
