@@ -18,7 +18,7 @@
  *   visit moves lastVisitDate forward, which invalidates the sentinel and
  *   re-arms the cycle. A booked covering visit suppresses everything.
  *
- * BIRTHDAYS: email + push 3 days before and on the day (once per year each).
+ * BIRTHDAYS: email + push 5 days before and on the day (once per year each).
  *
  * SCHEDULED-VISIT REMINDERS (to the member who booked, once per occurrence):
  *   day_before → 18:00 SAST the evening before
@@ -372,7 +372,9 @@ async function runNightlyNotifications() {
         console.log(`[Cron] Elder ${elder.id} (${elder.name}) — covered by upcoming visit, silent`);
       }
 
-      // ── BIRTHDAYS: email + push, 3 days before and on the day ───────────
+      // ── BIRTHDAYS: email + push, 5 days before and on the day ───────────
+      // (5-day lead per gift-supplier feedback Aug 25: shipping needs time.
+      //  SENTINEL_BDAY_3's VALUE stays -30 so past sentinels still dedupe.)
       if (elder.birthday) {
         const now = new Date();
         const bdParts = elder.birthday.split("-");
@@ -414,10 +416,10 @@ async function runNightlyNotifications() {
               })
             : 0;
           const pushed = await pushToUsers(db, bdMembers.map((m) => m.userId), {
-            title: isToday ? `🎂 It's ${elder.name}'s birthday today!` : `🎂 ${elder.name}'s birthday is in 3 days`,
+            title: isToday ? `🎂 It's ${elder.name}'s birthday today!` : `🎂 ${elder.name}'s birthday is in 5 days`,
             body: isToday
               ? `Make it a special one — a visit or a call means the world.`
-              : `A perfect excuse to plan a visit.`,
+              : `A perfect excuse to plan a visit — or send flowers or a gift if you can't be there.`,
             data: { path: `/elder/${elder.id}` },
           });
           if (sent > 0 || pushed > 0) {
@@ -429,12 +431,12 @@ async function runNightlyNotifications() {
             });
             totalEmailsSent += sent;
             totalPushSent += pushed;
-            console.log(`[Cron] Elder ${elder.id} (${elder.name}) — birthday ${isToday ? "TODAY" : "3-day"}: ${sent} email, ${pushed} push`);
+            console.log(`[Cron] Elder ${elder.id} (${elder.name}) — birthday ${isToday ? "TODAY" : "5-day"}: ${sent} email, ${pushed} push`);
           }
         };
 
         if (daysUntilBd === 0 && !bdTodayAlreadySent) await fireBirthday(true, SENTINEL_BDAY_TODAY);
-        else if (daysUntilBd === 3 && !bd3dayAlreadySent) await fireBirthday(false, SENTINEL_BDAY_3);
+        else if (daysUntilBd === 5 && !bd3dayAlreadySent) await fireBirthday(false, SENTINEL_BDAY_3);
       }
 
       // ── TRIAL ENDING: whole family, once per elder, at T-14 days ─────────

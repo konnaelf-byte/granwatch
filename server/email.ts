@@ -242,7 +242,7 @@ function buildBirthdayEmailHtml({
   const headline = isToday ? `🎂 It's ${granName}'s Birthday!` : `🎂 ${granName}'s Birthday is Coming Up!`;
   const message = isToday
     ? `Today is <strong>${granName}'s birthday</strong>! What a perfect day for a visit, a call, or a heartfelt message. Let's make them feel celebrated.`
-    : `Just a heads up — <strong>${granName}'s birthday is in 3 days</strong>. Why not plan a visit or organise something special with the family?`;
+    : `Just a heads up — <strong>${granName}'s birthday is in 5 days</strong>. Why not plan a visit or organise something special with the family? And if you can't be there in person, there's still time to send flowers or a gift.`;
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -298,7 +298,7 @@ export interface SendBirthdayReminderParams {
   recipients: EmailRecipient[];
   granName: string;
   granPhotoUrl?: string | null;
-  isToday: boolean; // true = birthday is today, false = 3 days away
+  isToday: boolean; // true = birthday is today, false = 5 days away
   /** Enables the "send birthday flowers" gift link (resolved by gran's country). */
   elderId?: number;
 }
@@ -323,7 +323,7 @@ export async function sendBirthdayReminderEmails(params: SendBirthdayReminderPar
     try {
       const subject = isToday
         ? `🎂 Today is ${granName}'s Birthday!`
-        : `🎂 ${granName}'s Birthday is in 3 days`;
+        : `🎂 ${granName}'s Birthday is in 5 days`;
 
       const { error } = await resend.emails.send({
         from: `GranWatch <${ENV.resendFromEmail}>`,
@@ -338,7 +338,7 @@ export async function sendBirthdayReminderEmails(params: SendBirthdayReminderPar
         }),
         text: isToday
           ? `Hi ${recipient.name || "there"},\n\nToday is ${granName}'s birthday! Open GranWatch to log a visit or book one: https://granwatch.app/dashboard\n\n💚 GranWatch`
-          : `Hi ${recipient.name || "there"},\n\n${granName}'s birthday is in 3 days. Plan a visit or organise something special: https://granwatch.app/dashboard\n\n💚 GranWatch`,
+          : `Hi ${recipient.name || "there"},\n\n${granName}'s birthday is in 5 days. Plan a visit or organise something special — and if you can't be there, there's still time to send flowers or a gift: https://granwatch.app/dashboard\n\n💚 GranWatch`,
       });
 
       if (error) {
