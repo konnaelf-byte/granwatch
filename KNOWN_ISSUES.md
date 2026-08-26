@@ -1,6 +1,6 @@
 # Known Issues & Production Notes
 
-*Last updated: 2026-06-19*
+*Last updated: 2026-08-24 (overnight audit — removed 3 stale entries overtaken by later events; see Resolved (cont.))*
 
 ---
 
@@ -16,31 +16,20 @@
 
 ## 🟡 Active — Non-Critical
 
-### RevenueCat keys not set — IAP won't work in native app
-**Status:** Pending Konna action
-The RevenueCat dashboard has not been created yet. `REVENUECAT_SECRET_API_KEY`, `VITE_REVENUECAT_IOS_KEY`, and `VITE_REVENUECAT_ANDROID_KEY` are unset. The app handles this gracefully (logs a warning, no crash). Web flow is unaffected. IAP will remain non-functional until RevenueCat dashboard is set up.
+(none currently — see Resolved (cont.) below for items closed out by later events)
 
-**Action:** Follow REVENUECAT-SETUP-GUIDE.md. `REVENUECAT_WEBHOOK_AUTH_HEADER` is already pre-set in Railway.
+---
 
-### Lemon Squeezy ZAR variant unpublished
-**Status:** Pending Konna action
-The default ZAR R79/month variant (ID: 1681701) is in draft state in the LS dashboard. Checkout will fail for South African users until it's published.
+## ✅ Resolved (cont.)
 
-**Action:** LS Dashboard → Products → Gran+ → Default variant → Publish.
+### assetlinks.json SHA256 was a placeholder — now RESOLVED (confirmed 2026-08-24)
+This file previously listed `PLACEHOLDER_SHA256_FINGERPRINT`. Confirmed live on 2026-08-24: `client/public/.well-known/assetlinks.json` now contains 3 real SHA256 fingerprints for `app.granwatch` — resolved as a byproduct of the real Android release keystore generated for the live Aug 20 Google Play launch. Android App Links should work; not independently device-tested, but the placeholder is gone.
 
-### AUD $4.99 Lemon Squeezy variant missing
-**Status:** Pending creation
-`LS_VARIANT_ID_AUD` is not set. Australian users will fall back to the ZAR default until this variant is created.
+### RevenueCat keys "not set" — STALE, overtaken by events (caught 2026-08-24 overnight)
+This entry (last written 2026-06-19) said the RevenueCat dashboard didn't exist yet. It's long since been superseded: RC is fully wired (STATUS.md, Aug 20) — a real Android Gran+ purchase went through Play → RevenueCat → server, the webhook was verified live (401 on bad auth, no auth-mismatch retries in logs), and iOS IAP has been live since Aug 11. Removed from Active; no action needed.
 
-**Action:** LS Dashboard → Products → Gran+ → Add variant (AUD $4.99) → copy ID → add `LS_VARIANT_ID_AUD` to Railway.
-
-### assetlinks.json SHA256 is a placeholder
-**Status:** Pending Android keystore generation
-The `/.well-known/assetlinks.json` file contains `PLACEHOLDER_SHA256_FINGERPRINT`. Android App Links (deep linking into the native Android app) will not work until:
-1. Android release keystore is generated
-2. SHA256 fingerprint is extracted (`keytool -list -v -keystore my-release-key.jks`)
-3. `PLACEHOLDER_SHA256_FINGERPRINT` is replaced in `client/public/.well-known/assetlinks.json`
-4. Change committed and pushed
+### LS ZAR variant unpublished / AUD variant missing — STALE, overtaken by events (caught 2026-08-24 overnight)
+Both entries (last written 2026-06-19) assumed the old per-country ZAR/AUD pricing model. Commit `f361986` (Aug 14, Konna's call Aug 13) repriced Gran+ to a single flat $2.99/mo USD worldwide and changed the LS **store currency** itself from ZAR to USD — the per-country-variant machinery these two issues were about no longer reflects how pricing works. Not independently re-verified inside the LS dashboard tonight (no login credentials available to this assistant — same hard rule as always), but the STATUS.md commit trail confirms the underlying model changed. Flagging for Konna to give the LS dashboard a quick glance next time he's in there, just to eyeball that nothing's in a half-migrated state — but not treating this as an open issue anymore.
 
 ---
 

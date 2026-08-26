@@ -59,6 +59,19 @@ export const GIFT_PARTNERS: GiftPartner[] = [
     active: true,
     note: "Test-phase link; same pitch as flowers.",
   },
+  {
+    id: "gesalfde",
+    name: "Gesalfde",
+    category: "gift",
+    countries: ["ZA"],
+    url: "https://gesalfde.co.za/?utm_source=granwatch&utm_medium=referral&utm_campaign=gifts",
+    priority: 110,
+    active: true,
+    note: "REAL commission deal (first one) — 10% commission agreed direct with supplier. " +
+      "Handmade SA gift/wellness products (body scrub, hand cream, gift hampers). " +
+      "Outranks the petal-and-post-gifts test-phase link for ZA gift category. " +
+      "Supplier has ~17k Facebook followers and agreed to post about GranWatch.",
+  },
 
   // ── Global fallbacks (priority < 100) ─────────────────────────────────────
   // TEST-PHASE plain links (same approach as Petal & Post): full UX now,
