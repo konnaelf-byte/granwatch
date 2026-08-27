@@ -104,24 +104,25 @@ const ARTICLES: Record<string, Article> = {
   "how-often-should-you-visit-elderly-parents": {
     title: "How often should you visit your elderly parents? An honest answer.",
     description:
-      "There's no magic number — but there is a magic pattern. What research actually says about visit frequency, elder loneliness, and the real problem: nobody's counting.",
+      "There's no magic number — but there is a workable pattern, plus what the real research says about loneliness in old age. The actual problem: nobody's counting.",
     datePublished: "2026-08-12",
     bodyHtml: `
 <h1>How often should you visit your elderly parents? An honest answer.</h1>
 <p class="sub">If you searched this question, start with this: the fact that you're asking already puts you ahead of most families. Nobody googles this out of neglect. They google it at 11pm, out of guilt, usually after realising it's been longer than they thought.</p>
 
 <h2>The short answer</h2>
-<p>There is no magic number — but there is a magic <em>pattern</em>: <strong>regularity beats frequency.</strong> A visit every single week that actually happens does more for an older person's wellbeing than daily intentions that don't. Research on elder loneliness consistently shows that <em>predictable</em> social contact — something to look forward to — is what protects against isolation, not raw visit counts.</p>
-<p>As a practical baseline, most geriatric-care professionals converge on:</p>
+<p>There is no magic number — but there is a pattern that comes up again and again in families who've actually solved this: <strong>a visit that reliably happens beats a bigger visit that might not.</strong> One dependable cup of tea a week tends to do more for someone's sense of being looked after than an occasional "big visit" you keep meaning to get to. That's not a clinical finding — it's just what consistency does for anyone waiting on you.</p>
+<p>To be clear about what is and isn't established science here: the research below on isolation and health is solid. The exact optimal minutes-per-visit or visits-per-week is not something we're aware of a study settling — so treat what follows as a sensible starting point, not a prescription:</p>
 <ul>
-<li><strong>Living independently and well:</strong> a meaningful visit every 1–2 weeks, with phone or video contact in between.</li>
-<li><strong>Declining health or recently widowed:</strong> weekly at minimum — this is when isolation accelerates.</li>
-<li><strong>In assisted living or frail:</strong> short visits, more often, beat long visits rarely. Twenty minutes twice a week outperforms a monthly marathon Sunday.</li>
+<li><strong>Living independently and well:</strong> a visit every 1–2 weeks, with calls or video in between, is a reasonable baseline.</li>
+<li><strong>Declining health or recently widowed:</strong> more often — this is when isolation tends to accelerate.</li>
+<li><strong>In assisted living or frail:</strong> shorter, more frequent visits are usually easier to keep up than long, rare ones — something sustained tends to matter more than something occasional but grand.</li>
 </ul>
 
 <h2>Why it matters more than most families realise</h2>
-<p>This isn't sentimentality; it's epidemiology. The <strong>WHO declared loneliness a global health concern, linking it to an estimated 100 deaths every hour</strong> worldwide (WHO Commission on Social Connection, 2025). The <strong>US Surgeon General's advisory found that chronic loneliness and social isolation increase dementia risk in older adults by approximately 50%</strong>, and that lacking social connection can be as deadly as smoking up to 15 cigarettes a day. Among lonely older people in the UK, <strong>41% told Age UK their television or pet is their main form of company.</strong></p>
-<p>And the problem is compounding from both directions. <strong>The world's population aged 60 and older will double from about 1 billion to 2.1 billion by 2050</strong> (WHO, Ageing and Health) — every year there are more grans, and families more scattered around them. Meanwhile <strong>mental health has overtaken cancer as the world's most-cited health concern: 45% of people across 31 countries now name it their top worry, up from 27% in 2018</strong> (Ipsos Health Service Report, 2024). Loneliness in old age sits exactly at the intersection of those two curves.</p>
+<p>This isn't sentimentality; it's epidemiology. The <strong>WHO Commission on Social Connection estimates loneliness and social isolation contribute to 100 deaths every hour worldwide — over 871,000 a year</strong> (WHO, June 2025). The <strong>US Surgeon General's 2023 advisory found that chronic social isolation raises dementia risk in older adults by roughly 50%</strong>, and that lacking social connection carries a mortality risk comparable to smoking up to 15 cigarettes a day. For plenty of isolated older people, the television or a pet quietly becomes the main company left in the day — not for lack of family who love them, but because nobody's actually tracking whether anyone's been.</p>
+<p>And the problem is compounding from both directions. <strong>The world's population aged 60 and older will double from 1 billion in 2020 to 2.1 billion by 2050</strong> (WHO, Ageing and Health) — every year there are more grans, and families more scattered around them. Meanwhile <strong>mental health has overtaken cancer as the world's most-cited health concern: 45% of people across 31 countries now name it their top worry, up from 27% in 2018</strong> (Ipsos Health Service Report, 2024). Loneliness in old age sits exactly at the intersection of those two curves.</p>
+<p>None of this is exclusive to family. A grandmother with a strong circle of friends who see her most days can be every bit as protected as one whose children visit weekly — connection is the active ingredient; who provides it is almost beside the point. But if you searched a page about visiting your elderly parents, it's very likely your own mother or father you're picturing right now — so that's who the rest of this is written for.</p>
 <p>A visit is not a nicety. For an isolated elder, it is preventive medicine that no pill replicates.</p>
 
 <h2>The real problem is not how often. It's <em>who's counting.</em></h2>
