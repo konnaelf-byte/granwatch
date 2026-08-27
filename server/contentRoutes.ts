@@ -333,7 +333,8 @@ ${CTA}`,
 <p class="sub">One page, everything explained. Five minutes from now you'll know exactly what GranWatch does, what it costs, and whether it's for your family.</p>
 
 <h2>The problem it solves</h2>
-<p>Every family with an older loved one carries the same quiet question: <em>when did someone last actually visit her?</em> Group chats don't answer it — silence in a chat looks the same whether Gran had three visitors this week or none. Distance makes it worse: the family members furthest away worry most and can see least.</p>
+<p>Every family with an older or isolated loved one carries the same quiet question: <em>when did someone last actually visit them?</em> Group chats don't answer it — silence in a chat looks the same whether Gran had three visitors this week or none. Distance makes it worse: the family members furthest away worry most and can see least.</p>
+<p>GranWatch turns that worry into one small, shared goal — <strong>never let too long pass between visits</strong> — and puts the whole family behind it. Many hands make light work: instead of one person quietly carrying the responsibility, everyone can see the goal, and anyone can be the one who resets it.</p>
 
 <h2>What GranWatch is</h2>
 <p>A simple app for the family. Gran gets a profile with her photo, and around that photo lives a <strong>colour ring</strong> everyone shares: <span class="ring g"></span><strong>green</strong> when someone has visited recently, <span class="ring y"></span><strong>amber</strong> when a visit is due, <span class="ring r"></span><strong>red</strong> when nobody has been in too long. When it turns red, the whole family knows — kindly, automatically, without anyone having to be the nag.</p>
