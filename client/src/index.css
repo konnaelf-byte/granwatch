@@ -43,6 +43,11 @@
 }
 
 :root {
+  /* App is light-only by brand design (BRAND.md) -- without this, Android's
+     system dark mode leaks into native form-control chrome (e.g. the
+     backdate <input type="date">'s internal value text renders white-on-
+     cream and disappears) even though our own .dark class is never applied. */
+  color-scheme: light;
   --primary: oklch(0.52 0.18 30);
   --primary-foreground: oklch(0.98 0.01 80);
   --sidebar-primary: oklch(0.52 0.18 30);
