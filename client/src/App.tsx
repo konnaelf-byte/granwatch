@@ -16,6 +16,7 @@ import ElderSettings from "./pages/ElderSettings";
 import { PaymentSuccess, PaymentCancel } from "./pages/PaymentResult";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
+import AdminDashboard from "./pages/AdminDashboard";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import InstallPrompt from "./components/InstallPrompt";
@@ -132,6 +133,7 @@ function Router() {
       <Route path="/elder/:id/settings" component={ElderSettings} />
       <Route path="/account" component={Account} />
       <Route path="/admin" component={Admin} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/payment/success" component={PaymentSuccess} />
       <Route path="/payment/cancel" component={PaymentCancel} />
       <Route path="/privacy" component={Privacy} />

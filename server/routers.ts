@@ -1674,6 +1674,142 @@ export const appRouter = router({
         })
       );
     }),
+
+    // Growth & usage dashboard aggregates (owner/admin only).
+    // All aggregation happens in JS on purpose: at current data volumes
+    // (tens of users, not tens of thousands) this is simpler and safer than
+    // dialect-specific SQL GROUP BY week expressions. Revisit if users > ~5k.
+    dashboardStats: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new Error("Admin access required");
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      const [allUsers, allElders, allVisits, allTokens, allGifts] = await Promise.all([
+        db.select({ id: users.id, createdAt: users.createdAt, lastSignedIn: users.lastSignedIn, loginMethod: users.loginMethod }).from(users),
+        db.select({ id: elders.id, createdAt: elders.createdAt, country: elders.country, isPaid: elders.isPaid, trialEndsAt: elders.trialEndsAt }).from(elders),
+        db.select({ id: visits.id, visitedAt: visits.visitedAt, userId: visits.userId }).from(visits),
+        db.select({ userId: pushTokens.userId, platform: pushTokens.platform }).from(pushTokens),
+        db.select({ id: giftLogs.id, giftType: giftLogs.giftType, partnerName: giftLogs.partnerName }).from(giftLogs),
+      ]);
+
+      const now = Date.now();
+      const DAY = 86400000;
+
+      // ---- Weekly buckets (last 12 weeks, Monday-start, server-local time) ----
+      const weekStart = (d: Date) => {
+        const dt = new Date(d);
+        dt.setHours(0, 0, 0, 0);
+        const day = (dt.getDay() + 6) % 7; // Mon=0
+        dt.setDate(dt.getDate() - day);
+        return dt.getTime();
+      };
+      const WEEKS = 12;
+      const thisWeek = weekStart(new Date());
+      const weekTs: number[] = [];
+      for (let i = WEEKS - 1; i >= 0; i--) weekTs.push(thisWeek - i * 7 * DAY);
+      const label = (ts: number) => {
+        const d = new Date(ts);
+        return `${d.getDate()} ${d.toLocaleDateString("en-ZA", { month: "short" })}`;
+      };
+      const weekly = weekTs.map((ts) => ({ ts, week: label(ts), userSignups: 0, elderSignups: 0, visits: 0 }));
+      const bucketFor = (t: Date) => weekly.find((w) => w.ts === weekStart(t));
+      for (const u of allUsers) { const b = bucketFor(u.createdAt); if (b) b.userSignups++; }
+      for (const e of allElders) { const b = bucketFor(e.createdAt); if (b) b.elderSignups++; }
+      for (const v of allVisits) { const b = bucketFor(v.visitedAt); if (b) b.visits++; }
+
+      // Cumulative growth line (totals as of the end of each week)
+      let cu = allUsers.filter((u) => u.createdAt.getTime() < weekTs[0]).length;
+      let ce = allElders.filter((e) => e.createdAt.getTime() < weekTs[0]).length;
+      const growth = weekly.map((w) => {
+        cu += w.userSignups;
+        ce += w.elderSignups;
+        return { week: w.week, totalUsers: cu, totalElders: ce };
+      });
+
+      // ---- Platform / store proxy: distinct users per push-registered platform.
+      // NOTE: this is the closest thing we capture to "which store" today —
+      // users who never enabled push land in "No push yet". A proper
+      // signupPlatform column stamped at first login is the phase-2 upgrade.
+      const platformByUser = new Map<number, Set<string>>();
+      for (const t of allTokens) {
+        const set = platformByUser.get(t.userId) ?? new Set<string>();
+        set.add(t.platform);
+        platformByUser.set(t.userId, set);
+      }
+      const platformCounts: Record<string, number> = { ios: 0, android: 0, web: 0 };
+      for (const set of Array.from(platformByUser.values())) {
+        for (const p of Array.from(set)) platformCounts[p] = (platformCounts[p] ?? 0) + 1;
+      }
+      const usersWithoutPush = allUsers.filter((u) => !platformByUser.has(u.id)).length;
+
+      // ---- Countries (per gran profile — the territory unit that matters
+      // for the distributor model) ----
+      const countryCounts = new Map<string, number>();
+      for (const e of allElders) {
+        const c = e.country ?? "Not set";
+        countryCounts.set(c, (countryCounts.get(c) ?? 0) + 1);
+      }
+
+      // ---- Login methods ----
+      const loginCounts = new Map<string, number>();
+      for (const u of allUsers) {
+        const m = u.loginMethod ?? "unknown";
+        loginCounts.set(m, (loginCounts.get(m) ?? 0) + 1);
+      }
+
+      // ---- Subscription funnel (elders are the paying unit) ----
+      const paying = allElders.filter((e) => e.isPaid).length;
+      const onTrial = allElders.filter((e) => !e.isPaid && e.trialEndsAt && e.trialEndsAt.getTime() > now).length;
+      const lapsed = allElders.length - paying - onTrial;
+
+      // ---- Activity ----
+      const active7 = allUsers.filter((u) => now - u.lastSignedIn.getTime() <= 7 * DAY).length;
+      const active30 = allUsers.filter((u) => now - u.lastSignedIn.getTime() <= 30 * DAY).length;
+      const newUsers30 = allUsers.filter((u) => now - u.createdAt.getTime() <= 30 * DAY).length;
+      const visitLoggers30 = new Set(
+        allVisits.filter((v) => now - v.visitedAt.getTime() <= 30 * DAY).map((v) => v.userId)
+      ).size;
+
+      // ---- Gift/flower clicks by partner ----
+      const giftCounts = new Map<string, number>();
+      for (const g of allGifts) {
+        const key = `${g.giftType}\u0000${g.partnerName ?? "(link only)"}`;
+        giftCounts.set(key, (giftCounts.get(key) ?? 0) + 1);
+      }
+
+      return {
+        totals: {
+          users: allUsers.length,
+          elders: allElders.length,
+          visits: allVisits.length,
+          paying,
+          onTrial,
+          lapsed,
+          giftClicks: allGifts.length,
+        },
+        activity: { active7, active30, newUsers30, visitLoggers30 },
+        weekly: weekly.map(({ ts: _ts, ...rest }) => rest),
+        growth,
+        platforms: [
+          { platform: "iOS", count: platformCounts.ios ?? 0 },
+          { platform: "Android", count: platformCounts.android ?? 0 },
+          { platform: "Web", count: platformCounts.web ?? 0 },
+          { platform: "No push yet", count: usersWithoutPush },
+        ],
+        countries: Array.from(countryCounts.entries())
+          .map(([country, count]) => ({ country, count }))
+          .sort((a, b) => b.count - a.count),
+        loginMethods: Array.from(loginCounts.entries())
+          .map(([method, count]) => ({ method, count }))
+          .sort((a, b) => b.count - a.count),
+        gifts: Array.from(giftCounts.entries())
+          .map(([key, count]) => {
+            const [giftType, partnerName] = key.split("\u0000");
+            return { giftType, partnerName, count };
+          })
+          .sort((a, b) => b.count - a.count),
+      };
+    }),
   }),
 });
 

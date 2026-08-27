@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Heart, ArrowLeft, Crown, Gift } from "lucide-react";
+import { Users, Heart, ArrowLeft, Crown, Gift, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -102,6 +102,15 @@ export default function Admin() {
             <Crown className="w-5 h-5 text-amber-500" />
             <h1 className="text-lg font-bold text-stone-800">GranWatch Admin</h1>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/admin/dashboard")}
+            className="ml-auto gap-1.5 text-stone-600"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Growth Dashboard
+          </Button>
         </div>
       </div>
 
