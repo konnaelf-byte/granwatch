@@ -250,7 +250,20 @@ async function startServer() {
     if (!fs.existsSync(distPath)) {
       console.error(`Build directory not found: ${distPath}. Run 'pnpm build' first.`);
     }
-    app.use(express.static(distPath));
+    app.use(
+      express.static(distPath, {
+        // Public static assets (logo, screenshots, JS/CSS bundles) need to be
+        // embeddable cross-origin -- e.g. the GranWatch logo in email
+        // signatures, or on a partner site -- but helmet()'s default
+        // Cross-Origin-Resource-Policy: same-origin blocks that for every
+        // static response, images included. Scoped to just this static-file
+        // middleware so API routes (registered above) keep the stricter
+        // same-origin default.
+        setHeaders: (res) => {
+          res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        },
+      })
+    );
     app.use("*", (_req, res) => {
       res.sendFile(path.resolve(distPath, "index.html"));
     });
