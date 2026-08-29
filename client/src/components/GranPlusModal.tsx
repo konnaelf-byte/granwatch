@@ -1,3 +1,4 @@
+import { TRIAL_MONTHS } from "@shared/const";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -109,7 +110,7 @@ export function GranPlusModal({ open, onOpenChange, elderId, elderName, isAdmin 
             <div className="text-sm text-muted-foreground">{t("plus.perMonth")}</div>
             {onTrial && trialDays !== null && (
               <div className="mt-2 text-sm font-semibold text-primary">
-                {t("plus.trialLine", { count: trialDays })}
+                {t("plus.trialLine", { count: trialDays, months: TRIAL_MONTHS })}
               </div>
             )}
           </div>

@@ -8,3 +8,10 @@ export const NOT_ADMIN_ERR_MSG = 'You do not have required permission (10002)';
  *  Must match the Lemon Squeezy variant price (variant ID 1681701).
  *  Value is in cents (ZAR): 7900 = R79.00 */
 export const MONTHLY_COST_CENTS = 7900; // R79.00
+
+/** Free-trial length for NEW gran profiles — single source of truth.
+ *  90 days (3 months) since 2026-08-29, Konstand's call (was 120/4mo since
+ *  2026-08-10, 180/6mo at launch). Existing trialEndsAt dates are never
+ *  touched by changes here. TRIAL_MONTHS feeds the i18n copy ({{months}}). */
+export const TRIAL_DAYS = 90;
+export const TRIAL_MONTHS = 3;

@@ -14,6 +14,7 @@
  * US Surgeon General advisory (2023), Age UK. Keep attributions intact.
  */
 
+import { TRIAL_MONTHS } from "@shared/const";
 import type { Express } from "express";
 
 const APP_URL = "https://granwatch.app";
@@ -351,7 +352,7 @@ ${CTA}`,
 <p>Beyond the ring: gentle reminders to the family member who hasn't been in longest (never to Gran), planned visits the whole family can see (so Sunday isn't triple-booked and Tuesday isn't empty), birthday reminders, and a visit history that settles "I thought YOU went last week" before it starts. Upgrading to <strong>Gran+</strong> adds the care layer: routines, medications and appointments kept where everyone looks, plus custom counters for anything your family wants to keep on top of (flowers delivered, garden checked, hair done).</p>
 
 <h2>What it costs</h2>
-<p>The heart of GranWatch is <strong>free for the whole family</strong>: the ring, visit logging, alerts, planned visits. <strong>Gran+</strong> adds the care layer for <strong>$2.99/month — one subscription covers the entire family</strong>, and every new profile starts with a <strong>4-month free trial</strong>, no card needed.</p>
+<p>The heart of GranWatch is <strong>free for the whole family</strong>: the ring, visit logging, alerts, planned visits. <strong>Gran+</strong> adds the care layer for <strong>$2.99/month — one subscription covers the entire family</strong>, and every new profile starts with a <strong>${TRIAL_MONTHS}-month free trial</strong>, no card needed.</p>
 
 <h2>Privacy, plainly</h2>
 <p>GranWatch tracks visits, not people. There is nothing on Gran to track — no wearable, no camera, no sensor in her home. Only invited family members see your family's information, and it is never sold or shared. The app speaks 8 languages, and works anywhere in the world.</p>

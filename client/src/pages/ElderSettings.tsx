@@ -1,3 +1,4 @@
+import { TRIAL_MONTHS } from "@shared/const";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,7 +67,7 @@ function GranPlusSettingsCard({ elderId, elderName: _elderName, onManage }: { el
       </div>
       {onTrial && (
         <p className="text-xs text-muted-foreground">
-          {t("settings.trialCardNote")}
+          {t("settings.trialCardNote", { months: TRIAL_MONTHS })}
         </p>
       )}
 

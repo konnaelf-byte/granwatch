@@ -6,6 +6,7 @@
  * Squeezy instead; this component is only mounted when isNativeApp is true.
  */
 
+import { TRIAL_MONTHS } from "@shared/const";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -182,7 +183,7 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
           )}
           {onTrial && trialDays !== null && (
             <div className={`text-sm font-semibold text-primary ${loadingOffering || !billingUnavailable ? "mt-2" : ""}`}>
-              {t("plus.trialLine", { count: trialDays })}
+              {t("plus.trialLine", { count: trialDays, months: TRIAL_MONTHS })}
             </div>
           )}
         </div>
@@ -219,7 +220,7 @@ export function NativeGranPlusModal({ open, onOpenChange, elderId, elderName }: 
         <div className="space-y-3">
           {billingUnavailable && !actuallyPaid && (
             <p className="text-center text-sm text-muted-foreground bg-muted rounded-lg px-3 py-3">
-              {onTrial ? t("plus.billingUnavailableTrial") : t("plus.billingUnavailable")}
+              {onTrial ? t("plus.billingUnavailableTrial", { months: TRIAL_MONTHS }) : t("plus.billingUnavailable")}
             </p>
           )}
           {!actuallyPaid && !billingUnavailable && (

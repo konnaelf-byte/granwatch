@@ -14,7 +14,8 @@
  *   render the countdown badge.
  */
 
-export const TRIAL_DAYS = 120; // 4 months (was 180 at launch; Konstand's call 2026-08-10). Applies to NEW profiles only — existing trialEndsAt dates are untouched.
+export { TRIAL_DAYS } from "@shared/const"; // single source of truth in shared/const.ts — applies to NEW profiles only
+import { TRIAL_DAYS } from "@shared/const";
 
 type EntitlementFields = { isPaid: boolean; trialEndsAt: Date | null };
 

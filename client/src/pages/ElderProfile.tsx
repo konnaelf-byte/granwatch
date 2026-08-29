@@ -896,7 +896,8 @@ export default function ElderProfile() {
                     {/* iOS only: appearance-none leaves an empty date input looking like
                         a blank box — overlay a label until a date is picked. Android
                         shows its own dd/mm/yyyy hint, so no overlay there. */}
-                    {!visitDate && /iphone|ipad|ipod/i.test(navigator.userAgent) && (
+                    {/* iPadOS 13+ reports a Macintosh UA — detect it via touch support */}
+                    {!visitDate && (/iphone|ipad|ipod/i.test(navigator.userAgent) || (/macintosh/i.test(navigator.userAgent) && navigator.maxTouchPoints > 1)) && (
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground pointer-events-none">
                         {t("elder.visitSelectDate")}
                       </span>
