@@ -1810,6 +1810,114 @@ export const appRouter = router({
           .sort((a, b) => b.count - a.count),
       };
     }),
+
+    // Financials dashboard (owner/admin only). All amounts are founder-book
+    // figures maintained here (private repo, served only behind the admin
+    // gate -- deliberately NOT hardcoded in the client bundle, which is
+    // public). FX + estimates are assumptions, marked as such in the UI.
+    financials: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new Error("Admin access required");
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      // Live anchors
+      const allElders = await db
+        .select({ id: elders.id, isPaid: elders.isPaid, trialEndsAt: elders.trialEndsAt })
+        .from(elders);
+      const now = Date.now();
+      const paying = allElders.filter((e) => e.isPaid).length;
+      const onTrial = allElders.filter((e) => !e.isPaid && e.trialEndsAt && e.trialEndsAt.getTime() > now).length;
+
+      const FX = 18.0; // ZAR per USD -- assumption, update as needed
+
+      // ---- Hard costs to date ----
+      const onceOff = [
+        { item: "Google Play developer account", usd: 25, note: "one-time, Aug 2026 era" },
+        { item: "CIPC trademark filing (GRANWATCH, Class 9 + 42)", usd: 1180 / FX, zarExact: 1180, note: "filed 28 Aug 2026" },
+      ];
+      const annual = [
+        { item: "Apple Developer Program", usd: 99, note: "" },
+        { item: "granwatch.app domain (Cloudflare)", usd: 15, note: "estimate", est: true },
+      ];
+      const monthly = [
+        { item: "Claude Max 5x -- 60% allocated to GranWatch", usd: 60, note: "$100/mo plan x 60%" },
+        { item: "Railway (server + MySQL)", usd: 8, note: "estimate: Hobby $5 + usage", est: true },
+        { item: "Zoho Mail (free plan)", usd: 0, note: "Mail Lite upgrade pending decision (~$1/user/mo)" },
+        { item: "Clerk / RevenueCat / Resend / Cloudflare R2", usd: 0, note: "all inside free tiers today" },
+      ];
+      const monthlyFixedUsd = monthly.reduce((s, m) => s + m.usd, 0);
+      const annualUsd = annual.reduce((s, a) => s + a.usd, 0);
+      const runRateUsd = monthlyFixedUsd + annualUsd / 12; // true monthly run-rate
+
+      // ---- Cost steps at user-count milestones (from SCALE-GAMEPLAN.md) ----
+      const costTiers = [
+        { at: 0, label: "Today (~40 users)", add: "--", addUsd: 0 },
+        { at: 200, label: "200 active families", add: "Resend Pro", addUsd: 20 },
+        { at: 1000, label: "1,000 families", add: "Railway resource bump", addUsd: 20 },
+        { at: 5000, label: "5,000 families", add: "Clerk Pro + managed DB w/ replica", addUsd: 60 },
+        { at: 10000, label: "10,000+ families", add: "2nd server replica + tooling (est)", addUsd: 50, est: true },
+      ];
+
+      // ---- Revenue projections (36 months, 3 scenarios) ----
+      // Unit economics: Gran+ $2.99/mo per family; blended fees ~17%
+      // (App Store small-business 15% / LS ~5%+50c / RC 1% over $2.5k MRR)
+      const NET_PER_FAMILY = 2.99 * 0.83;
+      const scenarios: Record<string, number[]> = {
+        // anchor paying-family counts at month 0 / 12 / 24 / 36
+        pessimistic: [5, 100, 400, 900],
+        likely: [5, 500, 2500, 6000],
+        optimistic: [5, 1500, 8000, 20000],
+      };
+      const interp = (anchors: number[], m: number) => {
+        const seg = Math.min(Math.floor(m / 12), 2);
+        const a = anchors[seg], b = anchors[seg + 1];
+        const t = (m - seg * 12) / 12;
+        return Math.round(a * Math.pow(b / a, t)); // geometric within each year
+      };
+      const tierCostAt = (families: number) =>
+        runRateUsd + costTiers.filter((c) => c.at > 0 && families >= c.at).reduce((s, c) => s + c.addUsd, 0);
+
+      const projection = Array.from({ length: 37 }, (_, m) => {
+        const row: Record<string, number> = { month: m };
+        for (const [name, anchors] of Object.entries(scenarios)) {
+          const fams = interp(anchors, m);
+          const rev = fams * NET_PER_FAMILY;
+          const cost = tierCostAt(fams);
+          row[name + "Families"] = fams;
+          row[name + "Revenue"] = Math.round(rev);
+          row[name + "Profit"] = Math.round(rev - cost);
+        }
+        return row;
+      });
+
+      // ---- Valuation ladder ----
+      // Rows 3-6 from STRATEGY.md's model (ARR x multiple). Rows 1-2 are
+      // coach estimates. NONE of this is a professional valuation.
+      const valuation = [
+        { stage: "Today (pre-revenue, live on both stores, 8 languages, TM filed)", basis: "replacement cost + IP + distribution", lowUsd: 25000, highUsd: 80000, est: true },
+        { stage: "500 paying families (~$18k ARR)", basis: "traction premium, 5-15x fwd", lowUsd: 100000, highUsd: 300000, est: true },
+        { stage: "10,000 families (~$600k ARR)", basis: "5x ARR -- STRATEGY.md", lowUsd: 3000000, highUsd: 3000000 },
+        { stage: "50,000 families + B2B (~$3M ARR)", basis: "10x ARR -- STRATEGY.md", lowUsd: 30000000, highUsd: 30000000 },
+        { stage: "Government/NHS contract (~$5M ARR)", basis: "15x ARR -- STRATEGY.md", lowUsd: 75000000, highUsd: 75000000 },
+        { stage: "Full platform + institutional (~$10M ARR)", basis: "20x ARR -- STRATEGY.md", lowUsd: 200000000, highUsd: 200000000 },
+      ];
+
+      return {
+        fx: FX,
+        live: { paying, onTrial, elders: allElders.length },
+        onceOff, annual, monthly,
+        totals: {
+          onceOffUsd: onceOff.reduce((s, o) => s + o.usd, 0),
+          annualUsd,
+          monthlyFixedUsd,
+          runRateUsd: Math.round(runRateUsd * 100) / 100,
+        },
+        costTiers,
+        netPerFamilyUsd: Math.round(NET_PER_FAMILY * 100) / 100,
+        projection,
+        valuation,
+      };
+    }),
   }),
 });
 

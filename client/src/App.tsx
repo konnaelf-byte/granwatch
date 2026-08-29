@@ -17,6 +17,7 @@ import { PaymentSuccess, PaymentCancel } from "./pages/PaymentResult";
 import Account from "./pages/Account";
 import Admin from "./pages/Admin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminFinancials from "./pages/AdminFinancials";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import InstallPrompt from "./components/InstallPrompt";
@@ -134,6 +135,7 @@ function Router() {
       <Route path="/account" component={Account} />
       <Route path="/admin" component={Admin} />
       <Route path="/admin/dashboard" component={AdminDashboard} />
+      <Route path="/admin/financials" component={AdminFinancials} />
       <Route path="/payment/success" component={PaymentSuccess} />
       <Route path="/payment/cancel" component={PaymentCancel} />
       <Route path="/privacy" component={Privacy} />

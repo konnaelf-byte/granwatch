@@ -13,7 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Heart, ArrowLeft, Crown, Gift, TrendingUp } from "lucide-react";
+import { Users, Heart, ArrowLeft, Crown, Gift, TrendingUp, Banknote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -110,6 +110,15 @@ export default function Admin() {
           >
             <TrendingUp className="w-4 h-4" />
             Growth Dashboard
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/admin/financials")}
+            className="gap-1.5 text-stone-600"
+          >
+            <Banknote className="w-4 h-4" />
+            Financials
           </Button>
         </div>
       </div>
