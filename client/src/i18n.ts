@@ -3,9 +3,10 @@
  *
  * The native shells load all UI from the server (server.url), so translations
  * ship like any web deploy. Language resolution order:
- *   1. explicit user choice (localStorage "gw-lang", set by LanguagePicker)
- *   2. device/browser language (navigator)
- *   3. English
+ *   1. ?lang= querystring on the URL (e.g. shared links — see detection below)
+ *   2. explicit user choice (localStorage "gw-lang", set by LanguagePicker)
+ *   3. device/browser language (navigator)
+ *   4. English
  *
  * Locale files live in client/src/locales/*.json. Keep keys in sync across
  * all 8 files — en.json is the source of truth. Agents/native speakers polish
@@ -54,7 +55,11 @@ i18n
     supportedLngs: ["en", "af", "nl", "fr", "de", "es", "pt", "fil"],
     nonExplicitSupportedLngs: true, // pt-BR → pt, de-AT → de, etc.
     detection: {
-      order: ["localStorage", "navigator"],
+      // "querystring" lets a shared link force a language, e.g.
+      // https://granwatch.app/?lang=pt — and it gets cached to
+      // localStorage too, so the choice sticks after that first visit.
+      order: ["querystring", "localStorage", "navigator"],
+      lookupQuerystring: "lang",
       lookupLocalStorage: "gw-lang",
       caches: ["localStorage"],
     },
