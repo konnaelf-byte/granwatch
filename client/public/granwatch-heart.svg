@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- GranWatch official heart — colors sampled from the app icon (fill #D23B26, outline #4A0E05) -->
+  <path d="M256 456
+           C 236 440 96 340 56 240
+           C 28 168 60 96 132 84
+           C 186 75 232 106 256 150
+           C 280 106 326 75 380 84
+           C 452 96 484 168 456 240
+           C 416 340 276 440 256 456 Z"
+        fill="#D23B26" stroke="#4A0E05" stroke-width="26" stroke-linejoin="round"/>
+</svg>
