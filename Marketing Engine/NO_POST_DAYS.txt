@@ -1,0 +1,7 @@
+# One date per line, YYYY-MM-DD, optional comment. Saturdays are always no-post days.
+2026-09-21  Yom Kippur
+# 2026-09-26  Sukkot day 1 (uncomment if you'd rather not post)
+# 2026-09-27  Sukkot day 2
+# 2026-10-03  Shemini Atzeret
+# 2026-10-04  Simchat Torah
+2026-12-25  Christmas (a visit, not a post)

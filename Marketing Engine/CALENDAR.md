@@ -7,10 +7,10 @@ Sun family prompt · Mon mission/stat · Tue how it works · Wed badge/identity 
 ## September 2026 — "Intro campaign" (the launch, told plainly)
 Theme: *This exists now.* The app is live on both stores in eight languages; most people who need it don't know it exists. Every post this month answers "what is it, who is it for, why now" in the guilt-relief voice.
 Overlays:
-- 8–14 Sep: message-house launch week. Tier-1 badge line on Wed; Tier-2 positioning line carries the rest. Thursday guide: "How often should you visit your elderly parents?" (exists).
-- 15–21 Sep: "she doesn't need a phone" week — the ring, the family, the no-device promise. Guide draft: "My mother refuses technology. How do we still stay close?" (new).
-- 22–28 Sep: many-hands week — siblings, the WhatsApp-group comparison (/compare/family-group-chat). Guide exists: siblings. Digest asks Konna for Facebook-group post SA-1 (Asset Pack 2) — manual.
-- 29 Sep–5 Oct: ambassador/partner week — Jeanné's link goes live publicly (with her OK); LinkedIn page if created.
+- **Kick-off Monday 14 Sep** (after Yom Teruah, 12–13 Sep). 14–20 Sep: message-house launch week — Tier 2 on Mon, Tier-1 badge line on Tue, guide on Wed, WHO stat on Thu, weekend nudge Fri, family prompt Sun. No post Sat 19.
+- 21–27 Sep: "she doesn't need a phone" week — the ring, the family, the no-device promise. **No post Mon 21 (Yom Kippur).** Guide draft: "My mother refuses technology. How do we still stay close?" (new).
+- 28 Sep–4 Oct: many-hands week — siblings, the WhatsApp-group comparison (/compare/family-group-chat). Guide exists: siblings. Digest asks Konna for Facebook-group post SA-1 (Asset Pack 2) — manual. Check NO_POST_DAYS for Sukkot choices.
+- 5–11 Oct: ambassador/partner week — Jeanné's link goes live publicly (with her OK); LinkedIn page if created.
 Human-only asks to queue this month: WhatsApp launch-kit sends (Masterplan D2), one real-family short video (Asset Pack 6, script 1), press pitch to SAPeople/TheSouthAfrican now that both stores are live (Asset Pack 5).
 
 ## October 2026 — Loneliness campaign (with Jeanné / Selah)

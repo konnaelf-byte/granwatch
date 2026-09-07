@@ -15,4 +15,4 @@ File name: `YYYY-MM-DD-<slug>.json` (the date is the publish day, SAST). Card im
 }
 ```
 
-Approval happens in chat ("go", "go except Wed", or edits); the coach sets `status`. In `silent`/`auto` mode the Publisher publishes anything not vetoed by its `when` time. Published specs stay here for 90 days as the record, then move to `../ARCHIVE/`.
+Approval happens on the weekly Google Sheet in Drive ("Engine — For approval") — Konna or Chantal set Status = Approved; `scripts/marketing-sheet.mjs --apply` copies that into `status`. The Publisher publishes only `approved` specs (in `silent`/`auto` mode, anything not vetoed). Published specs stay here for 90 days as the record, then move to `../ARCHIVE/`.

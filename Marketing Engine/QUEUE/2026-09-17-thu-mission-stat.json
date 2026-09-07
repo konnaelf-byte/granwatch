@@ -1,15 +1,15 @@
 {
   "status": "draft",
-  "slot": "mon-mission-stat",
+  "slot": "thu-mission-stat",
   "headline": "Loneliness is not a soft problem.",
   "sub": "The WHO links it to around 100 deaths every hour worldwide.",
   "content": "The WHO Commission on Social Connection estimates loneliness and social isolation contribute to 100 deaths every hour worldwide — over 871,000 a year.\n\nThat's not a reason to feel guilty. It's a reason to treat a visit to Gran as the medicine it is — the one no pill replicates.\n\nOne visit this week. Then another. The ring does the remembering. granwatch.app/learn",
-  "image": "Marketing Engine/media/2026-09-14-mon-mission-stat.png",
+  "image": "Marketing Engine/media/2026-09-17-thu-mission-stat.png",
   "channels": [
     "facebook",
     "instagram"
   ],
-  "when": "2026-09-14T10:00:00Z",
+  "when": "2026-09-17T10:00:00Z",
   "notes": "Contains a statistic → draft-only in every mode (ENGINE §8). Attribution verbatim from site.",
   "link": "https://granwatch.app/learn"
 }
