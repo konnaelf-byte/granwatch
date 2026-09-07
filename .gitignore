@@ -16,3 +16,7 @@ android/keystore.properties
 ios/App/App/GoogleService-Info.plist
 android/app/google-services.json
 *.p8
+
+# Marketing Engine binaries (regenerable)
+Marketing Engine/media/
+Marketing Engine/fonts/
