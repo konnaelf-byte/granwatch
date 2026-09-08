@@ -839,11 +839,11 @@ export default function ElderProfile() {
 
       {/* Log Visit Modal */}
       <Dialog open={logVisitOpen} onOpenChange={setLogVisitOpen}>
-        <DialogContent className="max-w-sm mx-auto">
+        <DialogContent className="max-w-sm mx-auto overflow-x-hidden">
           <DialogHeader>
-            <DialogTitle>{t("elder.logVisitTitle", { name: elder.name })}</DialogTitle>
+            <DialogTitle className="pr-6 break-words">{t("elder.logVisitTitle", { name: elder.name })}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2">
+          <div className="space-y-4 py-2 min-w-0">
             {/* When was the visit? "Today" preselected (zero extra taps for the
                 normal case); "Other day" reveals a native date input, ≤3 months back. */}
             <div>
@@ -911,19 +911,22 @@ export default function ElderProfile() {
             {/* Mood — emoji is free for everyone; selecting one is optional. Feeds the mood trend chart. */}
             <div>
               <p className="text-sm font-medium text-foreground mb-2">{t("elder.moodQ")}</p>
-              <div className="flex gap-2 justify-center">
+              {/* 6 equal columns that are allowed to shrink (min-w-0): long single-word
+                  labels in af/nl/de ("Uitstekend", "Uitstekend", "Ausgezeichnet") used to
+                  push the row — and the whole dialog — wider than the phone screen. */}
+              <div className="grid grid-cols-6 gap-1 min-w-0">
                 {MOOD_OPTIONS.map(({ emoji, label }) => (
                   <button
                     key={emoji}
                     type="button"
                     onClick={() => setMoodEmoji(moodEmoji === emoji ? null : emoji)}
-                    className={`flex flex-col items-center p-2 rounded-xl transition-all ${
+                    className={`flex flex-col items-center min-w-0 px-0.5 py-2 rounded-xl transition-all ${
                       moodEmoji === emoji ? "bg-primary/15 ring-2 ring-primary" : "hover:bg-muted"
                     }`}
                     aria-pressed={moodEmoji === emoji}
                   >
                     <span className="text-2xl">{emoji}</span>
-                    <span className="text-xs text-muted-foreground mt-0.5">{label}</span>
+                    <span className="text-[11px] leading-tight text-center text-muted-foreground mt-0.5 w-full break-words [overflow-wrap:anywhere]">{label}</span>
                   </button>
                 ))}
               </div>
