@@ -8,14 +8,14 @@
 - `NO_POST_DAYS.txt` — one date per line (YYYY-MM-DD, optional comment). No posts on those days, ever. Saturdays are always no-post days without being listed.
 
 ## 1. Mission and the one-paragraph strategy
-GranWatch exists so that no gran goes too long without a visit. Every competitor sells safety, logistics or paid strangers; GranWatch sells **presence** — a shared colour ring that shows the whole family when Gran was last visited, kindly and automatically. She doesn't need a phone. Growth is the invite loop (every family is a multi-country viral unit) seeded by diaspora waves (SA expats, Filipino OFW families), regional partners (NL/BE, AU, Brazil, LU) and ambassadors, and made discoverable by search/AI-assistant content. The engine's job: be present, in the right voice, everywhere a person who *actually cares* might be looking — and hand the human-only work to Konna pre-written.
+GranWatch exists so that no gran goes too long without a visit. Every competitor sells safety, logistics or paid strangers; GranWatch sells **presence** — a shared colour ring that shows the whole family when Gran was last visited, kindly and automatically. She doesn't need a phone. Growth is the invite loop (every family is a multi-country viral unit) seeded by diaspora waves (SA expats, Filipino OFW families), regional partners (NL/BE, AU, Brazil, LU) and ambassadors, and made discoverable by search/AI-assistant content. The engine's job: be present, in the right voice, everywhere a person who *truly cares* might be looking — and hand the human-only work to Konna pre-written.
 
 ## 2. Message house (approved 2026-09-07)
-**Tier 1 — badge line (cold audiences, always with the gran in the picture):** **For those who actually care.**
+**Tier 1 — badge line (cold audiences, always with the gran in the picture):** **For those who truly care.**
 **Tier 2 — positioning line (the most useful sentence we own; works cold in text):** See when Gran was last visited — she doesn't need a phone.
 **Tier 3 — brand line (sign-off, post-awareness):** Keep Gran in the green.
 Challenger to test against Tier 1 (rotate ~1 in 4 posts, log which produces sign-ups): *For families who actually show up.*
-Never let Tier 1 stand alone where no gran is visible (search titles, text-only posts) — pair it with Tier 2 or write "…who actually care about Gran."
+Never let Tier 1 stand alone where no gran is visible (search titles, text-only posts) — pair it with Tier 2 or write "…who truly care about Gran."
 
 **Three pillars every piece of content stands on**
 1. Guilt-relief. Nobody is accused. The ring states facts kindly; we offer the club, never the verdict. The son who hasn't visited in six weeks must feel invited, not judged.

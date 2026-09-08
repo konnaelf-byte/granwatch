@@ -2,7 +2,7 @@
 *Ideas the runs draw from. Mark used items with the date. Source files: `Elevating…/GranWatch — Marketing Asset Pack (Round 1).md` (assets 1–8), `GranWatch — Launch Kit (Diaspora Wave 1).md`, `GEO — AI Visibility Playbook.md`, `server/contentRoutes.ts` (existing guides + FAQ).*
 
 ## Post seeds (social)
-- Badge line straight: "For those who actually care." + positioning line. (Wed 10 Sep)
+- Badge line straight: "For those who truly care." + positioning line. (Wed 10 Sep)
 - Challenger: "For families who actually show up."
 - "Some families say they care. This one can show you."
 - "Love her? Visit her. GranWatch makes sure someone does."

@@ -99,6 +99,8 @@ export default function Landing() {
             <HeroLogoRing size={220} />
           </div>
 
+          {/* Badge line — only ever shown with the gran in view (the ring above). BRAND.md tagline #1. */}
+          <p className="text-primary font-semibold text-base mb-3 tracking-tight">{t("landing.heroBadge")}</p>
           <h1 className="text-4xl font-bold text-foreground mb-4 leading-tight">
             {t("landing.heroLine1")}<br />{t("landing.heroLine2")}
           </h1>

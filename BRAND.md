@@ -47,12 +47,12 @@ Green is the *status* colour (the promise). Red heart is the *brand* colour (the
 ## Typography
 Inter (app + web). Weights: ExtraBold for wordmark/headlines, Bold for taglines, Medium/Regular for body. System-sans fallback stack is fine on server-rendered pages.
 
-## Taglines (fixed hierarchy — UPDATED 2026-09-07, Konna's call)
-1. **Badge line (cold audiences — only ever with the gran in the picture):** "For those who actually care." Never alone in text-only places (search titles, LinkedIn text): pair it with line 2, or write "…who actually care about Gran." Challenger under test: "For families who actually show up."
+## Taglines (fixed hierarchy — UPDATED 2026-09-08, Konna's call — "truly", not "actually")
+1. **Badge line (cold audiences — only ever with the gran in the picture):** "For those who truly care." Afrikaans: "Vir dié wat regtig omgee." (all 8 languages live on the landing hero as `landing.heroBadge`). Never alone in text-only places (search titles, LinkedIn text): pair it with line 2, or write "…who truly care about Gran." Challenger under test: "For families who actually show up."
 2. **Positioning line:** "See when Gran was last visited — she doesn't need a phone." — the most useful sentence we own; works cold; the subtitle everywhere the badge or brand line appears.
 3. **Brand line (sign-off, post-awareness):** "Keep Gran in the green." — appears with the wordmark (OG image, site title, footers). Not a first-impression headline.
 4. Footer affection line: "made with love, for every gran."
-Why: a first-time reader can't parse "in the green" until they know the ring. The badge line sorts by identity — it offers a club ("those who actually care"), it never accuses (guilt-relief rule below). No superlatives ("No. 1") without substantiation.
+Why: a first-time reader can't parse "in the green" until they know the ring. The badge line sorts by identity — it offers a club ("those who truly care"), it never accuses (guilt-relief rule below). No superlatives ("No. 1") without substantiation.
 
 ## Voice rules
 - Guilt-RELIEF, never guilt-shaming. The ring states facts kindly; copy never accuses.
