@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 // Bezel-free hero artwork (dark green, no baked ring) — the animated ring is
 // the ONLY ring. The official logo (icon-1024.png) is untouched elsewhere.
@@ -107,9 +108,13 @@ export function HeroLogoRing({ size = 220 }: { size?: number }) {
   const fillRatio = Math.max(0, 1 - Math.min(day, THRESHOLD) / THRESHOLD);
   const strokeDashoffset = circumference * (1 - fillRatio);
 
+  // Labels come from the "ring" + "elder" locale namespaces so the demo speaks
+  // the visitor's language (the landing page honours ?lang= — e.g. ambassador links).
+  const { t } = useTranslation();
+  const statusLabel: Record<Status, string> = { green: t("ring.allGood"), yellow: t("ring.dueSoon"), orange: t("ring.overdue") };
   const daysText = day === 0
-    ? (justVisited ? "✓ Visited today!" : "Visited today!")
-    : day === 1 ? "1 day ago" : `${day} days ago`;
+    ? (justVisited ? `✓ ${t("ring.visitedToday")}` : t("ring.visitedToday"))
+    : t("elder.daysAgo", { count: day });
 
   return (
     <div className="flex flex-col items-center gap-3" role="img"
@@ -153,7 +158,7 @@ export function HeroLogoRing({ size = 220 }: { size?: number }) {
           {daysText}
         </div>
         <div className="text-xs text-muted-foreground mt-0.5 font-medium uppercase tracking-wide">
-          {day === 0 ? "All good" : colors.label}
+          {day === 0 ? statusLabel.green : statusLabel[status]}
         </div>
       </div>
     </div>
