@@ -17,6 +17,8 @@ GranWatch exists so that no gran goes too long without a visit. Every competitor
 Challenger to test against Tier 1 (rotate ~1 in 4 posts, log which produces sign-ups): *For families who actually show up.*
 Never let Tier 1 stand alone where no gran is visible (search titles, text-only posts) — pair it with Tier 2 or write "…who truly care about Gran."
 
+**Belief-first rule (Konna, 9 Sep): every post leads with ONE of the five beliefs — caring is a verb · body and soul · grace, not guilt · many hands · honour your father and mother. Features (the ring, no phone, free, 8 languages) may explain or close a post; they never lead it. "Belief outlives features."**
+
 **Three pillars every piece of content stands on**
 1. Guilt-relief. Nobody is accused. The ring states facts kindly; we offer the club, never the verdict. The son who hasn't visited in six weeks must feel invited, not judged.
 2. She doesn't need a phone. Gran is the beneficiary, never the user. Say it early and often.
