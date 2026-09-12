@@ -202,7 +202,14 @@
     "visitToday": "Vandag",
     "visitOtherDay": "Ander dag",
     "visitBackdateHint": "Jy kan besoeke tot 3 maande terug aanteken.",
-    "visitSelectDate": "Kies datum"
+    "visitSelectDate": "Kies datum",
+    "removeGiftTitle": "Verwyder hierdie inskrywing?",
+    "removeGiftDesc": "Per ongeluk getik, of die bestelling het nie deurgegaan nie? Dit verwyder dit uit Ouma se geskiedenis. Dit kanselleer niks by die winkel nie.",
+    "yesRemoveEntry": "Ja, verwyder",
+    "undo": "Ontdoen",
+    "toastFlowersLogged": "Blomme in Ouma se geskiedenis aangeteken 🌸",
+    "toastGiftLogged": "Geskenk in Ouma se geskiedenis aangeteken 🎁",
+    "toastGiftRemoved": "Inskrywing verwyder"
   },
   "counters": {
     "teaser": "Persoonlike tellers — 'n Gran+-funksie",

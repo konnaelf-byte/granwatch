@@ -202,7 +202,14 @@
     "visitToday": "Hoje",
     "visitOtherDay": "Outro dia",
     "visitBackdateHint": "Você pode registrar visitas de até 3 meses atrás.",
-    "visitSelectDate": "Escolher data"
+    "visitSelectDate": "Escolher data",
+    "removeGiftTitle": "Remover este registro?",
+    "removeGiftDesc": "Tocou sem querer ou o pedido não foi concluído? Isso remove o registro do histórico da Vovó. Não cancela nada com a loja.",
+    "yesRemoveEntry": "Sim, remover",
+    "undo": "Desfazer",
+    "toastFlowersLogged": "Flores anotadas no histórico da Vovó 🌸",
+    "toastGiftLogged": "Presente anotado no histórico da Vovó 🎁",
+    "toastGiftRemoved": "Registro removido"
   },
   "counters": {
     "teaser": "Contadores personalizados — um recurso do Gran+",

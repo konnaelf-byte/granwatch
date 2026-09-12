@@ -202,7 +202,14 @@
     "visitToday": "Vandaag",
     "visitOtherDay": "Andere dag",
     "visitBackdateHint": "Je kunt bezoeken tot 3 maanden terug loggen.",
-    "visitSelectDate": "Kies datum"
+    "visitSelectDate": "Kies datum",
+    "removeGiftTitle": "Deze vermelding verwijderen?",
+    "removeGiftDesc": "Per ongeluk getikt, of is de bestelling niet doorgegaan? Dit verwijdert het uit Oma's geschiedenis. Het annuleert niets bij de winkel.",
+    "yesRemoveEntry": "Ja, verwijderen",
+    "undo": "Ongedaan maken",
+    "toastFlowersLogged": "Bloemen genoteerd in Oma's geschiedenis 🌸",
+    "toastGiftLogged": "Cadeau genoteerd in Oma's geschiedenis 🎁",
+    "toastGiftRemoved": "Vermelding verwijderd"
   },
   "counters": {
     "teaser": "Eigen tellers — een Gran+-functie",

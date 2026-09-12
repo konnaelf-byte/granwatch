@@ -202,7 +202,14 @@
     "visitToday": "Ngayon",
     "visitOtherDay": "Ibang araw",
     "visitBackdateHint": "Maaari kang mag-log ng dalaw hanggang 3 buwan pabalik.",
-    "visitSelectDate": "Pumili ng petsa"
+    "visitSelectDate": "Pumili ng petsa",
+    "removeGiftTitle": "Alisin ang entry na ito?",
+    "removeGiftDesc": "Aksidenteng na-tap, o hindi natuloy ang order? Aalisin nito ang entry sa history ni Lola. Wala itong kinakansela sa tindahan.",
+    "yesRemoveEntry": "Oo, alisin",
+    "undo": "I-undo",
+    "toastFlowersLogged": "Naitala ang mga bulaklak sa history ni Lola 🌸",
+    "toastGiftLogged": "Naitala ang regalo sa history ni Lola 🎁",
+    "toastGiftRemoved": "Inalis ang entry"
   },
   "counters": {
     "teaser": "Mga custom counter — feature ng Gran+",

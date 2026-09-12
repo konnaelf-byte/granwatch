@@ -202,7 +202,14 @@
     "visitToday": "Today",
     "visitOtherDay": "Other day",
     "visitBackdateHint": "You can log visits up to 3 months back.",
-    "visitSelectDate": "Select date"
+    "visitSelectDate": "Select date",
+    "removeGiftTitle": "Remove this entry?",
+    "removeGiftDesc": "Tapped by mistake, or the order didn't go through? This removes it from Gran's history. It doesn't cancel anything with the shop.",
+    "yesRemoveEntry": "Yes, remove",
+    "undo": "Undo",
+    "toastFlowersLogged": "Flowers noted in Gran's history 🌸",
+    "toastGiftLogged": "Gift noted in Gran's history 🎁",
+    "toastGiftRemoved": "Entry removed"
   },
   "counters": {
     "teaser": "Custom counters — a Gran+ feature",

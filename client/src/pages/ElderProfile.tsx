@@ -61,6 +61,7 @@ export default function ElderProfile() {
   const [transferTarget, setTransferTarget] = useState<{ userId: number; name: string } | null>(null);
   const [removeTarget, setRemoveTarget] = useState<{ userId: number; name: string } | null>(null);
   const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
+  const [deleteGiftId, setDeleteGiftId] = useState<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -192,9 +193,23 @@ export default function ElderProfile() {
     toast.success(isNativeApp ? t("elder.toastCalendarNative") : t("elder.toastCalendarWeb"));
   };
 
-  const logGift = trpc.gifts.log.useMutation({
+  const removeGift = trpc.gifts.remove.useMutation({
     onSuccess: () => {
       utils.gifts.list.invalidate({ elderId });
+      setDeleteGiftId(null);
+      toast.success(t("elder.toastGiftRemoved"));
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const logGift = trpc.gifts.log.useMutation({
+    onSuccess: (data, vars) => {
+      utils.gifts.list.invalidate({ elderId });
+      // Mis-taps happen: give a one-tap Undo right on the toast.
+      toast(vars.giftType === "flowers" ? t("elder.toastFlowersLogged") : t("elder.toastGiftLogged"), {
+        action: { label: t("elder.undo"), onClick: () => removeGift.mutate({ giftLogId: data.id }) },
+        duration: 8000,
+      });
     },
     // Error is shown as a toast below; we still open the partner URL regardless
     onError: (e) => toast.error("Couldn't log gift: " + e.message),
@@ -591,9 +606,11 @@ export default function ElderProfile() {
               const giftEvents = (giftHistory ?? []).map((g: any) => ({
                 _type: "gift" as const,
                 _key: `g-${g.id}`,
+                _id: g.id as number,
                 _date: new Date(g.sentAt),
                 senderName: g.senderName as string,
                 giftType: g.giftType as "flowers" | "gift",
+                canRemove: g.sentByUserId === user?.id || elder.memberRole === "admin",
               }));
               const timeline = [...visitEvents, ...giftEvents]
                 .sort((a, b) => b._date.getTime() - a._date.getTime());
@@ -667,7 +684,20 @@ export default function ElderProfile() {
                         <p className={`font-semibold text-sm ${isFlowers ? "text-pink-800 dark:text-pink-300" : "text-amber-800 dark:text-amber-300"}`}>
                           {isFlowers ? t("elder.sentFlowersHist", { name: item.senderName }) : t("elder.sentGiftHist", { name: item.senderName })}
                         </p>
-                        <p className="text-xs text-muted-foreground flex-shrink-0 ml-2">{dateStr}</p>
+                        <div className="flex items-center flex-shrink-0 ml-2 gap-1">
+                          <p className="text-xs text-muted-foreground">{dateStr}</p>
+                          {item.canRemove && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => setDeleteGiftId(item._id)}
+                              aria-label={t("elder.removeGiftTitle")}
+                            >
+                              <X className="w-4 h-4" aria-hidden="true" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
@@ -1139,6 +1169,31 @@ export default function ElderProfile() {
       </AlertDialog>
 
       {/* Regenerate invite code confirmation dialog: moved to ElderSettings (2026-08-21) */}
+
+      {/* Remove gift/flowers history entry confirmation dialog */}
+      <AlertDialog open={deleteGiftId !== null} onOpenChange={(o) => { if (!o) setDeleteGiftId(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" />
+              {t("elder.removeGiftTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("elder.removeGiftDesc")}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("elder.keepIt")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => deleteGiftId !== null && removeGift.mutate({ giftLogId: deleteGiftId })}
+              disabled={removeGift.isPending}
+            >
+              {removeGift.isPending ? t("elder.removing") : t("elder.yesRemoveEntry")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete planned visit confirmation dialog */}
       <AlertDialog open={deleteVisitId !== null} onOpenChange={(o) => { if (!o) setDeleteVisitId(null); }}>

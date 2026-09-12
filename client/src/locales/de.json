@@ -202,7 +202,14 @@
     "visitToday": "Heute",
     "visitOtherDay": "Anderer Tag",
     "visitBackdateHint": "Besuche können bis zu 3 Monate rückwirkend eingetragen werden.",
-    "visitSelectDate": "Datum wählen"
+    "visitSelectDate": "Datum wählen",
+    "removeGiftTitle": "Diesen Eintrag entfernen?",
+    "removeGiftDesc": "Versehentlich getippt oder die Bestellung kam nicht zustande? Das entfernt ihn aus Omas Verlauf. Beim Shop wird dadurch nichts storniert.",
+    "yesRemoveEntry": "Ja, entfernen",
+    "undo": "Rückgängig",
+    "toastFlowersLogged": "Blumen in Omas Verlauf vermerkt 🌸",
+    "toastGiftLogged": "Geschenk in Omas Verlauf vermerkt 🎁",
+    "toastGiftRemoved": "Eintrag entfernt"
   },
   "counters": {
     "teaser": "Eigene Zähler — eine Gran+-Funktion",

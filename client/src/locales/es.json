@@ -202,7 +202,14 @@
     "visitToday": "Hoy",
     "visitOtherDay": "Otro día",
     "visitBackdateHint": "Puedes registrar visitas de hasta 3 meses atrás.",
-    "visitSelectDate": "Elegir fecha"
+    "visitSelectDate": "Elegir fecha",
+    "removeGiftTitle": "¿Eliminar esta entrada?",
+    "removeGiftDesc": "¿Tocaste por error o el pedido no se completó? Esto la quita del historial de la abuela. No cancela nada con la tienda.",
+    "yesRemoveEntry": "Sí, eliminar",
+    "undo": "Deshacer",
+    "toastFlowersLogged": "Flores anotadas en el historial de la abuela 🌸",
+    "toastGiftLogged": "Regalo anotado en el historial de la abuela 🎁",
+    "toastGiftRemoved": "Entrada eliminada"
   },
   "counters": {
     "teaser": "Contadores personalizados — una función de Gran+",

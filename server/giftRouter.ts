@@ -86,6 +86,39 @@ export const giftRouter = router({
     }),
 
   /**
+   * Remove a gift-log entry (mis-tap, or the order never went through).
+   * Allowed for the person who logged it, or a family admin. This only
+   * removes the history entry — it cannot cancel anything with the shop.
+   */
+  remove: protectedProcedure
+    .input(z.object({ giftLogId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+
+      const [log] = await db
+        .select()
+        .from(giftLogs)
+        .where(eq(giftLogs.id, input.giftLogId))
+        .limit(1);
+      if (!log) throw new Error("Entry not found");
+
+      const [member] = await db
+        .select()
+        .from(elderMembers)
+        .where(and(eq(elderMembers.elderId, log.elderId), eq(elderMembers.userId, ctx.user.id)))
+        .limit(1);
+      if (!member) throw new Error("Not a member of this family");
+
+      const isOwner = log.sentByUserId === ctx.user.id;
+      const isAdmin = member.role === "admin";
+      if (!isOwner && !isAdmin) throw new Error("Only the person who logged this, or a family admin, can remove it");
+
+      await db.delete(giftLogs).where(eq(giftLogs.id, input.giftLogId));
+      return { ok: true };
+    }),
+
+  /**
    * List recent gift logs for an elder (visible to all family members).
    * Returned in descending chronological order, with the sender's name resolved.
    */

@@ -202,7 +202,14 @@
     "visitToday": "Aujourd'hui",
     "visitOtherDay": "Autre jour",
     "visitBackdateHint": "Vous pouvez noter des visites jusqu'à 3 mois en arrière.",
-    "visitSelectDate": "Choisir la date"
+    "visitSelectDate": "Choisir la date",
+    "removeGiftTitle": "Supprimer cette entrée ?",
+    "removeGiftDesc": "Touché par erreur, ou la commande n'a pas abouti ? Cela la retire de l'historique de Mamie. Cela n'annule rien auprès de la boutique.",
+    "yesRemoveEntry": "Oui, supprimer",
+    "undo": "Annuler",
+    "toastFlowersLogged": "Fleurs notées dans l'historique de Mamie 🌸",
+    "toastGiftLogged": "Cadeau noté dans l'historique de Mamie 🎁",
+    "toastGiftRemoved": "Entrée supprimée"
   },
   "counters": {
     "teaser": "Compteurs personnalisés — une fonction Gran+",
