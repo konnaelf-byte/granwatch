@@ -56,7 +56,8 @@
     "getAppSub": "Die App bietet Push-Benachrichtigungen und das Startbildschirm-Widget — oder fahren Sie einfach im Browser fort.",
     "storeIos": "Im App Store laden",
     "storeAndroid": "Bei Google Play holen",
-    "storeWeb": "Im Browser fortfahren"
+    "storeWeb": "Im Browser fortfahren",
+    "footAbout": "Über uns"
   },
   "join": {
     "headerTitle": "Einer Familie beitreten",

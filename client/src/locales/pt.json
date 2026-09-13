@@ -56,7 +56,8 @@
     "getAppSub": "O app adiciona notificações e o widget da tela inicial — ou simplesmente continue no navegador.",
     "storeIos": "Baixar na App Store",
     "storeAndroid": "Disponível no Google Play",
-    "storeWeb": "Continuar no navegador"
+    "storeWeb": "Continuar no navegador",
+    "footAbout": "Sobre nós"
   },
   "join": {
     "headerTitle": "Entrar numa família",

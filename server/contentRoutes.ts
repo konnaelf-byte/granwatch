@@ -6,7 +6,7 @@
  * HTML. These routes register BEFORE the static/SPA catchall, so they win.
  * Zero interaction with app code — purely additive.
  *
- * Pages: /guides (index), /guides/:slug (articles), /faq, /compare/family-group-chat,
+ * Pages: /guides (index), /guides/:slug (articles), /faq, /about, /compare/family-group-chat,
  * /sitemap.xml (shadows the static one to include these pages), /robots.txt.
  *
  * Content source: Marketing Masterplan + Asset Pack Round 1 (2026-08-12).
@@ -79,7 +79,7 @@ ${schemaTag}
 <header><a href="${APP_URL}"><img src="/icon-192.png" alt="">GranWatch</a></header>
 <main>${opts.bodyHtml}</main>
 <footer>
-  <a href="${APP_URL}">Home</a><a href="/learn">All you should know</a><a href="/guides">Guides</a><a href="/faq">FAQ</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>
+  <a href="${APP_URL}">Home</a><a href="/learn">All you should know</a><a href="/guides">Guides</a><a href="/faq">FAQ</a><a href="/about">About</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a>
   <div style="margin-top:8px">GranWatch — Keep Gran in the green. She doesn't need a phone.</div>
 </footer>
 </body>
@@ -380,10 +380,53 @@ ${CTA}`,
     }));
   });
 
+  // ─── /about — mission and values (Konna, 13 Sep 2026) ──────────────────────
+  // Says who we are and what we believe; deliberately says nothing about who
+  // we are not. Universal language throughout — no religious or political
+  // framing — so it reads the same in every market.
+  app.get("/about", (_req, res) => {
+    res.send(layout({
+      title: "About GranWatch — why we exist and what we believe",
+      description: "GranWatch exists to switch the networks around older people back on. What we believe about loneliness, shared responsibility, and caring as a verb — and who we work with.",
+      path: "/about",
+      schema: {
+        "@context": "https://schema.org",
+        "@type": "AboutPage",
+        "name": "About GranWatch",
+        "url": `${APP_URL}/about`,
+        "mainEntity": { "@type": "Organization", "name": "GranWatch", "url": APP_URL, "founder": { "@type": "Person", "name": "Konstand Spies" } },
+      },
+      bodyHtml: `
+<h1>About GranWatch</h1>
+<p class="sub">Why we exist, what we believe, and who we work with.</p>
+
+<h2>Why we exist</h2>
+<p>Loneliness in old age is not a mystery to be solved. Most of the people who could fix it are already there: children, grandchildren, neighbours, old friends, the congregation, the club, the carer down the hall. What's missing isn't love. It's a nudge at the right moment, and a way for everyone to see that someone has been.</p>
+<p>GranWatch exists to switch those networks back on.</p>
+
+<h2>What we believe</h2>
+<p>We believe the answer to the loneliness epidemic is mostly already in place. The people around an elderly person are the cure; they just need to be activated, reminded and kept in step with one another.</p>
+<p>We believe that when two or more people get behind one goal, something bigger than the sum of them appears. We call it <strong>1 + 1 = 11</strong>. A daughter on her own visits when she can. A daughter, a son, two grandchildren and a neighbour who can all see the same picture visit far more than five separate people ever would, and the weight stops falling on one person.</p>
+<p>We believe that caring for the old is the same responsibility as caring for the very young. An infant's need is obvious. An elderly parent's is quieter, easier to miss, and every bit as real: dignity and wellbeing in old age depend on other people showing up.</p>
+<p>We believe caring is a verb. Good intentions don't count. A visit, a call, a bunch of flowers on the right day — those count, and GranWatch is built to make sure they happen.</p>
+
+<h2>Who it's for</h2>
+<p>Anyone with a loved one who could go too long without being seen. We say "Gran" because that's who this started with, but it works just as well for a father, an uncle, a neighbour, or a friend who lives alone.</p>
+
+<h2>Who we work with</h2>
+<p>We champion any individual or organisation that shares these values in practice: families, retirement villages, care homes, congregations, community groups, and the local businesses that help a family say "thinking of you" when they can't be there in person. If looking after older people is genuinely part of what you do, we'd like to hear from you at <a href="mailto:hello@granwatch.app">hello@granwatch.app</a>.</p>
+
+<h2>A note from the founder</h2>
+<p>I built GranWatch after watching my own family struggle to stay close to an ageing grandmother — not for lack of love, but for lack of a shared picture of who'd been and when. It's a small app with a simple job: make sure no one you love goes unvisited.</p>
+<p><strong>Konstand Spies</strong><br>Founder</p>
+${CTA}`,
+    }));
+  });
+
   // Dynamic sitemap (shadows the static file; includes content pages)
   app.get("/sitemap.xml", (_req, res) => {
     const urls = [
-      "/", "/learn", "/privacy", "/terms", "/guides", "/faq", "/compare/family-group-chat",
+      "/", "/learn", "/about", "/privacy", "/terms", "/guides", "/faq", "/compare/family-group-chat",
       ...Object.keys(ARTICLES).map(s => `/guides/${s}`),
     ];
     res.type("application/xml").send(

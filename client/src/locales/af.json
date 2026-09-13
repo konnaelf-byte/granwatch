@@ -56,7 +56,8 @@
     "getAppSub": "Die app voeg kennisgewings en die tuisskerm-widget by — of gaan eenvoudig voort in jou blaaier.",
     "storeIos": "Laai af op die App Store",
     "storeAndroid": "Kry dit op Google Play",
-    "storeWeb": "Gaan voort in blaaier"
+    "storeWeb": "Gaan voort in blaaier",
+    "footAbout": "Oor ons"
   },
   "join": {
     "headerTitle": "Sluit by 'n familie aan",

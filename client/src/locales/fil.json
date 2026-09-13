@@ -56,7 +56,8 @@
     "getAppSub": "May push alerts at home-screen widget ang app — o magpatuloy lang sa iyong browser.",
     "storeIos": "I-download sa App Store",
     "storeAndroid": "Kunin sa Google Play",
-    "storeWeb": "Magpatuloy sa browser"
+    "storeWeb": "Magpatuloy sa browser",
+    "footAbout": "Tungkol sa amin"
   },
   "join": {
     "headerTitle": "Sumali sa isang pamilya",

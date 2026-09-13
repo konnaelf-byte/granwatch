@@ -56,7 +56,8 @@
     "getAppSub": "The app adds push alerts and the home-screen widget — or just continue in your browser.",
     "storeIos": "Download on the App Store",
     "storeAndroid": "Get it on Google Play",
-    "storeWeb": "Continue in browser"
+    "storeWeb": "Continue in browser",
+    "footAbout": "About"
   },
   "join": {
     "headerTitle": "Join a Family",

@@ -56,7 +56,8 @@
     "getAppSub": "De app voegt meldingen en de widget op je beginscherm toe — of ga gewoon verder in je browser.",
     "storeIos": "Download in de App Store",
     "storeAndroid": "Haal het op Google Play",
-    "storeWeb": "Verder in de browser"
+    "storeWeb": "Verder in de browser",
+    "footAbout": "Over ons"
   },
   "join": {
     "headerTitle": "Sluit je aan bij een familie",

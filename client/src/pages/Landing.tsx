@@ -230,6 +230,8 @@ export default function Landing() {
           <span>·</span>
           <a href="/faq" className="hover:text-foreground transition-colors">{t("landing.footFaq")}</a>
           <span>·</span>
+          <a href="/about" className="hover:text-foreground transition-colors">{t("landing.footAbout")}</a>
+          <span>·</span>
           <a href="/privacy" className="hover:text-foreground transition-colors">{t("landing.footPrivacy")}</a>
           <span>·</span>
           <a href="/terms" className="hover:text-foreground transition-colors">{t("landing.footTerms")}</a>
