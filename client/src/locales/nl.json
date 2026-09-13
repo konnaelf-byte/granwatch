@@ -9,7 +9,8 @@
     "add": "Toevoegen",
     "save": "Opslaan",
     "saving": "Opslaan…",
-    "optional": "(optioneel)"
+    "optional": "(optioneel)",
+    "close": "Sluiten"
   },
   "landing": {
     "heroBadge": "Voor wie er écht om geeft.",
@@ -210,7 +211,8 @@
     "undo": "Ongedaan maken",
     "toastFlowersLogged": "Bloemen genoteerd in Oma's geschiedenis 🌸",
     "toastGiftLogged": "Cadeau genoteerd in Oma's geschiedenis 🎁",
-    "toastGiftRemoved": "Vermelding verwijderd"
+    "toastGiftRemoved": "Vermelding verwijderd",
+    "photoViewerTitle": "Bezoekfoto's"
   },
   "counters": {
     "teaser": "Eigen tellers — een Gran+-functie",

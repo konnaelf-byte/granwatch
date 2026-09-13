@@ -9,7 +9,8 @@
     "add": "Idagdag",
     "save": "I-save",
     "saving": "Sine-save…",
-    "optional": "(opsyonal)"
+    "optional": "(opsyonal)",
+    "close": "Isara"
   },
   "landing": {
     "heroBadge": "Para sa mga tunay na nagmamalasakit.",
@@ -210,7 +211,8 @@
     "undo": "I-undo",
     "toastFlowersLogged": "Naitala ang mga bulaklak sa history ni Lola 🌸",
     "toastGiftLogged": "Naitala ang regalo sa history ni Lola 🎁",
-    "toastGiftRemoved": "Inalis ang entry"
+    "toastGiftRemoved": "Inalis ang entry",
+    "photoViewerTitle": "Mga litrato ng pagbisita"
   },
   "counters": {
     "teaser": "Mga custom counter — feature ng Gran+",

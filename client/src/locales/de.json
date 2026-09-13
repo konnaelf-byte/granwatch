@@ -9,7 +9,8 @@
     "add": "Hinzufügen",
     "save": "Speichern",
     "saving": "Speichern…",
-    "optional": "(optional)"
+    "optional": "(optional)",
+    "close": "Schließen"
   },
   "landing": {
     "heroBadge": "Für alle, denen sie wirklich am Herzen liegt.",
@@ -210,7 +211,8 @@
     "undo": "Rückgängig",
     "toastFlowersLogged": "Blumen in Omas Verlauf vermerkt 🌸",
     "toastGiftLogged": "Geschenk in Omas Verlauf vermerkt 🎁",
-    "toastGiftRemoved": "Eintrag entfernt"
+    "toastGiftRemoved": "Eintrag entfernt",
+    "photoViewerTitle": "Besuchsfotos"
   },
   "counters": {
     "teaser": "Eigene Zähler — eine Gran+-Funktion",

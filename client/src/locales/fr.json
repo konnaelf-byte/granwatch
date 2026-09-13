@@ -9,7 +9,8 @@
     "add": "Ajouter",
     "save": "Enregistrer",
     "saving": "Sauvegarde…",
-    "optional": "(facultatif)"
+    "optional": "(facultatif)",
+    "close": "Fermer"
   },
   "landing": {
     "heroBadge": "Pour ceux qui tiennent vraiment à elle.",
@@ -210,7 +211,8 @@
     "undo": "Annuler",
     "toastFlowersLogged": "Fleurs notées dans l'historique de Mamie 🌸",
     "toastGiftLogged": "Cadeau noté dans l'historique de Mamie 🎁",
-    "toastGiftRemoved": "Entrée supprimée"
+    "toastGiftRemoved": "Entrée supprimée",
+    "photoViewerTitle": "Photos des visites"
   },
   "counters": {
     "teaser": "Compteurs personnalisés — une fonction Gran+",

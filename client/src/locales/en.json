@@ -9,7 +9,8 @@
     "add": "Add",
     "save": "Save",
     "saving": "Saving…",
-    "optional": "(optional)"
+    "optional": "(optional)",
+    "close": "Close"
   },
   "landing": {
     "heroBadge": "For those who truly care.",
@@ -210,7 +211,8 @@
     "undo": "Undo",
     "toastFlowersLogged": "Flowers noted in Gran's history 🌸",
     "toastGiftLogged": "Gift noted in Gran's history 🎁",
-    "toastGiftRemoved": "Entry removed"
+    "toastGiftRemoved": "Entry removed",
+    "photoViewerTitle": "Visit photos"
   },
   "counters": {
     "teaser": "Custom counters — a Gran+ feature",

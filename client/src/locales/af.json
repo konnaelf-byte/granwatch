@@ -9,7 +9,8 @@
     "add": "Voeg by",
     "save": "Stoor",
     "saving": "Stoor tans…",
-    "optional": "(opsioneel)"
+    "optional": "(opsioneel)",
+    "close": "Maak toe"
   },
   "landing": {
     "heroBadge": "Vir dié wat regtig omgee.",
@@ -210,7 +211,8 @@
     "undo": "Ontdoen",
     "toastFlowersLogged": "Blomme in Ouma se geskiedenis aangeteken 🌸",
     "toastGiftLogged": "Geskenk in Ouma se geskiedenis aangeteken 🎁",
-    "toastGiftRemoved": "Inskrywing verwyder"
+    "toastGiftRemoved": "Inskrywing verwyder",
+    "photoViewerTitle": "Besoekfoto's"
   },
   "counters": {
     "teaser": "Persoonlike tellers — 'n Gran+-funksie",

@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { useLocation, useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
-import { ArrowLeft, Calendar, Users, Share2, Check, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2, UserMinus, MessageCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Share2, Check, CheckCircle2, Star, Settings, Copy, Sparkles, ShieldCheck, Trash2, Cake, Pill, Gift, Lock, ImagePlus, X, Loader2, UserMinus, MessageCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import { GranPlusModal } from "@/components/GranPlusModal";
 import { NativeGranPlusModal } from "@/components/NativeGranPlusModal";
 import { CareSchedulePanel } from "@/components/CareSchedulePanel";
@@ -13,7 +13,7 @@ import { usePurchaseHealer } from "@/hooks/usePurchaseHealer";
 import StatusRing from "@/components/StatusRing";
 import type { VisitStatus } from "@/components/StatusRing";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
@@ -62,6 +62,9 @@ export default function ElderProfile() {
   const [removeTarget, setRemoveTarget] = useState<{ userId: number; name: string } | null>(null);
   const [deleteVisitId, setDeleteVisitId] = useState<number | null>(null);
   const [deleteGiftId, setDeleteGiftId] = useState<number | null>(null);
+  // In-app photo viewer for visit photos (index into historyPhotos, newest first)
+  const [photoIndex, setPhotoIndex] = useState<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
   const utils = trpc.useUtils();
 
@@ -104,6 +107,15 @@ export default function ElderProfile() {
     { elderId, limit: 20 },
     { enabled: isAuthenticated && elderId > 0 }
   );
+
+  // Every visit photo in this gran's history, newest first — one list so the
+  // viewer can step through them regardless of which entry was tapped.
+  const historyPhotos = ((visitHistory ?? []) as any[])
+    .filter((v) => !!v.photoUrl)
+    .sort((a, b) => new Date(b.visitedAt).getTime() - new Date(a.visitedAt).getTime())
+    .map((v) => ({ url: v.photoUrl as string, visitorName: v.visitorName as string, date: new Date(v.visitedAt) }));
+  const showPhoto = (delta: number) =>
+    setPhotoIndex((i) => (i === null ? null : Math.min(historyPhotos.length - 1, Math.max(0, i + delta))));
 
   const { data: planned } = trpc.planned.list.useQuery(
     { elderId },
@@ -657,14 +669,19 @@ export default function ElderProfile() {
                             <p className="text-xs text-muted-foreground italic ml-5">"{item.notes}"</p>
                           )}
                           {item.photoUrl && (
-                            <a href={item.photoUrl} target="_blank" rel="noopener noreferrer" className="block ml-5 mt-2">
+                            <button
+                              type="button"
+                              className="block ml-5 mt-2 text-left"
+                              onClick={() => setPhotoIndex(Math.max(0, historyPhotos.findIndex((p) => p.url === item.photoUrl)))}
+                              aria-label={`Open photo from ${item.visitorName}'s visit`}
+                            >
                               <img
                                 src={item.photoUrl}
                                 alt={`Photo from ${item.visitorName}'s visit`}
                                 loading="lazy"
                                 className="rounded-lg border max-h-48 w-auto object-cover"
                               />
-                            </a>
+                            </button>
                           )}
                         </div>
                       );
@@ -1169,6 +1186,60 @@ export default function ElderProfile() {
       </AlertDialog>
 
       {/* Regenerate invite code confirmation dialog: moved to ElderSettings (2026-08-21) */}
+
+      {/* In-app photo viewer: tap a visit photo → full-screen, swipe/arrow through all history photos */}
+      <Dialog open={photoIndex !== null} onOpenChange={(o) => { if (!o) setPhotoIndex(null); }}>
+        <DialogContent
+          showCloseButton={false}
+          className="max-w-none w-screen h-[100dvh] sm:max-w-none rounded-none border-0 bg-black p-0 flex flex-col"
+          onKeyDown={(e) => { if (e.key === "ArrowLeft") showPhoto(-1); if (e.key === "ArrowRight") showPhoto(1); }}
+        >
+          <DialogTitle className="sr-only">{t("elder.photoViewerTitle")}</DialogTitle>
+          {photoIndex !== null && historyPhotos[photoIndex] && (
+            <>
+              <div className="flex items-center justify-between px-3 py-2 text-white/90 text-sm">
+                <span className="truncate">
+                  {historyPhotos[photoIndex].visitorName} · {historyPhotos[photoIndex].date.toLocaleDateString(i18n.language, { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+                <span className="flex items-center gap-3 flex-shrink-0">
+                  <span className="text-white/60 text-xs">{photoIndex + 1} / {historyPhotos.length}</span>
+                  <button type="button" onClick={() => setPhotoIndex(null)} aria-label={t("common.close")} className="p-1">
+                    <X className="w-5 h-5" />
+                  </button>
+                </span>
+              </div>
+              <div
+                className="flex-1 min-h-0 flex items-center justify-center select-none"
+                onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }}
+                onTouchEnd={(e) => {
+                  if (touchStartX.current === null) return;
+                  const dx = e.changedTouches[0].clientX - touchStartX.current;
+                  touchStartX.current = null;
+                  if (dx < -40) showPhoto(1);
+                  else if (dx > 40) showPhoto(-1);
+                }}
+              >
+                <img
+                  key={historyPhotos[photoIndex].url}
+                  src={historyPhotos[photoIndex].url}
+                  alt={`Photo from ${historyPhotos[photoIndex].visitorName}'s visit`}
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+              {historyPhotos.length > 1 && (
+                <div className="flex items-center justify-between px-3 py-3">
+                  <button type="button" onClick={() => showPhoto(-1)} disabled={photoIndex === 0} aria-label="Previous photo" className="p-2 rounded-full bg-white/10 text-white disabled:opacity-30">
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  <button type="button" onClick={() => showPhoto(1)} disabled={photoIndex === historyPhotos.length - 1} aria-label="Next photo" className="p-2 rounded-full bg-white/10 text-white disabled:opacity-30">
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Remove gift/flowers history entry confirmation dialog */}
       <AlertDialog open={deleteGiftId !== null} onOpenChange={(o) => { if (!o) setDeleteGiftId(null); }}>

@@ -9,7 +9,8 @@
     "add": "Adicionar",
     "save": "Salvar",
     "saving": "Salvando…",
-    "optional": "(opcional)"
+    "optional": "(opcional)",
+    "close": "Fechar"
   },
   "landing": {
     "heroBadge": "Para quem se importa de verdade.",
@@ -210,7 +211,8 @@
     "undo": "Desfazer",
     "toastFlowersLogged": "Flores anotadas no histórico da Vovó 🌸",
     "toastGiftLogged": "Presente anotado no histórico da Vovó 🎁",
-    "toastGiftRemoved": "Registro removido"
+    "toastGiftRemoved": "Registro removido",
+    "photoViewerTitle": "Fotos das visitas"
   },
   "counters": {
     "teaser": "Contadores personalizados — um recurso do Gran+",
